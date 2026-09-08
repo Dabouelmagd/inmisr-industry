@@ -4,3 +4,4 @@ dist/
 .env.production
 *.log
 .DS_Store
+.env.save
