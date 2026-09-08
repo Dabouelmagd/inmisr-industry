@@ -1,0 +1,782 @@
+// ─── prisma/schema.complete.prisma ───────────────────────────────
+// النسخة الكاملة النهائية من Schema مع كل الجداول والـ indexes
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ────────────────────────────────────────────────────────
+enum Role {
+  BUYER
+  SUPPLIER
+  INVESTOR
+  ADMIN
+  SUPER_ADMIN
+}
+enum KycStatus {
+  PENDING
+  UNDER_REVIEW
+  VERIFIED
+  REJECTED
+  SUSPENDED
+}
+enum VerifiedLevel {
+  NONE
+  BASIC
+  CERTIFIED
+  ELITE
+}
+enum SubscriptionPlan {
+  FREE
+  GROWTH
+  ELITE
+}
+enum RfqStatus {
+  DRAFT
+  PUBLISHED
+  QUOTES_RECEIVED
+  UNDER_NEGOTIATION
+  ACCEPTED
+  ESCROW_FUNDED
+  IN_DELIVERY
+  COMPLETED
+  DISPUTED
+  CANCELLED
+  EXPIRED
+}
+enum OrderStatus {
+  PENDING
+  ESCROW_FUNDED
+  IN_PRODUCTION
+  SHIPPED
+  DELIVERED
+  CONFIRMED
+  DISPUTED
+  CANCELLED
+  REFUNDED
+  COMPLETED
+}
+enum EscrowStatus {
+  PENDING
+  HELD
+  RELEASED
+  REFUNDED
+  DISPUTED
+  ARBITRATION
+}
+enum NotificationType {
+  RFQ_NEW
+  RFQ_QUOTE_RECEIVED
+  RFQ_ACCEPTED
+  RFQ_EXPIRED
+  ORDER_PLACED
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  ORDER_CONFIRMED
+  ESCROW_FUNDED
+  ESCROW_RELEASED
+  ESCROW_DISPUTED
+  PAYMENT_RECEIVED
+  VERIFICATION_APPROVED
+  VERIFICATION_REJECTED
+  REVIEW_RECEIVED
+  MESSAGE_RECEIVED
+  ANOMALY_DETECTED
+  SYSTEM
+}
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  PUSH
+  WHATSAPP
+}
+enum PaymentMethod {
+  ESCROW
+  INSTALLMENT
+  ADVANCE_PARTIAL
+  DEFERRED_30
+  LC
+}
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED_BUYER
+  RESOLVED_SUPPLIER
+  ESCALATED
+}
+enum AdStatus {
+  DRAFT
+  PENDING
+  ACTIVE
+  PAUSED
+  COMPLETED
+  REJECTED
+}
+enum AdType {
+  SEARCH_TOP
+  HOMEPAGE_BANNER
+  CATEGORY_FEATURED
+  RFQ_SIDEBAR
+}
+enum BidModel {
+  CPC
+  CPM
+  FIXED
+}
+
+// ─── USER & AUTH ──────────────────────────────────────────────────
+model User {
+  id              String    @id @default(uuid())
+  email           String?   @unique
+  emailVerified   Boolean   @default(false)
+  phoneHash       String?   @unique
+  phoneRelay      String?   @unique
+  passwordHash    String?
+  fcmTokensJson   Json      @default("[]")
+  role            Role      @default(BUYER)
+  kycStatus       KycStatus @default(PENDING)
+  isActive        Boolean   @default(true)
+  isBanned        Boolean   @default(false)
+  banReason       String?
+  lastLoginAt     DateTime?
+  lastLoginIp     String?
+  twoFaEnabled    Boolean   @default(false)
+  twoFaSecret     String?
+  refreshTokens   RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  otpCodes        OtpCode[]
+  deviceTokens    DeviceToken[]
+  company         Company?
+  sentMessages    Message[] @relation("sender")
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([email])
+  @@index([role, kycStatus])
+  @@map("users")
+}
+
+model DeviceToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  platform  String
+  deviceId  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, isActive])
+  @@index([token])
+  @@map("device_tokens")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRevoked])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, isUsed])
+  @@index([tokenHash])
+  @@map("password_reset_tokens")
+}
+
+model OtpCode {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String
+  purpose   String
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([userId, purpose, isUsed])
+  @@map("otp_codes")
+}
+
+// ─── COMPANIES ────────────────────────────────────────────────────
+model Company {
+  id                 String        @id @default(uuid())
+  userId             String        @unique
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nameAr             String
+  nameEn             String?
+  commercialRegNo    String?       @unique
+  taxId              String?       @unique
+  type               Role
+  verifiedLevel      VerifiedLevel @default(NONE)
+  trustScore         Int           @default(0)
+  avgRating          Float         @default(0)
+  totalReviews       Int           @default(0)
+  totalDeals         Int           @default(0)
+  avgResponseHours   Float         @default(72)
+  specMatchRate      Float         @default(0)
+  onTimeRate         Float         @default(0)
+  disputeRate        Float         @default(0)
+  logoUrl            String?
+  coverUrl           String?
+  descriptionAr      String?
+  descriptionEn      String?
+  websiteUrl         String?
+  founded            Int?
+  employeeCount      String?
+  deletedAt          DateTime?
+  subscription       Subscription?
+  location           GeoLocation?
+  loyaltyPoints      LoyaltyPoints?
+  products           Product[]
+  rfqRequests        RfqRequest[]  @relation("buyer")
+  rfqQuotes          RfqQuote[]    @relation("supplier_quotes")
+  ordersAsBuyer      Order[]       @relation("buyer_orders")
+  ordersAsSupplier   Order[]       @relation("supplier_orders")
+  reviewsGiven       Review[]      @relation("reviewer")
+  reviewsReceived    Review[]      @relation("reviewee")
+  verifications      Verification[]
+  categories         CompanyCategory[]
+  financeApps        FinanceApplication[]
+  adCampaigns        AdCampaign[]
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([type, verifiedLevel])
+  @@index([trustScore])
+  @@index([avgRating])
+  @@index([type, deletedAt])
+  @@map("companies")
+}
+
+model GeoLocation {
+  id              String   @id @default(uuid())
+  companyId       String   @unique
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  addressAr       String?
+  addressEn       String?
+  city            String
+  governorate     String
+  industrialZone  String?
+  postalCode      String?
+  lat             Float
+  lng             Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([lat, lng])
+  @@index([city])
+  @@index([industrialZone])
+  @@map("geo_locations")
+}
+
+// ─── CATEGORIES & PRODUCTS ────────────────────────────────────────
+model Category {
+  id              String    @id @default(uuid())
+  nameAr          String
+  nameEn          String
+  parentId        String?
+  parent          Category? @relation("subcategories", fields: [parentId], references: [id])
+  children        Category[] @relation("subcategories")
+  rfqTemplateJson Json?
+  sectorCode      String    @unique
+  iconEmoji       String?
+  isActive        Boolean   @default(true)
+  products        Product[]
+  rfqRequests     RfqRequest[]
+  companies       CompanyCategory[]
+  createdAt       DateTime  @default(now())
+
+  @@index([sectorCode])
+  @@index([isActive])
+  @@map("categories")
+}
+
+model CompanyCategory {
+  companyId  String
+  categoryId String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([companyId, categoryId])
+  @@index([categoryId])
+  @@map("company_categories")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  nameAr      String
+  nameEn      String?
+  specsJson   Json
+  priceMin    Float?
+  priceMax    Float?
+  unit        String
+  minQty      Float
+  maxQty      Float?
+  imagesJson  Json     @default("[]")
+  docsJson    Json     @default("[]")
+  isActive    Boolean  @default(true)
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId, isActive])
+  @@index([categoryId, isActive])
+  @@index([views])
+  @@map("products")
+}
+
+// ─── RFQ ──────────────────────────────────────────────────────────
+model RfqRequest {
+  id              String    @id @default(uuid())
+  buyerCompanyId  String
+  buyer           Company   @relation("buyer", fields: [buyerCompanyId], references: [id])
+  categoryId      String
+  category        Category  @relation(fields: [categoryId], references: [id])
+  templateType    String    @default("general")
+  specsJson       Json
+  quantity        Float
+  unit            String
+  deadline        DateTime
+  deliveryAddress String
+  deliveryCity    String
+  deliveryZone    String?
+  paymentMethod   PaymentMethod @default(ESCROW)
+  docsRequired    Json     @default("[]")
+  acceptancePolicy String?
+  notes           String?
+  geoRadiusKm     Int      @default(100)
+  status          RfqStatus @default(DRAFT)
+  publishedAt     DateTime?
+  expiresAt       DateTime?
+  viewCount       Int       @default(0)
+  quotes          RfqQuote[]
+  order           Order?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([categoryId, status])
+  @@index([buyerCompanyId])
+  @@index([expiresAt])
+  @@map("rfq_requests")
+}
+
+model RfqQuote {
+  id                String    @id @default(uuid())
+  rfqId             String
+  rfq               RfqRequest @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  supplierCompanyId String
+  supplier          Company   @relation("supplier_quotes", fields: [supplierCompanyId], references: [id])
+  pricePerUnit      Float
+  totalPrice        Float
+  deliveryDays      Int
+  warrantyDays      Int?
+  paymentTerms      String
+  notes             String?
+  documentsJson     Json      @default("[]")
+  status            String    @default("PENDING")
+  validUntil        DateTime
+  order             Order?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([rfqId, supplierCompanyId])
+  @@index([rfqId, status])
+  @@index([supplierCompanyId])
+  @@map("rfq_quotes")
+}
+
+// ─── ORDERS & ESCROW ──────────────────────────────────────────────
+model Order {
+  id              String      @id @default(uuid())
+  rfqId           String?     @unique
+  rfq             RfqRequest? @relation(fields: [rfqId], references: [id])
+  quoteId         String?     @unique
+  quote           RfqQuote?   @relation(fields: [quoteId], references: [id])
+  buyerCompanyId  String
+  buyer           Company     @relation("buyer_orders", fields: [buyerCompanyId], references: [id])
+  supplierCompanyId String
+  supplier        Company     @relation("supplier_orders", fields: [supplierCompanyId], references: [id])
+  amount          Float
+  commission      Float
+  netToSupplier   Float
+  status          OrderStatus @default(PENDING)
+  paymentMethod   PaymentMethod
+  shipmentJson    Json?
+  confirmedAt     DateTime?
+  deliveredAt     DateTime?
+  completedAt     DateTime?
+  escrow          Escrow?
+  messages        Message[]
+  documents       OrderDocument[]
+  review          Review?
+  dispute         Dispute?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([buyerCompanyId, status])
+  @@index([supplierCompanyId, status])
+  @@index([status, createdAt])
+  @@map("orders")
+}
+
+model Escrow {
+  id             String      @id @default(uuid())
+  orderId        String      @unique
+  order          Order       @relation(fields: [orderId], references: [id])
+  amount         Float
+  commission     Float
+  netToSupplier  Float
+  status         EscrowStatus @default(PENDING)
+  bankName       String      @default("CIB")
+  bankAccountRef String?
+  gatewayRef     String?
+  gatewayType    String?
+  heldAt         DateTime?
+  releasedAt     DateTime?
+  refundedAt     DateTime?
+  releaseDeadline DateTime?
+  autoReleaseAt  DateTime?
+  transactions   EscrowTransaction[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([status, autoReleaseAt])
+  @@map("escrows")
+}
+
+model EscrowTransaction {
+  id        String   @id @default(uuid())
+  escrowId  String
+  escrow    Escrow   @relation(fields: [escrowId], references: [id])
+  type      String
+  amount    Float
+  reference String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([escrowId])
+  @@map("escrow_transactions")
+}
+
+model OrderDocument {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type      String
+  nameAr    String
+  fileUrl   String
+  fileSize  Int?
+  mimeType  String?
+  uploadedBy String
+  isPublic  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@map("order_documents")
+}
+
+// ─── MESSAGING ────────────────────────────────────────────────────
+model Message {
+  id               String   @id @default(uuid())
+  senderId         String
+  sender           User     @relation("sender", fields: [senderId], references: [id])
+  orderId          String
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  contentEncrypted String
+  contentSanitized String
+  hasPiiFlag       Boolean  @default(false)
+  piiTypes         Json     @default("[]")
+  isRedacted       Boolean  @default(false)
+  attachmentsJson  Json     @default("[]")
+  readAt           DateTime?
+  createdAt        DateTime @default(now())
+
+  @@index([orderId, createdAt])
+  @@index([senderId])
+  @@map("messages")
+}
+
+// ─── REVIEWS & DISPUTES ───────────────────────────────────────────
+model Review {
+  id           String   @id @default(uuid())
+  orderId      String   @unique
+  order        Order    @relation(fields: [orderId], references: [id])
+  reviewerId   String
+  reviewer     Company  @relation("reviewer", fields: [reviewerId], references: [id])
+  revieweeId   String
+  reviewee     Company  @relation("reviewee", fields: [revieweeId], references: [id])
+  qualityScore Float
+  timeScore    Float
+  commScore    Float
+  overallScore Float
+  comment      String?
+  isPublic     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@index([revieweeId, isPublic])
+  @@index([reviewerId])
+  @@map("reviews")
+}
+
+model Dispute {
+  id          String        @id @default(uuid())
+  orderId     String        @unique
+  order       Order         @relation(fields: [orderId], references: [id])
+  raisedBy    String
+  reason      String
+  evidenceJson Json         @default("[]")
+  status      DisputeStatus @default(OPEN)
+  resolution  String?
+  resolvedBy  String?
+  resolvedAt  DateTime?
+  arbitrators Json          @default("[]")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([status])
+  @@map("disputes")
+}
+
+// ─── SUBSCRIPTIONS & LOYALTY ──────────────────────────────────────
+model Subscription {
+  id          String           @id @default(uuid())
+  companyId   String           @unique
+  company     Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  plan        SubscriptionPlan @default(FREE)
+  startDate   DateTime         @default(now())
+  endDate     DateTime?
+  autoRenew   Boolean          @default(true)
+  cancelledAt DateTime?
+  paymentRef  String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([plan, endDate])
+  @@map("subscriptions")
+}
+
+model LoyaltyPoints {
+  id               String   @id @default(uuid())
+  companyId        String   @unique
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  points           Int      @default(0)
+  tier             String   @default("BRONZE")
+  totalEarned      Int      @default(0)
+  totalRedeemed    Int      @default(0)
+  transactionsJson Json     @default("[]")
+  lastUpdated      DateTime @default(now())
+
+  @@index([tier, points])
+  @@map("loyalty_points")
+}
+
+// ─── VERIFICATIONS & FINANCE ──────────────────────────────────────
+model Verification {
+  id          String    @id @default(uuid())
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  docType     String
+  fileUrlEnc  String
+  ocrDataJson Json?
+  status      KycStatus @default(PENDING)
+  reviewerId  String?
+  reviewNotes String?
+  reviewedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([companyId, status])
+  @@index([status])
+  @@map("verifications")
+}
+
+model FinanceApplication {
+  id             String   @id @default(uuid())
+  companyId      String
+  company        Company  @relation(fields: [companyId], references: [id])
+  amount         Float
+  durationMonths Int
+  interestRate   Float
+  monthlyPayment Float
+  bankPartner    String
+  status         String   @default("PENDING")
+  orderId        String?
+  approvedAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([companyId, status])
+  @@map("finance_applications")
+}
+
+model FeasibilityStudy {
+  id             String   @id @default(uuid())
+  title          String
+  sectorId       String
+  region         String
+  investmentReq  Float
+  roiEstimate    Float
+  paybackMonths  Int
+  demandDataJson Json
+  factoriesJson  Json     @default("[]")
+  fundingJson    Json     @default("[]")
+  status         String   @default("PUBLISHED")
+  viewCount      Int      @default(0)
+  interestCount  Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([status, roiEstimate])
+  @@map("feasibility_studies")
+}
+
+// ─── NOTIFICATIONS ────────────────────────────────────────────────
+model Notification {
+  id        String              @id @default(uuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  titleAr   String
+  bodyAr    String
+  titleEn   String?
+  bodyEn    String?
+  data      Json?
+  channels  NotificationChannel[]
+  isRead    Boolean             @default(false)
+  readAt    DateTime?
+  sentAt    DateTime?
+  createdAt DateTime            @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+// ─── ADS ──────────────────────────────────────────────────────────
+model AdCampaign {
+  id             String    @id @default(uuid())
+  companyId      String
+  company        Company   @relation(fields: [companyId], references: [id])
+  name           String
+  type           AdType
+  bidModel       BidModel
+  bidAmount      Float
+  dailyBudget    Float
+  totalBudget    Float
+  startDate      DateTime
+  endDate        DateTime
+  status         AdStatus  @default(PENDING)
+  targetSectors  Json      @default("[]")
+  targetCities   Json      @default("[]")
+  creativeJson   Json
+  impressions    Int       @default(0)
+  clicks         Int       @default(0)
+  conversions    Int       @default(0)
+  spent          Float     @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([companyId, status])
+  @@index([status, startDate, endDate])
+  @@index([type, status])
+  @@map("ad_campaigns")
+}
+
+// ─── AUDIT & SECURITY ─────────────────────────────────────────────
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  oldValue  Json?
+  newValue  Json?
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId, action, createdAt])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model LeakageAttempt {
+  id          String   @id @default(uuid())
+  userId      String
+  messageId   String?
+  orderId     String?
+  patternType String
+  rawContent  String
+  sanitized   String
+  action      String
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("leakage_attempts")
+}
+
+model AnomalyAlert {
+  id          String   @id @default(uuid())
+  userId      String
+  type        String
+  score       Float
+  description String
+  metadata    Json?
+  isResolved  Boolean  @default(false)
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, isResolved])
+  @@index([score])
+  @@map("anomaly_alerts")
+}
+
+// ─── PRICE FORECAST CACHE ─────────────────────────────────────────
+model PriceForecastCache {
+  id           String   @id @default(uuid())
+  sectorCode   String   @unique
+  forecastJson Json
+  generatedAt  DateTime @default(now())
+  expiresAt    DateTime
+
+  @@index([sectorCode])
+  @@index([expiresAt])
+  @@map("price_forecast_cache")
+}

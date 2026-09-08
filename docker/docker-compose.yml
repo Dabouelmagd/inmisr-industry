@@ -1,0 +1,231 @@
+# إن مصر للصناعة — Docker Compose Stack
+# Production-ready infrastructure
+
+services:
+
+  # ── API Backend ──────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: inmisr-api
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://inmisr:${DB_PASSWORD}@postgres:5432/inmisr_db
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://inmisr:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      PAYMOB_API_KEY: ${PAYMOB_API_KEY}
+      PAYMOB_INTEGRATION_ID: ${PAYMOB_INTEGRATION_ID}
+      FAWRY_MERCHANT_CODE: ${FAWRY_MERCHANT_CODE}
+      FAWRY_SECURITY_KEY: ${FAWRY_SECURITY_KEY}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME}
+      FCM_SERVER_KEY: ${FCM_SERVER_KEY}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      AWS_REGION: ${AWS_REGION}
+      CORS_ORIGINS: https://inmisr.net,https://www.inmisr.net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - inmisr-network
+    volumes:
+      - api-logs:/app/logs
+
+  # ── Frontend (Next.js) ───────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: inmisr-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: https://api.inmisr.net/api/v1
+      NEXT_PUBLIC_GOOGLE_MAPS_KEY: ${GOOGLE_MAPS_KEY}
+    networks:
+      - inmisr-network
+
+  # ── PostgreSQL 16 ─────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: inmisr-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: inmisr_db
+      POSTGRES_USER: inmisr
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=ar_EG.UTF-8 --lc-ctype=ar_EG.UTF-8"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inmisr -d inmisr_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - inmisr-network
+    ports:
+      - "5432:5432"
+
+  # ── Redis 7 ───────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: inmisr-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save 60 1000
+      --loglevel warning
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - inmisr-network
+    ports:
+      - "6379:6379"
+
+  # ── RabbitMQ ──────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: inmisr-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: inmisr
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: /
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+      - ./docker/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - inmisr-network
+    ports:
+      - "5672:5672"
+      - "15672:15672"   # Management UI
+
+  # ── Nginx Reverse Proxy ───────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: inmisr-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/ssl:/etc/nginx/ssl:ro
+      - nginx-logs:/var/log/nginx
+    depends_on:
+      - api
+      - frontend
+    networks:
+      - inmisr-network
+
+  # ── Elasticsearch ─────────────────────────────────────────────
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
+    container_name: inmisr-elastic
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+    volumes:
+      - elastic-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200 | grep -q 'cluster_name'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - inmisr-network
+    ports:
+      - "9200:9200"
+
+  # ── Kibana (Logs Dashboard) ───────────────────────────────────
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.10.0
+    container_name: inmisr-kibana
+    restart: unless-stopped
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - inmisr-network
+    ports:
+      - "5601:5601"
+
+  # ── pgAdmin ───────────────────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: inmisr-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - inmisr-network
+    ports:
+      - "5050:80"
+
+# ── Volumes ────────────────────────────────────────────────────────
+volumes:
+  postgres-data:
+    name: inmisr-postgres-data
+  redis-data:
+    name: inmisr-redis-data
+  rabbitmq-data:
+    name: inmisr-rabbitmq-data
+  elastic-data:
+    name: inmisr-elastic-data
+  api-logs:
+    name: inmisr-api-logs
+  nginx-logs:
+    name: inmisr-nginx-logs
+  pgadmin-data:
+    name: inmisr-pgadmin-data
+
+# ── Networks ───────────────────────────────────────────────────────
+networks:
+  inmisr-network:
+    name: inmisr-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

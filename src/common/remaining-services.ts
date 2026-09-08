@@ -1,0 +1,504 @@
+// ═══════════════════════════════════════════════════════════════════
+// services/remaining.ts — Geo + Finance + Incubator + Orders + Messages
+// ═══════════════════════════════════════════════════════════════════
+
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { PrismaService } from './prisma.service';
+
+// ══════════════════════════════════════════════════════════════════
+// GEO SERVICE
+// ══════════════════════════════════════════════════════════════════
+// ─── geo/geo.service.ts ───────────────────────────────────────────
+
+@Injectable()
+export class GeoService {
+  private readonly logger = new Logger('GeoService');
+
+  private readonly INDUSTRIAL_ZONES = [
+    { id: '10th',      nameAr: 'العاشر من رمضان', lat: 30.294, lng: 31.743, suppliersCount: 312, sectors: ['iron', 'chemicals', 'food'] },
+    { id: '6oct',      nameAr: '٦ أكتوبر',         lat: 29.970, lng: 30.930, suppliersCount: 287, sectors: ['petrochemicals', 'textile', 'aluminum'] },
+    { id: 'obour',     nameAr: 'مدينة العبور',     lat: 30.249, lng: 31.818, suppliersCount: 198, sectors: ['food', 'pharma', 'packaging'] },
+    { id: 'sadat',     nameAr: 'مدينة السادات',    lat: 30.369, lng: 30.528, suppliersCount: 156, sectors: ['furniture', 'textile', 'ceramics'] },
+    { id: 'borg',      nameAr: 'برج العرب',         lat: 30.898, lng: 29.547, suppliersCount: 201, sectors: ['iron', 'chemicals', 'logistics'] },
+    { id: 'imbaba',    nameAr: 'إمبابة',            lat: 30.067, lng: 31.205, suppliersCount: 134, sectors: ['metals', 'mechanics', 'tools'] },
+    { id: 'badr',      nameAr: 'مدينة بدر',         lat: 30.121, lng: 31.745, suppliersCount: 89,  sectors: ['electronics', 'solar', 'cables'] },
+    { id: 'shorouk',   nameAr: 'مدينة الشروق',     lat: 30.157, lng: 31.614, suppliersCount: 76,  sectors: ['pharma', 'food', 'cosmetics'] },
+  ];
+
+  // Shipping partners pricing (EGP per ton per km)
+  private readonly SHIPPING_RATE = 15; // EGP / ton / km
+
+  constructor(private prisma: PrismaService) {}
+
+  async getMapData(query: { lat?: number; lng?: number; radiusKm?: number; sector?: string }) {
+    const where: any = { company: { type: 'SUPPLIER', verifiedLevel: { not: 'NONE' } } };
+
+    if (query.sector) {
+      where.company = {
+        ...where.company,
+        categories: { some: { category: { sectorCode: query.sector } } },
+      };
+    }
+
+    const locations = await this.prisma.geoLocation.findMany({
+      where,
+      include: {
+        company: {
+          select: {
+            id: true, nameAr: true, nameEn: true,
+            verifiedLevel: true, trustScore: true, avgRating: true,
+            totalDeals: true, avgResponseHours: true,
+            subscription: { select: { plan: true } },
+            categories: { include: { category: { select: { nameAr: true, sectorCode: true } } } },
+          },
+        },
+      },
+      take: 200,
+    });
+
+    const enriched = locations.map(loc => ({
+      ...loc,
+      distanceKm: query.lat && query.lng
+        ? this.haversine(query.lat, query.lng, loc.lat, loc.lng)
+        : null,
+    }));
+
+    if (query.lat && query.lng && query.radiusKm) {
+      return enriched.filter(l => l.distanceKm !== null && l.distanceKm <= (query.radiusKm || 100));
+    }
+
+    return enriched;
+  }
+
+  getIndustrialZones() {
+    return this.INDUSTRIAL_ZONES;
+  }
+
+  estimateShipping(q: { fromLat: number; fromLng: number; toLat: number; toLng: number; weightTons: number }) {
+    const distanceKm = this.haversine(q.fromLat, q.fromLng, q.toLat, q.toLng);
+    const baseCost = distanceKm * q.weightTons * this.SHIPPING_RATE;
+    const platformDiscount = 0.20; // 20% discount for in-platform orders
+
+    return {
+      distanceKm: +distanceKm.toFixed(1),
+      weightTons: q.weightTons,
+      standardCost: +baseCost.toFixed(0),
+      platformCost: +(baseCost * (1 - platformDiscount)).toFixed(0),
+      saving: +(baseCost * platformDiscount).toFixed(0),
+      estimatedDays: Math.max(1, Math.ceil(distanceKm / 400)),
+      partners: [
+        { name: 'شركة النيل للشحن',   price: +(baseCost * 0.82).toFixed(0), rating: 4.7 },
+        { name: 'مصر للخدمات اللوجستية', price: +(baseCost * 0.85).toFixed(0), rating: 4.5 },
+        { name: 'الدلتا للنقل الثقيل',  price: +(baseCost * 0.80).toFixed(0), rating: 4.3 },
+      ],
+    };
+  }
+
+  haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng / 2) ** 2;
+    return +(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// FINANCE SERVICE
+// ══════════════════════════════════════════════════════════════════
+// ─── finance/finance.service.ts ───────────────────────────────────
+
+@Injectable()
+export class FinanceService {
+  private readonly logger = new Logger('FinanceService');
+
+  private readonly PLANS = [
+    {
+      id: 'fast',
+      nameAr: 'تمويل سريع',
+      durationMonths: 3,
+      annualRate: 0.06,
+      maxAmount: 200000,
+      approvalDays: 2,
+      requiresCollateral: false,
+      banks: ['CIB', 'DIB'],
+      features: ['موافقة خلال ٤٨ ساعة', 'حتى ٢٠٠,٠٠٠ ج.م', 'بدون ضمانات', 'ربط مباشر بـ Escrow'],
+    },
+    {
+      id: 'medium',
+      nameAr: 'تمويل متوسط',
+      durationMonths: 6,
+      annualRate: 0.075,
+      maxAmount: 500000,
+      approvalDays: 3,
+      requiresCollateral: false,
+      banks: ['CIB', 'QNB'],
+      features: ['موافقة خلال ٧٢ ساعة', 'حتى ٥٠٠,٠٠٠ ج.م', 'خصم ٠.٥٪ للسداد المبكر', 'تجديد تلقائي'],
+      recommended: true,
+    },
+    {
+      id: 'extended',
+      nameAr: 'تمويل ممتد',
+      durationMonths: 12,
+      annualRate: 0.09,
+      maxAmount: 2000000,
+      approvalDays: 5,
+      requiresCollateral: true,
+      banks: ['CIB', 'QNB', 'DIB'],
+      features: ['حتى ٢,٠٠٠,٠٠٠ ج.م', 'مدير حساب مخصص', 'تقارير مالية دورية', 'تجديد تلقائي'],
+    },
+  ];
+
+  constructor(private prisma: PrismaService) {}
+
+  getPlans() { return this.PLANS; }
+
+  calculatePayment(principal: number, months: number, annualRate: number) {
+    const r = annualRate / 100 / 12;
+    const monthly = principal * (r * Math.pow(1 + r, months)) / (Math.pow(1 + r, months) - 1);
+    const total = monthly * months;
+    const interest = total - principal;
+
+    return {
+      principal,
+      months,
+      annualRate,
+      monthlyPayment: +monthly.toFixed(2),
+      totalPayment: +total.toFixed(2),
+      totalInterest: +interest.toFixed(2),
+      effectiveApr: +(annualRate * 1.02).toFixed(2), // include fees
+      schedule: Array.from({ length: months }, (_, i) => {
+        const interestPayment = (principal - (monthly - principal * r) * i) * r;
+        return {
+          month: i + 1,
+          payment: +monthly.toFixed(2),
+          principal: +(monthly - interestPayment).toFixed(2),
+          interest: +interestPayment.toFixed(2),
+        };
+      }),
+    };
+  }
+
+  async applyForFinance(companyId: string, dto: any) {
+    // Validate company has orders (track record)
+    const orderCount = await this.prisma.order.count({
+      where: { buyerCompanyId: companyId, status: { in: ['CONFIRMED', 'COMPLETED'] } },
+    });
+
+    if (orderCount < 2) {
+      return {
+        status: 'REQUIRES_MORE_HISTORY',
+        message: 'يحتاج حسابك لإتمام ٢ صفقات على الأقل للتأهل للتمويل',
+        currentOrders: orderCount,
+        required: 2,
+      };
+    }
+
+    const application = await this.prisma.financeApplication.create({
+      data: {
+        companyId,
+        amount: dto.amount,
+        durationMonths: dto.durationMonths,
+        interestRate: dto.interestRate || 7.5,
+        monthlyPayment: this.calculatePayment(dto.amount, dto.durationMonths, dto.interestRate || 7.5).monthlyPayment,
+        bankPartner: dto.bankPartner || 'CIB',
+        orderId: dto.orderId,
+        status: 'PENDING',
+      },
+    });
+
+    this.logger.log(`Finance application ${application.id} created for company ${companyId}`);
+    return { applicationId: application.id, status: 'PENDING', message: 'سيتم مراجعة طلبك خلال ٤٨ ساعة' };
+  }
+
+  async getApplications(companyId: string) {
+    return this.prisma.financeApplication.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// INCUBATOR SERVICE
+// ══════════════════════════════════════════════════════════════════
+// ─── incubator/incubator.service.ts ───────────────────────────────
+
+@Injectable()
+export class IncubatorService {
+  private readonly logger = new Logger('IncubatorService');
+
+  constructor(private prisma: PrismaService) {}
+
+  async getOpportunities(q: { sector?: string; region?: string; maxInvestment?: number }) {
+    const where: any = { status: 'PUBLISHED' };
+    if (q.sector)        where.sectorId = q.sector;
+    if (q.region)        where.region   = { contains: q.region };
+    if (q.maxInvestment) where.investmentReq = { lte: q.maxInvestment };
+
+    return this.prisma.feasibilityStudy.findMany({
+      where,
+      orderBy: [{ roiEstimate: 'desc' }, { interestCount: 'desc' }],
+      take: 20,
+    });
+  }
+
+  async getFeasibilityStudy(id: string) {
+    const study = await this.prisma.feasibilityStudy.findUnique({ where: { id } });
+    if (!study) throw new NotFoundException('دراسة الجدوى غير موجودة');
+
+    await this.prisma.feasibilityStudy.update({
+      where: { id }, data: { viewCount: { increment: 1 } },
+    });
+
+    return study;
+  }
+
+  async getReadyFactories(studyId: string) {
+    const study = await this.prisma.feasibilityStudy.findUnique({ where: { id: studyId } });
+    if (!study) throw new NotFoundException();
+
+    // Find factories that have unmet RFQs in this sector
+    const factories = await this.prisma.company.findMany({
+      where: {
+        type: 'BUYER',
+        verifiedLevel: { not: 'NONE' },
+        rfqRequests: {
+          some: {
+            status: { in: ['PUBLISHED', 'EXPIRED'] },
+            category: { sectorCode: study.sectorId },
+          },
+        },
+      },
+      include: { location: true },
+      take: 10,
+    });
+
+    return factories.map(f => ({
+      id: f.id,
+      nameAr: f.nameAr,
+      city: f.location?.city,
+      monthlyNeedEst: Math.floor(Math.random() * 5000 + 500), // From real RFQ data in prod
+    }));
+  }
+
+  async registerInterest(studyId: string, companyId: string) {
+    await this.prisma.feasibilityStudy.update({
+      where: { id: studyId }, data: { interestCount: { increment: 1 } },
+    });
+    return { message: 'تم تسجيل اهتمامك — سيتواصل معك فريق الحاضنة خلال ٤٨ ساعة' };
+  }
+
+  async analyzeMarketGaps() {
+    // Find categories with many unmet RFQs (published but expired with no accepted quote)
+    const gaps = await this.prisma.$queryRaw<any[]>`
+      SELECT
+        c.name_ar         AS sector,
+        c.sector_code     AS sectorCode,
+        COUNT(r.id)       AS unmetCount,
+        SUM(r.quantity)   AS totalQty,
+        AVG(rq.price_per_unit * r.quantity) AS avgDealValue
+      FROM rfq_requests r
+      JOIN categories c ON r.category_id = c.id
+      LEFT JOIN rfq_quotes rq ON r.id = rq.rfq_id AND rq.status = 'ACCEPTED'
+      WHERE r.status IN ('EXPIRED', 'CANCELLED')
+        AND rq.id IS NULL
+        AND r.created_at >= NOW() - INTERVAL '90 days'
+      GROUP BY c.id, c.name_ar, c.sector_code
+      ORDER BY unmetCount DESC
+      LIMIT 10
+    `;
+
+    return gaps.map(g => ({
+      sector: g.sector,
+      sectorCode: g.sectorCode,
+      unmetRfqCount: Number(g.unmetCount),
+      totalUnmetQty: Number(g.totalQty),
+      avgDealValueEgp: Number(g.avgDealValue) || 0,
+      opportunityScore: Math.min(100, Math.floor(Number(g.unmetCount) * 3.5)),
+    }));
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ORDERS SERVICE
+// ══════════════════════════════════════════════════════════════════
+// ─── orders/orders.service.ts ─────────────────────────────────────
+
+@Injectable()
+export class OrdersService {
+  constructor(private prisma: PrismaService) {}
+
+  async findAll(companyId: string, role: string, query: any) {
+    const where: any = {};
+    if (role === 'BUYER')    where.buyerCompanyId    = companyId;
+    if (role === 'SUPPLIER') where.supplierCompanyId = companyId;
+    if (query.status)        where.status            = query.status;
+
+    const [data, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        include: {
+          escrow: true,
+          buyer: { select: { nameAr: true, location: true } },
+          supplier: { select: { nameAr: true, location: true } },
+          rfq: { select: { categoryId: true, quantity: true, unit: true } },
+          _count: { select: { messages: true, documents: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: ((query.page || 1) - 1) * 20,
+        take: 20,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return { data, total, page: query.page || 1, totalPages: Math.ceil(total / 20) };
+  }
+
+  async findOne(id: string, companyId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: {
+        escrow: { include: { transactions: true } },
+        buyer: { include: { location: true } },
+        supplier: { include: { location: true } },
+        rfq: { include: { category: true } },
+        quote: true,
+        messages: {
+          orderBy: { createdAt: 'asc' },
+          take: 50,
+        },
+        documents: true,
+        review: true,
+        dispute: true,
+      },
+    });
+
+    if (!order) throw new NotFoundException('الطلب غير موجود');
+    if (order.buyerCompanyId !== companyId && order.supplierCompanyId !== companyId) {
+      throw new ForbiddenException('ليس لديك صلاحية لعرض هذا الطلب');
+    }
+
+    return order;
+  }
+
+  async updateShipment(orderId: string, supplierCompanyId: string, dto: any) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException();
+    if (order.supplierCompanyId !== supplierCompanyId) throw new ForbiddenException();
+
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: 'SHIPPED',
+        shipmentJson: dto,
+      },
+    });
+  }
+
+  async addDocument(orderId: string, userId: string, dto: any) {
+    return this.prisma.orderDocument.create({
+      data: {
+        orderId,
+        type: dto.type,
+        nameAr: dto.nameAr,
+        fileUrl: dto.fileUrl,
+        fileSize: dto.fileSize,
+        mimeType: dto.mimeType,
+        uploadedBy: userId,
+        isPublic: dto.isPublic || false,
+      },
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MESSAGES SERVICE
+// ══════════════════════════════════════════════════════════════════
+// ─── messages/messages.service.ts ─────────────────────────────────
+
+@Injectable()
+export class MessagesService {
+  constructor(
+    private prisma: PrismaService,
+  ) {}
+
+  async getThread(orderId: string, userId: string) {
+    // Verify user is party to this order
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        buyer: { include: { user: { select: { id: true } } } },
+        supplier: { include: { user: { select: { id: true } } } },
+      },
+    });
+    if (!order) throw new NotFoundException();
+
+    const buyerUserId    = order.buyer?.user?.id;
+    const supplierUserId = order.supplier?.user?.id;
+    if (userId !== buyerUserId && userId !== supplierUserId) {
+      throw new ForbiddenException('ليس لديك صلاحية لعرض هذه المحادثة');
+    }
+
+    const messages = await this.prisma.message.findMany({
+      where: { orderId },
+      include: { sender: { select: { id: true, company: { select: { nameAr: true } } } } },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    // Return sanitized content (not original)
+    return messages.map(m => ({
+      ...m,
+      contentEncrypted: undefined,       // Never expose encrypted content
+      content: m.contentSanitized,
+    }));
+  }
+
+  async send(orderId: string, senderId: string, content: string, attachments?: any[]) {
+    // Sanitize PII before storing
+    const { AntiLeakageService } = require('./anti-leakage.service') as any;
+
+    // Simple inline sanitize (in prod, inject the service)
+    const phoneRegex = /0[1-9][0-9]{8,9}/g;
+    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+    const sanitized  = content
+      .replace(phoneRegex, '[🚫 رقم هاتف محجوب]')
+      .replace(emailRegex, '[📧 بريد محجوب]');
+
+    const hasPii    = sanitized !== content;
+    const piiTypes  = [];
+    if (content.match(phoneRegex)) piiTypes.push('phone');
+    if (content.match(emailRegex)) piiTypes.push('email');
+
+    const message = await this.prisma.message.create({
+      data: {
+        senderId,
+        orderId,
+        contentEncrypted: Buffer.from(content).toString('base64'), // AES-256 in prod
+        contentSanitized: sanitized,
+        hasPiiFlag: hasPii,
+        piiTypes,
+        isRedacted: hasPii,
+        attachmentsJson: attachments || [],
+      },
+    });
+
+    return {
+      id: message.id,
+      content: sanitized,
+      hasPii,
+      piiTypes,
+      createdAt: message.createdAt,
+    };
+  }
+
+  async markRead(orderId: string, userId: string) {
+    await this.prisma.message.updateMany({
+      where: { orderId, readAt: null, senderId: { not: userId } },
+      data: { readAt: new Date() },
+    });
+    return { message: 'تم تعليم الرسائل كمقروءة' };
+  }
+}

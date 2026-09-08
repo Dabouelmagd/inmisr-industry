@@ -1,0 +1,302 @@
+# ─── k8s/production.yml ──────────────────────────────────────────
+# Kubernetes manifests for إن مصر للصناعة production deployment
+
+# ── Namespace ─────────────────────────────────────────────────────
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production
+  labels:
+    app: inmisr-industry
+    env: production
+
+---
+# ── ConfigMap ─────────────────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: inmisr-config
+  namespace: production
+data:
+  NODE_ENV: "production"
+  PORT: "3001"
+  CORS_ORIGINS: "https://inmisr.net,https://www.inmisr.net"
+  AWS_REGION: "me-south-1"
+  AWS_S3_BUCKET: "inmisr-industry-files"
+
+---
+# ── Secret (values injected from AWS Secrets Manager) ─────────────
+apiVersion: v1
+kind: Secret
+metadata:
+  name: inmisr-secrets
+  namespace: production
+type: Opaque
+# These are base64-encoded in production — use AWS Secrets Manager CSI
+stringData:
+  DATABASE_URL: "postgresql://inmisr:$(DB_PASSWORD)@rds.inmisr.internal:5432/inmisr_db"
+  REDIS_URL: "redis://:$(REDIS_PASSWORD)@elasticache.inmisr.internal:6379"
+  JWT_ACCESS_SECRET: "$(JWT_ACCESS_SECRET)"
+  JWT_REFRESH_SECRET: "$(JWT_REFRESH_SECRET)"
+
+---
+# ── API Deployment ─────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inmisr-api
+  namespace: production
+  labels:
+    app: inmisr-api
+    version: "1.0.0"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: inmisr-api
+  template:
+    metadata:
+      labels:
+        app: inmisr-api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3001"
+        prometheus.io/path: "/api/v1/metrics"
+    spec:
+      serviceAccountName: inmisr-api-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      
+      # Graceful shutdown
+      terminationGracePeriodSeconds: 30
+
+      containers:
+        - name: api
+          image: ghcr.io/your-org/inmisr-industry/inmisr-api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3001
+              name: http
+              protocol: TCP
+          
+          envFrom:
+            - configMapRef:
+                name: inmisr-config
+            - secretRef:
+                name: inmisr-secrets
+          
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3001
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 3
+            successThreshold: 1
+          
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3001
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 3
+          
+          startupProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3001
+            failureThreshold: 10
+            periodSeconds: 5
+          
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 5"]
+          
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["ALL"]
+          
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: logs
+              mountPath: /app/logs
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}
+
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values: ["inmisr-api"]
+                topologyKey: kubernetes.io/hostname
+
+---
+# ── API Service ────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: inmisr-api-service
+  namespace: production
+  labels:
+    app: inmisr-api
+spec:
+  selector:
+    app: inmisr-api
+  ports:
+    - port: 3001
+      targetPort: 3001
+      protocol: TCP
+      name: http
+  type: ClusterIP
+
+---
+# ── HPA — Horizontal Pod Autoscaler ──────────────────────────────
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: inmisr-api-hpa
+  namespace: production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: inmisr-api
+  minReplicas: 3
+  maxReplicas: 12
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 120
+
+---
+# ── Ingress ────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: inmisr-ingress
+  namespace: production
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://inmisr.net"
+spec:
+  tls:
+    - hosts:
+        - api.inmisr.net
+      secretName: inmisr-tls
+  rules:
+    - host: api.inmisr.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: inmisr-api-service
+                port:
+                  number: 3001
+
+---
+# ── PodDisruptionBudget ────────────────────────────────────────────
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: inmisr-api-pdb
+  namespace: production
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: inmisr-api
+
+---
+# ── Network Policy ─────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: inmisr-api-netpol
+  namespace: production
+spec:
+  podSelector:
+    matchLabels:
+      app: inmisr-api
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - port: 3001
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 169.254.169.254/32  # Block AWS metadata service
+      ports:
+        - port: 5432   # PostgreSQL
+        - port: 6379   # Redis
+        - port: 5672   # RabbitMQ
+        - port: 9200   # Elasticsearch
+        - port: 443    # External APIs (Paymob, Twilio...)
+        - port: 80
