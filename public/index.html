@@ -2846,10 +2846,10 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         </div>
       </div>
       <div class="g2" style="gap:14px;margin-bottom:14px">
-        <div><span class="lbl">اسم الشركة / المورد</span><input class="inp" placeholder="شركة الدلتا للتجارة"></div>
+        <div><span class="lbl">اسم الشركة / المورد</span><input class="inp" id="reg-sup-company" placeholder="شركة الدلتا للتجارة"></div>
         <div><span class="lbl">نوع النشاط</span><select class="sel"><option>مصنع / منتج</option><option>تاجر / موزع</option><option>وكيل حصري</option><option>مستورد</option></select></div>
-        <div><span class="lbl">رقم الهاتف</span><input class="inp" placeholder="01X XXXX XXXX" dir="ltr"></div>
-        <div><span class="lbl">البريد الإلكتروني</span><input class="inp" placeholder="info@company.com" dir="ltr"></div>
+        <div><span class="lbl">رقم الهاتف</span><input class="inp" id="reg-sup-phone" placeholder="01X XXXX XXXX" dir="ltr"></div>
+        <div><span class="lbl">البريد الإلكتروني</span><input class="inp" id="reg-sup-email" placeholder="info@company.com" dir="ltr"></div>
         <div><span class="lbl">رقم السجل التجاري</span><input class="inp" placeholder="XXXXXXXXXX"></div>
         <div><span class="lbl">الرقم الضريبي</span><input class="inp" placeholder="XXX-XXX-XXXX"></div>
       </div>
@@ -2893,12 +2893,12 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         </div>
       </div>
       <div class="g2" style="gap:14px;margin-bottom:14px">
-        <div><span class="lbl">اسم المصنع / الشركة</span><input class="inp" placeholder="مصنع المستقبل للبناء"></div>
+        <div><span class="lbl">اسم المصنع / الشركة</span><input class="inp" id="reg-buy-company" placeholder="مصنع المستقبل للبناء"></div>
         <div><span class="lbl">القطاع الصناعي</span><select class="sel"><option>تشييد وبناء</option><option>غذاء ومشروبات</option><option>نسيج وملابس</option><option>كيماويات</option><option>معدات وآلات</option></select></div>
         <div><span class="lbl">اسم مسؤول المشتريات</span><input class="inp" placeholder="الاسم الكامل"></div>
-        <div><span class="lbl">رقم الهاتف</span><input class="inp" placeholder="01X XXXX XXXX" dir="ltr"></div>
-        <div><span class="lbl">البريد الإلكتروني</span><input class="inp" placeholder="procurement@company.com" dir="ltr"></div>
-        <div><span class="lbl">المحافظة</span><select class="sel"><option>القاهرة</option><option>الإسكندرية</option><option>الجيزة</option><option>الشرقية</option><option>أخرى</option></select></div>
+        <div><span class="lbl">رقم الهاتف</span><input class="inp" id="reg-buy-phone" placeholder="01X XXXX XXXX" dir="ltr"></div>
+        <div><span class="lbl">البريد الإلكتروني</span><input class="inp" id="reg-buy-email" placeholder="procurement@company.com" dir="ltr"></div>
+        <div><span class="lbl">المحافظة</span><select class="sel" id="reg-buy-gov"><option>القاهرة</option><option>الإسكندرية</option><option>الجيزة</option><option>الشرقية</option><option>أخرى</option></select></div>
       </div>
       <div class="g2" style="gap:14px;margin-bottom:14px">
         <div><span class="lbl">شعار الشركة / المنشأة</span>
@@ -7381,30 +7381,56 @@ window.socialLogin = function(provider) {
   }, 900);
 };
 
-window.submitLogin = function() {
+window.submitLogin = async function() {
   if (!selectedLoginType) { toast("الرجاء اختيار نوع الحساب"); return; }
   var email = (document.getElementById("login-email") || {}).value || "";
   var pass = (document.getElementById("login-password") || {}).value || "";
   if (!email.trim() || !pass.trim()) { toast("الرجاء إدخال بيانات الدخول"); return; }
 
-  var acc = DEMO_ACCOUNTS[selectedLoginType];
-  if (!acc || email.trim() !== acc.email || pass.trim() !== acc.pass) {
-    toast("⚠️ بيانات الدخول غير صحيحة — استخدمي البيانات التجريبية الموضحة أعلى الفورم");
-    return;
-  }
+  var btn = document.getElementById("login-submit-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "جارٍ الدخول..."; }
 
-  document.getElementById("login-modal").classList.remove("open");
-  window.isLoggedIn = true;
-  window.loggedInRole = selectedLoginType;
+  try {
+    var data = await apiFetch("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ emailOrPhone: email.trim(), password: pass.trim() })
+    });
 
-  if (typeof runPendingActionAfterLogin === "function" && runPendingActionAfterLogin()) {
-    toast("تم تسجيل الدخول ✓ — جارٍ استكمال طلبك...");
-  } else if (selectedLoginType === "owner") {
-    toast("تم تسجيل الدخول — مرحباً بك في لوحة تحكم الإدارة (" + acc.label + ")");
-    goTo("admin");
-  } else {
-    toast("تم تسجيل الدخول — مرحباً بك في لوحة تحكم حسابك (" + acc.label + ")");
-    goTo("dash");
+    window.localStorage.setItem("inmisr_access_token", data.accessToken);
+    window.localStorage.setItem("inmisr_refresh_token", data.refreshToken);
+
+    // Map the server's real role back to the UI's role vocabulary,
+    // rather than trusting whichever tab the person happened to click.
+    var serverRole = (data.user && data.user.role) || "";
+    var uiRole = serverRole === "SUPPLIER" ? "supplier"
+               : serverRole === "BUYER" ? "company"
+               : (serverRole === "ADMIN" || serverRole === "SUPER_ADMIN") ? "owner"
+               : selectedLoginType;
+
+    document.getElementById("login-modal").classList.remove("open");
+    window.isLoggedIn = true;
+    window.loggedInRole = uiRole;
+    window.currentUser = data.user;
+
+    var rememberEl = document.getElementById("login-remember");
+    if (rememberEl && rememberEl.checked) {
+      window.rememberedRole = uiRole;
+      try { window.name = "inmisr_remember:" + uiRole; } catch(e) {}
+    }
+
+    if (typeof runPendingActionAfterLogin === "function" && runPendingActionAfterLogin()) {
+      toast("تم تسجيل الدخول ✓ — جارٍ استكمال طلبك...");
+    } else if (uiRole === "owner") {
+      toast("تم تسجيل الدخول بنجاح — مرحباً بك في لوحة تحكم الإدارة");
+      goTo("admin");
+    } else {
+      toast("تم تسجيل الدخول بنجاح — مرحباً بك في لوحة تحكم حسابك");
+      goTo("dash");
+    }
+  } catch (err) {
+    toast("⚠️ " + (err.message || "بيانات الدخول غير صحيحة"));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "دخول ←"; }
   }
 };
 
@@ -8376,11 +8402,37 @@ function clearLearnedTranslations() {
 window.clearLearnedTranslations = clearLearnedTranslations;
 
 
-window.submitRegistration = function(role) {
+// ── Real backend connection ─────────────────────────────────────
+// api.inmisr.net is the live NestJS backend (separate origin from
+// inmisr.net, so CORS_ORIGINS on the server must include this site).
+var API_BASE = "https://api.inmisr.net/api/v1";
+
+async function apiFetch(path, options) {
+  options = options || {};
+  var token = window.localStorage.getItem("inmisr_access_token");
+  var headers = Object.assign(
+    { "Content-Type": "application/json" },
+    token ? { "Authorization": "Bearer " + token } : {},
+    options.headers || {}
+  );
+  var res = await fetch(API_BASE + path, Object.assign({}, options, { headers: headers }));
+  var body = null;
+  try { body = await res.json(); } catch (e) {}
+  if (!res.ok) {
+    var msg = (body && (body.message || (body.errors && body.errors.join("، ")))) || "حدث خطأ غير متوقع — يرجى المحاولة مرة أخرى";
+    throw new Error(msg);
+  }
+  return (body && "data" in body) ? body.data : body;
+}
+window.apiFetch = apiFetch;
+
+window.submitRegistration = async function(role) {
   var cfg = {
-    supplier: { prefix:"reg-sup", formId:"reg-supplier", btnId:"reg-submit-supplier", btnLabel:"إنشاء حساب المورد ←", loggedInRole:"supplier" },
-    buyer:    { prefix:"reg-buy", formId:"reg-buyer",    btnId:"reg-submit-buyer",    btnLabel:"إنشاء حساب المشتري ←", loggedInRole:"company" },
-    worker:   { prefix:"reg-work", formId:"reg-worker",   btnId:"reg-submit-worker",   btnLabel:"إنشاء حسابي ←", loggedInRole:"worker" }
+    supplier: { prefix:"reg-sup", formId:"reg-supplier", btnId:"reg-submit-supplier", btnLabel:"إنشاء حساب المورد ←", loggedInRole:"supplier", apiRole:"SUPPLIER" },
+    buyer:    { prefix:"reg-buy", formId:"reg-buyer",    btnId:"reg-submit-buyer",    btnLabel:"إنشاء حساب المشتري ←", loggedInRole:"company", apiRole:"BUYER" },
+    // NOTE: the backend Role enum (BUYER/SUPPLIER/INVESTOR/ADMIN/SUPER_ADMIN)
+    // has no WORKER role yet, so this path stays simulated until that's added.
+    worker:   { prefix:"reg-work", formId:"reg-worker",   btnId:"reg-submit-worker",   btnLabel:"إنشاء حسابي ←", loggedInRole:"worker", apiRole:null }
   }[role];
   if (!cfg) return;
 
@@ -8391,30 +8443,59 @@ window.submitRegistration = function(role) {
   var pass = passEl ? passEl.value : "";
   var pass2 = pass2El ? pass2El.value : "";
 
-  // Find the email field within the visible form (no id was previously assigned to it for supplier/buyer)
-  var formContainer = document.getElementById(cfg.formId);
-  var emailInput = document.getElementById(cfg.prefix + "-email") ||
-    (formContainer ? formContainer.querySelector('input[placeholder*="@"]') : null);
-  var email = emailInput ? emailInput.value.trim() : "";
+  var emailEl = document.getElementById(cfg.prefix + "-email");
+  var email = emailEl ? emailEl.value.trim() : "";
 
   if (!email) { toast("⚠️ الرجاء إدخال البريد الإلكتروني"); return; }
   if (!pass || pass.length < 8) { toast("⚠️ كلمة المرور يجب أن تكون 8 أحرف على الأقل"); return; }
   if (pass !== pass2) { toast("⚠️ كلمة المرور وتأكيدها غير متطابقين"); return; }
 
   var submitBtn = document.getElementById(cfg.btnId);
+
+  // Worker registration has no backend role yet — keep the simulated flow.
+  if (!cfg.apiRole) {
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "جارٍ إنشاء الحساب..."; }
+    setTimeout(function() {
+      simulateSendEmail(email, "تأكيد إنشاء الحساب — إن مصر للصناعة");
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = cfg.btnLabel; }
+      if (rememberEl && rememberEl.checked) { window.rememberedRole = cfg.loggedInRole; }
+      toast("✅ تم إنشاء الحساب! تم إرسال رابط تأكيد إلى " + email + " — فعّلي حسابك من بريدك الإلكتروني");
+    }, 1100);
+    return;
+  }
+
+  var companyEl = document.getElementById(cfg.prefix + "-company");
+  var phoneEl = document.getElementById(cfg.prefix + "-phone");
+  var companyName = companyEl ? companyEl.value.trim() : "";
+  var phone = phoneEl ? phoneEl.value.trim() : "";
+
+  if (!companyName) { toast("⚠️ الرجاء إدخال اسم الشركة / المصنع"); return; }
+
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "جارٍ إنشاء الحساب..."; }
 
-  setTimeout(function() {
-    simulateSendEmail(email, "تأكيد إنشاء الحساب — إن مصر للصناعة");
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.textContent = cfg.btnLabel;
-    }
-    if (rememberEl && rememberEl.checked) {
-      window.rememberedRole = cfg.loggedInRole;
-    }
+  try {
+    await apiFetch("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        email: email,
+        password: pass,
+        role: cfg.apiRole,
+        companyNameAr: companyName,
+        phone: phone || undefined
+      })
+    });
+
+    if (rememberEl && rememberEl.checked) { window.rememberedRole = cfg.loggedInRole; }
     toast("✅ تم إنشاء الحساب! تم إرسال رابط تأكيد إلى " + email + " — فعّلي حسابك من بريدك الإلكتروني");
-  }, 1100);
+
+    setTimeout(function() {
+      if (typeof openLoginModal === "function") openLoginModal();
+    }, 1400);
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إنشاء الحساب — حاولي مرة أخرى"));
+  } finally {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = cfg.btnLabel; }
+  }
 };
 
 window.openForgotPasswordFlow = function() {
@@ -8428,16 +8509,9 @@ window.openForgotPasswordFlow = function() {
 };
 
 // Hook remember-me into the existing login flow so re-checking persists role across the session
-var _origSubmitLoginForRemember = window.submitLogin;
-window.submitLogin = function() {
-  var rememberEl = document.getElementById("login-remember");
-  var wantsRemember = rememberEl && rememberEl.checked;
-  _origSubmitLoginForRemember();
-  if (wantsRemember && window.isLoggedIn) {
-    window.rememberedRole = window.loggedInRole;
-    try { window.name = "inmisr_remember:" + window.loggedInRole; } catch(e) {}
-  }
-};
+// Remember-me handling now lives directly inside submitLogin above
+// (it used to be bolted on here, but that assumed submitLogin ran
+// synchronously — it now awaits the real API call).
 // ══════════════════════════════════════════════════════════════════
 
 </script><div class="mov" id="verif-preview-modal">
