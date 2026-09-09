@@ -3664,6 +3664,29 @@ function showMsg(key){
 }
 window.toast=toast; window.showMsg=showMsg;
 
+// Real URL routing for public, stable pages — lets links to /suppliers,
+// /rfq, /pricing, etc. be shared, bookmarked, refreshed, and (once the
+// server serves index.html for these paths — see deployment note) indexed
+// by search engines. Gated pages (dash/orders/admin/loyalty) and the
+// dynamic sector-suppliers view intentionally have no public URL.
+var PAGE_ROUTES = {
+  home:"", sup:"suppliers", rfq:"rfq", map:"map", incubator:"incubator",
+  pricing:"pricing", offers:"offers", solar:"solar", guide:"guide",
+  reg:"register", about:"about", privacy:"privacy", security:"security",
+  terms:"terms", shipping:"shipping", packaging:"packaging",
+  training:"training", financing:"financing", inspection:"inspection",
+  factory:"factory", supplychain:"supply-chain", adreq:"advertise"
+};
+var PATH_TO_PAGE = {};
+for (var _rk in PAGE_ROUTES) { PATH_TO_PAGE[PAGE_ROUTES[_rk]] = _rk; }
+
+function routeFromLocation(){
+  var path = window.location.pathname.replace(/^\/+|\/+$/g, "");
+  var pg = path === "" ? "home" : PATH_TO_PAGE[path];
+  if (pg) { goTo(pg, true); }
+}
+window.addEventListener("popstate", routeFromLocation);
+
 var NAV_HISTORY = [];
 var CURRENT_PAGE = "home";
 
@@ -3687,6 +3710,12 @@ function goTo(pg, fromBack){
     return;
   }
   el.classList.add("active");
+  if (!fromBack && PAGE_ROUTES.hasOwnProperty(pg)) {
+    var _path = "/" + PAGE_ROUTES[pg];
+    if (_path !== window.location.pathname) {
+      history.pushState({page: pg}, "", _path);
+    }
+  }
   var tickerEl = document.querySelector(".ticker");
   if (tickerEl) tickerEl.style.display = (pg === "home") ? "flex" : "none";
   if (pg === "dash") {
@@ -3752,6 +3781,10 @@ window.rfqStep = rfqStep;
 function bnd(id,fn){var e=document.getElementById(id);if(e)e.addEventListener("click",fn);}
 
 document.addEventListener("DOMContentLoaded",function(){
+
+  // ROUTING: show the page matching the URL the visitor actually landed
+  // on (a shared /rfq link, a bookmark, a browser refresh, etc.)
+  routeFromLocation();
 
   // THEME
   var themeBtn = document.getElementById("themeBtn");

@@ -1,11 +1,10 @@
 User-agent: *
 Allow: /
 
-# Note: inmisr.net is currently a single-page app with no URL-based
-# routing -- every section (suppliers, RFQ, pricing, dashboards, etc.)
-# renders under this one address via client-side JavaScript. There are
-# no separate crawlable paths to disallow yet. If real per-page routing
-# (e.g. /suppliers, /rfq) is added later, dashboard/admin-specific
-# paths should be excluded here.
+# Dashboard, order, admin, and loyalty views require a logged-in session
+# and are rendered entirely client-side with no dedicated public path --
+# nothing to disallow here for them. All other sections now have real,
+# distinct URLs (see sitemap.xml) served by the same index.html via the
+# server's SPA fallback (try_files ... /index.html).
 
 Sitemap: https://inmisr.net/sitemap.xml

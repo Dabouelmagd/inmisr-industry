@@ -1,15 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Note: inmisr.net has no URL-based routing yet (see robots.txt) -- every
-  section of the site renders under this single address via client-side
-  JavaScript. Listing paths like /suppliers or /rfq here would be
-  inaccurate, since visiting them directly would not return that specific
-  content. Once real per-page routing exists, add a <url> entry per page.
+  These paths are now real, distinct URLs handled client-side via the
+  History API (see routeFromLocation() / goTo() in index.html). For a
+  direct visit or a search-engine crawl to actually receive this page's
+  content (not a 404), the server MUST serve public/index.html for any
+  of these paths instead of looking for a matching file. See the
+  deployment note shared alongside this file for the exact nginx change.
+
+  Gated pages (dashboard, orders, admin, loyalty) and the dynamic
+  sector-suppliers view are intentionally excluded -- they require login
+  or a specific sector parameter and have no meaningful public URL.
 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://inmisr.net/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
+  <url><loc>https://inmisr.net/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://inmisr.net/suppliers</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://inmisr.net/rfq</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://inmisr.net/pricing</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://inmisr.net/map</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://inmisr.net/incubator</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://inmisr.net/offers</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://inmisr.net/solar</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inmisr.net/register</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://inmisr.net/guide</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://inmisr.net/about</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://inmisr.net/financing</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inmisr.net/inspection</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inmisr.net/training</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inmisr.net/supply-chain</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://inmisr.net/factory</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://inmisr.net/shipping</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://inmisr.net/packaging</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://inmisr.net/advertise</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://inmisr.net/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://inmisr.net/security</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://inmisr.net/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
 </urlset>
