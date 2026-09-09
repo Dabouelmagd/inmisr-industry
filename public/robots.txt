@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Note: inmisr.net is currently a single-page app with no URL-based
+# routing -- every section (suppliers, RFQ, pricing, dashboards, etc.)
+# renders under this one address via client-side JavaScript. There are
+# no separate crawlable paths to disallow yet. If real per-page routing
+# (e.g. /suppliers, /rfq) is added later, dashboard/admin-specific
+# paths should be excluded here.
+
+Sitemap: https://inmisr.net/sitemap.xml

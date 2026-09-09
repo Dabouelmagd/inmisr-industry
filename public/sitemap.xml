@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Note: inmisr.net has no URL-based routing yet (see robots.txt) -- every
+  section of the site renders under this single address via client-side
+  JavaScript. Listing paths like /suppliers or /rfq here would be
+  inaccurate, since visiting them directly would not return that specific
+  content. Once real per-page routing exists, add a <url> entry per page.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://inmisr.net/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
