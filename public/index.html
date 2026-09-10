@@ -3964,6 +3964,7 @@ document.addEventListener("DOMContentLoaded",function(){
     var adminSupCountEl = document.getElementById("admin-active-sup-count");
     if (adminSupCountEl) adminSupCountEl.textContent = SUPS.length + " مورد نشط";
   }
+  window.renderSups = renderSups; // exposed globally so loadRealSuppliers() (outer scope) can call it once real data arrives
 
 
   function applySupFilters(){
