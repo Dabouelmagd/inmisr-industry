@@ -3681,6 +3681,67 @@ function routeFromLocation(){
 }
 window.addEventListener("popstate", routeFromLocation);
 
+// ── Live update detection ────────────────────────────────────────
+// This is a single static index.html served by nginx, so every new
+// deploy is a fresh file with a fresh ETag. We poll that ETag (a plain
+// HEAD request — cheap, no body) and, when it changes under a visitor's
+// feet, show a banner and refresh automatically once it's safe to
+// (never mid-form-fill or with a modal open). Works for anonymous
+// visitors and logged-in users alike — no backend/DB involvement.
+var APP_VERSION_TAG = null;
+
+function checkForAppUpdate() {
+  fetch("/", { method: "HEAD", cache: "no-store" })
+    .then(function(res) {
+      var tag = res.headers.get("etag") || res.headers.get("last-modified");
+      if (!tag) return;
+      if (APP_VERSION_TAG === null) { APP_VERSION_TAG = tag; return; }
+      if (tag !== APP_VERSION_TAG) { showAppUpdateBanner(); }
+    })
+    .catch(function(){ /* offline / blip — just retry on the next interval */ });
+}
+
+function isSafeToAutoRefresh() {
+  if (document.querySelector(".mov.open")) return false;
+  var active = document.activeElement;
+  if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT")) return false;
+  return true;
+}
+
+var _appUpdateBannerShown = false;
+function showAppUpdateBanner() {
+  if (_appUpdateBannerShown) return;
+  _appUpdateBannerShown = true;
+
+  var bar = document.createElement("div");
+  bar.id = "app-update-banner";
+  bar.style.cssText = "position:fixed;bottom:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#7C3AED,#CE1126);color:#fff;padding:12px 18px;display:flex;align-items:center;justify-content:center;gap:14px;font-size:13px;flex-wrap:wrap;box-shadow:0 -4px 18px rgba(0,0,0,.25)";
+  bar.innerHTML =
+    '<span>🎉 يتوفر تحديث جديد على المنصة</span>' +
+    '<button id="app-update-refresh-btn" style="background:#fff;color:#7C3AED;border:none;padding:7px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;font-size:13px">تحديث الآن</button>' +
+    '<span id="app-update-countdown" style="opacity:.85;font-size:11px"></span>';
+  document.body.appendChild(bar);
+  document.getElementById("app-update-refresh-btn").addEventListener("click", function(){ location.reload(); });
+
+  var secondsLeft = 12;
+  var countdownEl = document.getElementById("app-update-countdown");
+  var timer = setInterval(function() {
+    if (!isSafeToAutoRefresh()) {
+      if (countdownEl) countdownEl.textContent = "(هيتحدّث تلقائيًا بمجرد ما تخلصي اللي بتعمليه)";
+      return; // paused, not cancelled — keeps checking every second
+    }
+    secondsLeft -= 1;
+    if (countdownEl) countdownEl.textContent = "(تحديث تلقائي خلال " + secondsLeft + " ث)";
+    if (secondsLeft <= 0) { clearInterval(timer); location.reload(); }
+  }, 1000);
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  checkForAppUpdate(); // capture this visitor's baseline ETag
+  setInterval(checkForAppUpdate, 3 * 60 * 1000); // re-check every 3 minutes
+});
+window.addEventListener("focus", checkForAppUpdate); // and whenever the tab regains focus
+
 var NAV_HISTORY = [];
 var CURRENT_PAGE = "home";
 
