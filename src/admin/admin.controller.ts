@@ -32,6 +32,13 @@ export class AdminController {
     return this.admin.getDashboardStats();
   }
 
+  @Get('escrow')
+  @ApiOperation({ summary: 'إحصائيات Escrow (محتجز، مُفرج عنه، متنازع عليه)' })
+  getEscrow(@Request() req: any) {
+    this.requireAdmin(req);
+    return this.admin.getEscrowStats();
+  }
+
   // ── DISPUTES ─────────────────────────────────────────────────
   @Get('disputes')
   @ApiOperation({ summary: 'قائمة النزاعات' })
@@ -50,13 +57,9 @@ export class AdminController {
   // ── VERIFICATIONS ─────────────────────────────────────────────
   @Get('verifications')
   @ApiOperation({ summary: 'طلبات التحقق المعلقة' })
-  async getVerifications(@Query() q: any, @Request() req: any) {
+  getVerifications(@Query() q: any, @Request() req: any) {
     this.requireAdmin(req);
-    const where: any = {};
-    if (q.status) where.status = q.status;
-    else where.status = 'PENDING';
-    const { PrismaService } = require('../common/prisma.service');
-    return { message: 'Inject PrismaService in module for full query' };
+    return this.admin.getVerifications({ status: q.status, page: q.page, limit: q.limit });
   }
 
   @Patch('verifications/:id/review')

@@ -2515,10 +2515,10 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
       
       <div id="atab-overview"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px"><div><div style="font-size:20px;font-weight:700">نظرة عامة</div><div style="font-size:13px;color:var(--ts);margin-top:4px">آخر تحديث: الآن · inmisr.net</div></div><div style="display:flex;gap:8px"><span class="pill pg">النظام يعمل ✓</span><span class="pill pb2" id="admin-active-sup-count">124 مورد نشط</span></div></div>
         <div class="g4" style="margin-bottom:24px">
-          <div style="background:var(--surface);border:1px solid var(--bd);border-radius:13px;padding:17px;border-right:3px solid var(--red)"><div class="kl">الإيرادات/الشهر</div><div class="kv">78K ج.م</div><div class="kch">↑ 23%</div></div>
-          <div style="background:var(--surface);border:1px solid var(--bd);border-radius:13px;padding:17px;border-right:3px solid #C09300"><div class="kl">صفقات الشهر</div><div class="kv">87</div><div class="kch">↑ 12</div></div>
-          <div style="background:var(--surface);border:1px solid var(--bd);border-radius:13px;padding:17px;border-right:3px solid #22C55E"><div class="kl">Escrow محتجز</div><div class="kv">2.1M ج.م</div><div class="kch" style="color:#F59E0B">14 صفقة</div></div>
-          <div style="background:var(--surface);border:1px solid var(--bd);border-radius:13px;padding:17px;border-right:3px solid #7C3AED"><div class="kl">تحقق معلق</div><div class="kv">7</div><div class="kch" style="color:#EF4444">يحتاج مراجعة</div></div>
+          <div style="background:var(--surface);border:1px solid var(--bd);border-radius:13px;padding:17px;border-right:3px solid var(--red)"><div class="kl">الإيرادات/الشهر</div><div class="kv" id="admin-kpi-revenue">—</div><div class="kch" id="admin-kpi-revenue-growth"></div></div>
+          <div style="background:var(--surface);border:1px solid var(--bd);border-radius:13px;padding:17px;border-right:3px solid #C09300"><div class="kl">صفقات الشهر</div><div class="kv" id="admin-kpi-deals">—</div><div class="kch" id="admin-kpi-rfq-active"></div></div>
+          <div style="background:var(--surface);border:1px solid var(--bd);border-radius:13px;padding:17px;border-right:3px solid #22C55E"><div class="kl">عمولة المنصة/الشهر</div><div class="kv" id="admin-kpi-commission">—</div><div class="kch" id="admin-kpi-suppliers-new"></div></div>
+          <div style="background:var(--surface);border:1px solid var(--bd);border-radius:13px;padding:17px;border-right:3px solid #7C3AED"><div class="kl">تحقق معلق</div><div class="kv" id="admin-kpi-pending-verif">—</div><div class="kch" style="color:#EF4444" id="admin-kpi-disputes-open"></div></div>
         </div>
         <div style="font-size:15px;font-weight:700;margin-bottom:14px">آخر الصفقات</div>
         <div class="tw" style="margin-bottom:24px"><table class="tbl"><thead><tr><th>رقم الطلبية</th><th>المشتري</th><th>المورد</th><th>المبلغ</th><th>العمولة</th><th>الحالة</th></tr></thead><tbody>
@@ -2543,7 +2543,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
       </div>
       <div id="atab-disputes" style="display:none"><div style="font-size:20px;font-weight:700;margin-bottom:18px">إدارة النزاعات</div><div class="card"><div class="cb"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:11px"><div><span style="color:var(--red);font-weight:700;font-size:13px">#DIS-001</span><div style="font-size:13px;font-weight:600;margin-top:5px">ستار للبلاستيك ضد مصر للكيماويات</div><div style="font-size:13px;color:var(--ts);margin-top:3px">خامات غير مطابقة للمواصفات</div></div><div style="text-align:left"><div style="font-size:18px;font-weight:700;color:#C09300">54,000 ج.م</div><span class="pill pr" style="display:inline-block;margin-top:5px">نزاع مفتوح</span></div></div><div style="display:flex;gap:8px"><button class="bc" style="flex:1;padding:8px;font-size:13px;border-radius:8px" data-msg="buyer">لصالح المشتري</button><button class="bl" style="flex:1;padding:8px;font-size:13px;border-radius:8px" data-msg="supplier">لصالح المورد</button><button style="background:rgba(245,158,11,.1);color:#D97706;border:1px solid rgba(245,158,11,.25);border-radius:8px;flex:1;padding:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600" data-msg="split">تقسيم 50/50</button></div></div></div></div>
       <div id="atab-revenue" style="display:none"><div style="font-size:20px;font-weight:700;margin-bottom:18px">الإيرادات</div><div class="tw"><table class="tbl"><thead><tr><th>المصدر</th><th>هذا الشهر</th><th>الشهر الماضي</th><th>النمو</th></tr></thead><tbody><tr><td>عمولات صفقات</td><td style="color:#C09300;font-weight:600">42,000 ج.م</td><td>35,300 ج.م</td><td style="color:#22C55E;font-weight:600">↑ 19%</td></tr><tr><td>اشتراكات Growth</td><td style="color:#C09300;font-weight:600">21,000 ج.م</td><td>18,000 ج.م</td><td style="color:#22C55E;font-weight:600">↑ 17%</td></tr><tr><td>إعلانات</td><td style="color:#C09300;font-weight:600">11,400 ج.م</td><td>8,200 ج.م</td><td style="color:#22C55E;font-weight:600">↑ 38%</td></tr></tbody></table></div></div>
-      <div id="atab-escrow" style="display:none"><div style="font-size:20px;font-weight:700;margin-bottom:18px">Escrow</div><div class="g3"><div class="kc"><div class="kl">إجمالي محتجز</div><div class="kv">2.1M ج.م</div><div class="kch">14 صفقة</div></div><div class="kc"><div class="kl">إفراج الشهر</div><div class="kv">870K ج.م</div><div class="kch">12 مكتملة</div></div><div class="kc"><div class="kl">نزاعات</div><div class="kv">2</div><div class="kch" style="color:#EF4444">قيد المراجعة</div></div></div></div>
+      <div id="atab-escrow" style="display:none"><div style="font-size:20px;font-weight:700;margin-bottom:18px">Escrow</div><div class="g3"><div class="kc"><div class="kl">إجمالي محتجز</div><div class="kv" id="admin-escrow-held">—</div><div class="kch" id="admin-escrow-held-count"></div></div><div class="kc"><div class="kl">إفراج الشهر</div><div class="kv" id="admin-escrow-released">—</div><div class="kch" id="admin-escrow-released-count"></div></div><div class="kc"><div class="kl">نزاعات</div><div class="kv" id="admin-escrow-disputed">—</div><div class="kch" style="color:#EF4444">قيد المراجعة</div></div></div></div>
       <div id="atab-ads" style="display:none">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px">
     <div><div style="font-size:20px;font-weight:700">إدارة الإعلانات</div><div style="font-size:13px;color:var(--ts);margin-top:4px">الأنواع والأسعار، معاينة قبل النشر، الحجوزات، وفصل طلبات الموردين عن إعلانات الأونر</div></div>
@@ -3817,6 +3817,9 @@ function goTo(pg, fromBack){
   }
   var tickerEl = document.querySelector(".ticker");
   if (tickerEl) tickerEl.style.display = (pg === "home") ? "flex" : "none";
+  if (pg === "admin" && typeof loadAdminOverview === "function") {
+    loadAdminOverview();
+  }
   if (pg === "dash") {
     var companyPanel = document.getElementById("dash-header-company");
     var supplierPanel = document.getElementById("dash-header-supplier");
@@ -4275,6 +4278,12 @@ document.addEventListener("DOMContentLoaded",function(){
     }
     if (name === "team") {
       loadTeamMembers();
+    }
+    if (name === "overview") {
+      loadAdminOverview();
+    }
+    if (name === "escrow") {
+      loadAdminEscrow();
     }
     if (name === "promocodes") {
       if (typeof renderPromoCodesTable === "function") renderPromoCodesTable();
@@ -7904,6 +7913,67 @@ async function loadTeamMembers() {
   renderTeamMembersTable();
 }
 window.loadTeamMembers = loadTeamMembers;
+
+// ── Owner dashboard: real data (GET /admin/dashboard, GET /admin/escrow) ──
+function formatEgp(n) {
+  n = n || 0;
+  if (Math.abs(n) >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, "") + "M ج.م";
+  if (Math.abs(n) >= 1000) return (n / 1000).toFixed(0) + "K ج.م";
+  return Math.round(n).toLocaleString("ar-EG") + " ج.م";
+}
+
+async function loadAdminOverview() {
+  try {
+    var stats = await apiFetch("/admin/dashboard");
+    var revEl = document.getElementById("admin-kpi-revenue");
+    var revGrowthEl = document.getElementById("admin-kpi-revenue-growth");
+    var dealsEl = document.getElementById("admin-kpi-deals");
+    var rfqEl = document.getElementById("admin-kpi-rfq-active");
+    var commEl = document.getElementById("admin-kpi-commission");
+    var supNewEl = document.getElementById("admin-kpi-suppliers-new");
+    var verifEl = document.getElementById("admin-kpi-pending-verif");
+    var disputesEl = document.getElementById("admin-kpi-disputes-open");
+
+    if (revEl) revEl.textContent = formatEgp(stats.revenue.month);
+    if (revGrowthEl) {
+      var g = stats.revenue.growth;
+      revGrowthEl.textContent = (g >= 0 ? "↑ " : "↓ ") + Math.abs(g) + "%";
+      revGrowthEl.style.color = g >= 0 ? "#22C55E" : "#EF4444";
+    }
+    if (dealsEl) dealsEl.textContent = stats.orders.completedThisMonth;
+    if (rfqEl) rfqEl.textContent = stats.rfq.active + " RFQ نشط";
+    if (commEl) commEl.textContent = formatEgp(stats.revenue.commission);
+    if (supNewEl) supNewEl.textContent = "+" + stats.suppliers.newThisMonth + " مورد جديد";
+    if (verifEl) verifEl.textContent = stats.verification.pending;
+    if (disputesEl) disputesEl.textContent = stats.disputes.open + " نزاع مفتوح";
+
+    var adminSupCountEl = document.getElementById("admin-active-sup-count");
+    if (adminSupCountEl) adminSupCountEl.textContent = stats.suppliers.total + " مورد نشط";
+  } catch (err) {
+    toast("⚠️ تعذر تحميل إحصائيات لوحة التحكم: " + (err.message || ""));
+  }
+}
+window.loadAdminOverview = loadAdminOverview;
+
+async function loadAdminEscrow() {
+  try {
+    var stats = await apiFetch("/admin/escrow");
+    var heldEl = document.getElementById("admin-escrow-held");
+    var heldCountEl = document.getElementById("admin-escrow-held-count");
+    var relEl = document.getElementById("admin-escrow-released");
+    var relCountEl = document.getElementById("admin-escrow-released-count");
+    var disEl = document.getElementById("admin-escrow-disputed");
+
+    if (heldEl) heldEl.textContent = formatEgp(stats.held.amount);
+    if (heldCountEl) heldCountEl.textContent = stats.held.count + " صفقة";
+    if (relEl) relEl.textContent = formatEgp(stats.releasedThisMonth.amount);
+    if (relCountEl) relCountEl.textContent = stats.releasedThisMonth.count + " مكتملة";
+    if (disEl) disEl.textContent = stats.disputed;
+  } catch (err) {
+    toast("⚠️ تعذر تحميل إحصائيات Escrow: " + (err.message || ""));
+  }
+}
+window.loadAdminEscrow = loadAdminEscrow;
 
 // ══════════════════════════════════════════════════════════════════
 // BUSINESS TEAM & PERMISSIONS — for supplier/company dashboards

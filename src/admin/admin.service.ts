@@ -41,6 +41,26 @@ export class AdminService {
     return { data, total, page: filter.page || 1 };
   }
 
+  // ── VERIFICATION QUEUE ────────────────────────────────────────
+  async getVerifications(filter: { status?: string; page?: number; limit?: number }) {
+    const where: any = { status: filter.status || 'PENDING' };
+
+    const [data, total] = await Promise.all([
+      this.prisma.verification.findMany({
+        where,
+        include: {
+          company: { select: { nameAr: true, nameEn: true, type: true, commercialRegNo: true, taxId: true } },
+        },
+        orderBy: { createdAt: 'asc' },
+        skip: ((filter.page || 1) - 1) * (filter.limit || 20),
+        take: filter.limit || 20,
+      }),
+      this.prisma.verification.count({ where }),
+    ]);
+
+    return { data, total, page: filter.page || 1 };
+  }
+
   async resolveDispute(disputeId: string, adminId: string, dto: {
     resolution:    string;
     winner:        'BUYER' | 'SUPPLIER' | 'SPLIT';
@@ -155,6 +175,27 @@ export class AdminService {
   }
 
   // ── PLATFORM DASHBOARD STATS ─────────────────────────────────
+  // ── ESCROW STATS ─────────────────────────────────────────────
+  async getEscrowStats() {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [held, releasedMonth, disputed] = await Promise.all([
+      this.prisma.escrow.aggregate({ where: { status: 'HELD' }, _sum: { amount: true }, _count: true }),
+      this.prisma.escrow.aggregate({
+        where: { status: 'RELEASED', releasedAt: { gte: monthStart } },
+        _sum: { amount: true }, _count: true,
+      }),
+      this.prisma.escrow.count({ where: { status: { in: ['DISPUTED', 'ARBITRATION'] } } }),
+    ]);
+
+    return {
+      held: { amount: held._sum.amount || 0, count: held._count },
+      releasedThisMonth: { amount: releasedMonth._sum.amount || 0, count: releasedMonth._count },
+      disputed,
+    };
+  }
+
   async getDashboardStats() {
     const now         = new Date();
     const monthStart  = new Date(now.getFullYear(), now.getMonth(), 1);
