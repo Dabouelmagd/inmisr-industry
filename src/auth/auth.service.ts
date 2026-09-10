@@ -19,8 +19,22 @@ export class AuthService {
     private notifications: NotificationsService,
   ) {}
 
+  // Roles that must never be self-service-registerable through the
+  // public form — only creatable via the one-time bootstrap secret
+  // (SUPER_ADMIN) or by an authenticated SUPER_ADMIN via /auth/team (ADMIN).
+  private static PRIVILEGED_ROLES = ['ADMIN', 'SUPER_ADMIN'];
+
   // ── REGISTER ──────────────────────────────────────────────────
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto, adminBootstrapSecret?: string) {
+    if (AuthService.PRIVILEGED_ROLES.includes(dto.role)) {
+      const expected = this.config.get<string>('ADMIN_BOOTSTRAP_SECRET');
+      if (!expected || adminBootstrapSecret !== expected) {
+        throw new ForbiddenException('غير مصرح بإنشاء حساب بهذه الصلاحية عبر التسجيل العام');
+      }
+    } else if (!dto.companyNameAr) {
+      throw new BadRequestException('اسم الشركة مطلوب');
+    }
+
     // Check duplicates
     const exists = await this.prisma.user.findFirst({
       where: {
@@ -36,6 +50,8 @@ export class AuthService {
       ? await bcrypt.hash(dto.password, 12)
       : null;
 
+    const isStaff = AuthService.PRIVILEGED_ROLES.includes(dto.role);
+
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
@@ -43,7 +59,7 @@ export class AuthService {
         phoneRelay: dto.phone ? `relay-${uuidv4().slice(0, 8)}@inmisr.net` : null,
         passwordHash,
         role: dto.role,
-        company: {
+        company: isStaff ? undefined : {
           create: {
             nameAr: dto.companyNameAr,
             nameEn: dto.companyNameEn,
@@ -67,6 +83,60 @@ export class AuthService {
     await this.sendOtp(user.id, 'EMAIL_VERIFY', dto.email, dto.phone);
 
     return { message: 'تم إنشاء الحساب — يرجى تأكيد بريدك الإلكتروني أو رقم هاتفك', userId: user.id };
+  }
+
+  // ── TEAM / ASSISTANTS (owner-managed) ───────────────────────────
+  // Only ever called from an endpoint gated to req.user.role === 'SUPER_ADMIN'.
+  async listTeamMembers() {
+    return this.prisma.user.findMany({
+      where: { role: { in: AuthService.PRIVILEGED_ROLES as any } },
+      select: {
+        id: true, email: true, role: true, isActive: true, isBanned: true,
+        createdAt: true, lastLoginAt: true,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async createTeamMember(dto: { email: string; password: string }) {
+    const exists = await this.prisma.user.findFirst({ where: { email: dto.email } });
+    if (exists) throw new ConflictException('البريد الإلكتروني مسجل مسبقاً');
+    if (!dto.password || dto.password.length < 8) {
+      throw new BadRequestException('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, 12);
+    const user = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        passwordHash,
+        role: 'ADMIN' as any,
+        emailVerified: true,
+        kycStatus: 'VERIFIED' as any,
+      },
+    });
+
+    await this.notifications.sendEmail(
+      dto.email,
+      'تمت إضافتك كمساعد إداري — إن مصر للصناعة',
+      `تم إنشاء حساب مساعد إداري لك على منصة إن مصر للصناعة.\nالإيميل: ${dto.email}\nيرجى تسجيل الدخول وتغيير كلمة المرور من الإعدادات.`,
+    );
+
+    return { message: 'تم إضافة المساعد بنجاح', userId: user.id };
+  }
+
+  async removeTeamMember(userId: string, requesterId: string) {
+    if (userId === requesterId) throw new BadRequestException('لا يمكنك إزالة حسابك الخاص');
+    const target = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!target) throw new BadRequestException('المستخدم غير موجود');
+    if (target.role === 'SUPER_ADMIN') {
+      throw new ForbiddenException('لا يمكن إزالة حساب المالك (Super Admin)');
+    }
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { isActive: false, isBanned: true, banReason: 'أُزيل من فريق الإدارة' },
+    });
+    return { message: 'تم إلغاء تفعيل حساب المساعد' };
   }
 
   // ── LOGIN ─────────────────────────────────────────────────────
@@ -236,9 +306,9 @@ export class RegisterDto {
   @IsEnum(Role)
   role: Role;
 
-  @ApiProperty({ example: 'حديد مصر للتجارة' })
-  @IsString()
-  companyNameAr: string;
+  @ApiProperty({ example: 'حديد مصر للتجارة', required: false })
+  @IsString() @IsOptional()
+  companyNameAr?: string;
 
   @ApiProperty({ example: 'Hadid Misr Trading', required: false })
   @IsString() @IsOptional()

@@ -4,7 +4,7 @@
 
 import {
   Controller, Get, Post, Put, Delete, Body, Param, Query,
-  UseGuards, Request, HttpCode, HttpStatus, Patch, Res,
+  UseGuards, Request, HttpCode, HttpStatus, Patch, Res, Headers, ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -64,8 +64,37 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'تسجيل حساب جديد' })
   @HttpCode(HttpStatus.CREATED)
-  register(@Body() dto: RegisterDto) {
-    return this.auth.register(dto);
+  register(@Body() dto: RegisterDto, @Headers('x-admin-bootstrap-secret') adminSecret?: string) {
+    return this.auth.register(dto, adminSecret);
+  }
+
+  // ── Team / Assistants — owner (SUPER_ADMIN) only ─────────────────
+  @Get('team')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'قائمة المساعدين الإداريين (Super Admin فقط)' })
+  listTeam(@Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN') throw new ForbiddenException('هذا الإجراء متاح لمالك الحساب فقط');
+    return this.auth.listTeamMembers();
+  }
+
+  @Post('team')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'إضافة مساعد إداري جديد (Super Admin فقط)' })
+  @HttpCode(HttpStatus.CREATED)
+  addTeamMember(@Body() body: { email: string; password: string }, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN') throw new ForbiddenException('هذا الإجراء متاح لمالك الحساب فقط');
+    return this.auth.createTeamMember(body);
+  }
+
+  @Delete('team/:id')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'إزالة مساعد إداري (Super Admin فقط)' })
+  removeTeamMember(@Param('id') id: string, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN') throw new ForbiddenException('هذا الإجراء متاح لمالك الحساب فقط');
+    return this.auth.removeTeamMember(id, req.user.sub);
   }
 
   @Post('login')

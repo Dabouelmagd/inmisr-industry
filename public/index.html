@@ -2809,42 +2809,17 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
 </div>
 
 <div class="mov" id="invite-team-modal">
-  <div class="modal" style="max-width:520px">
+  <div class="modal" style="max-width:460px">
     <button class="mc" onclick="closeM('invite-team-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
-    <div style="font-size:16px;font-weight:700;margin-bottom:4px" id="invite-team-title">دعوة عضو جديد للفريق</div>
-    <div style="font-size:12px;color:var(--ts);margin-bottom:18px">هنبعتله لينك دعوة على بريده الإلكتروني لتفعيل حسابه بنفس الصلاحيات اللي تحدّديها تحت</div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:4px" id="invite-team-title">إضافة مساعد جديد للفريق</div>
+    <div style="font-size:12px;color:var(--ts);margin-bottom:18px">هيتم إنشاء حساب مساعد إداري فعّال فورًا بهذا الإيميل وكلمة المرور — هيقدر يدخل على لوحة التحكم مباشرة. كل مساعد حاليًا عنده نفس صلاحيات الوصول للوحة التحكم (مفيش تخصيص دقيق للصلاحيات لسه).</div>
 
     <input type="hidden" id="invite-team-edit-id" value="">
 
-    <div class="g2" style="gap:12px;margin-bottom:12px">
-      <div><span class="lbl">الاسم بالكامل</span><input class="inp" id="invite-team-name" placeholder="اسم الموظف"></div>
-      <div><span class="lbl">البريد الإلكتروني</span><input class="inp" id="invite-team-email" placeholder="name@inmisr.net" dir="ltr"></div>
-    </div>
-    <div style="margin-bottom:14px"><span class="lbl">الوظيفة</span>
-      <select class="sel" id="invite-team-role" onchange="applyRolePreset()">
-        <option value="مساعد إداري">مساعد إداري</option>
-        <option value="محاسب">محاسب</option>
-        <option value="مدير عمليات">مدير عمليات</option>
-        <option value="مدير مبيعات">مدير مبيعات</option>
-        <option value="مشرف محتوى">مشرف محتوى</option>
-        <option value="أخرى">أخرى</option>
-      </select>
-    </div>
+    <div style="margin-bottom:12px"><span class="lbl">البريد الإلكتروني</span><input class="inp" id="invite-team-email" placeholder="name@inmisr.net" dir="ltr"></div>
+    <div style="margin-bottom:18px"><span class="lbl">كلمة المرور</span><input class="inp" id="invite-team-password" type="text" placeholder="8 أحرف على الأقل" dir="ltr"></div>
 
-    <div style="margin-bottom:16px">
-      <span class="lbl">الصلاحيات على لوحة التحكم</span>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
-        <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="checkbox" id="perm-view_reports" value="عرض البيانات والتقارير">عرض البيانات والتقارير</label>
-        <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="checkbox" id="perm-manage_suppliers" value="إدارة الموردين والتحقق">إدارة الموردين والتحقق</label>
-        <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="checkbox" id="perm-manage_orders" value="إدارة الطلبات و RFQ">إدارة الطلبات و RFQ</label>
-        <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="checkbox" id="perm-manage_payments" value="إدارة المدفوعات و Escrow">إدارة المدفوعات و Escrow</label>
-        <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="checkbox" id="perm-manage_ads" value="إدارة الإعلانات والاشتراكات">إدارة الإعلانات والاشتراكات</label>
-        <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="checkbox" id="perm-manage_services" value="إدارة الخدمات الصناعية">إدارة الخدمات الصناعية</label>
-        <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;grid-column:1/3"><input type="checkbox" id="perm-full_access" value="وصول كامل (صلاحيات الأونر)">⭐ وصول كامل (كل صلاحيات الأونر)</label>
-      </div>
-    </div>
-
-    <button class="bc" style="width:100%;padding:11px;font-size:13px" id="invite-team-submit-btn" onclick="confirmInviteTeam()">📧 إرسال الدعوة</button>
+    <button class="bc" style="width:100%;padding:11px;font-size:13px" id="invite-team-submit-btn" onclick="confirmInviteTeam()">➕ إضافة المساعد</button>
   </div>
 </div>
 
@@ -4174,7 +4149,7 @@ document.addEventListener("DOMContentLoaded",function(){
       renderAdminServiceTables();
     }
     if (name === "team") {
-      renderTeamMembersTable();
+      loadTeamMembers();
     }
     if (name === "promocodes") {
       if (typeof renderPromoCodesTable === "function") renderPromoCodesTable();
@@ -7650,106 +7625,59 @@ function simulateSendEmail(toEmail, subject) {
 // TEAM & PERMISSIONS (owner-only) — invite staff with role-based access
 // ══════════════════════════════════════════════════════════════════
 var TEAM_SEQ = 100;
-var TEAM_MEMBERS = [
-  {id:"TM-001", name:"سارة أحمد", email:"sara@inmisr.net", role:"محاسب",
-   permissions:["عرض البيانات والتقارير","إدارة المدفوعات و Escrow"], status:"نشط", cls:"pg", invitedDate:"2026-02-10"},
-  {id:"TM-002", name:"كريم محمود", email:"karim@inmisr.net", role:"مدير عمليات",
-   permissions:["عرض البيانات والتقارير","إدارة الطلبات و RFQ","إدارة الموردين والتحقق"], status:"دعوة معلّقة", cls:"pa", invitedDate:"2026-06-22"}
-];
+// Owner's admin-level "Team / Assistants" — wired to the real backend
+// (GET/POST/DELETE /api/v1/auth/team, guarded server-side to SUPER_ADMIN).
+// There is currently no granular per-assistant permission system server
+// side, so every assistant added here gets the same ADMIN-level access —
+// the checkboxes/roles the old mock UI showed were never enforced by
+// anything, so they were removed rather than left as a false promise.
+var TEAM_MEMBERS = [];
 
-var ROLE_PERMISSION_PRESETS = {
-  "مساعد إداري": ["view_reports"],
-  "محاسب": ["view_reports","manage_payments"],
-  "مدير عمليات": ["view_reports","manage_orders","manage_suppliers","manage_services"],
-  "مدير مبيعات": ["view_reports","manage_orders","manage_ads"],
-  "مشرف محتوى": ["manage_ads","manage_services"],
-  "أخرى": []
-};
-
-function applyRolePreset() {
-  var role = document.getElementById("invite-team-role").value;
-  var preset = ROLE_PERMISSION_PRESETS[role] || [];
-  ["view_reports","manage_suppliers","manage_orders","manage_payments","manage_ads","manage_services","full_access"].forEach(function(key) {
-    var cb = document.getElementById("perm-" + key);
-    if (cb) cb.checked = preset.indexOf(key) > -1;
-  });
-}
-window.applyRolePreset = applyRolePreset;
-
-function openInviteTeamModal(editId) {
-  document.getElementById("invite-team-edit-id").value = editId || "";
-  if (editId) {
-    var m = TEAM_MEMBERS.find(function(x){ return x.id === editId; });
-    if (m) {
-      document.getElementById("invite-team-title").textContent = "تعديل صلاحيات: " + m.name;
-      document.getElementById("invite-team-name").value = m.name;
-      document.getElementById("invite-team-email").value = m.email;
-      document.getElementById("invite-team-role").value = m.role;
-      document.getElementById("invite-team-submit-btn").textContent = "💾 حفظ التعديلات";
-      ["عرض البيانات والتقارير","إدارة الموردين والتحقق","إدارة الطلبات و RFQ","إدارة المدفوعات و Escrow","إدارة الإعلانات والاشتراكات","إدارة الخدمات الصناعية","وصول كامل (صلاحيات الأونر)"]
-        .forEach(function(label) {
-          var input = document.querySelector('#invite-team-modal input[value="' + label + '"]');
-          if (input) input.checked = m.permissions.indexOf(label) > -1;
-        });
-    }
-  } else {
-    document.getElementById("invite-team-title").textContent = "دعوة عضو جديد للفريق";
-    document.getElementById("invite-team-name").value = "";
-    document.getElementById("invite-team-email").value = "";
-    document.getElementById("invite-team-role").selectedIndex = 0;
-    document.getElementById("invite-team-submit-btn").textContent = "📧 إرسال الدعوة";
-    document.querySelectorAll('#invite-team-modal input[type="checkbox"]').forEach(function(cb){ cb.checked = false; });
-    applyRolePreset();
-  }
+function openInviteTeamModal() {
+  document.getElementById("invite-team-edit-id").value = "";
+  document.getElementById("invite-team-title").textContent = "إضافة مساعد جديد للفريق";
+  document.getElementById("invite-team-email").value = "";
+  document.getElementById("invite-team-password").value = "";
+  document.getElementById("invite-team-submit-btn").textContent = "➕ إضافة المساعد";
   if (typeof openM === "function") openM("invite-team-modal");
 }
 window.openInviteTeamModal = openInviteTeamModal;
 
-function confirmInviteTeam() {
-  var editId = document.getElementById("invite-team-edit-id").value;
-  var name = document.getElementById("invite-team-name").value.trim();
+async function confirmInviteTeam() {
   var email = document.getElementById("invite-team-email").value.trim();
-  var role = document.getElementById("invite-team-role").value;
-  var permissions = [];
-  document.querySelectorAll('#invite-team-modal input[type="checkbox"]:checked').forEach(function(cb){ permissions.push(cb.value); });
+  var password = document.getElementById("invite-team-password").value.trim();
 
-  if (!name || !email) { toast("الرجاء إدخال الاسم والبريد الإلكتروني"); return; }
-  if (!permissions.length) { toast("الرجاء تحديد صلاحية واحدة على الأقل"); return; }
+  if (!email) { toast("⚠️ الرجاء إدخال البريد الإلكتروني"); return; }
+  if (!password || password.length < 8) { toast("⚠️ كلمة المرور يجب أن تكون 8 أحرف على الأقل"); return; }
 
-  if (editId) {
-    var m = TEAM_MEMBERS.find(function(x){ return x.id === editId; });
-    if (m) { m.name = name; m.email = email; m.role = role; m.permissions = permissions; }
-    toast("تم تحديث صلاحيات " + name);
-  } else {
-    TEAM_SEQ += 1;
-    var inviteLink = "https://inmisr.net/team-invite/" + TEAM_SEQ + "-" + Date.now().toString(36);
-    TEAM_MEMBERS.unshift({
-      id: "TM-" + TEAM_SEQ, name:name, email:email, role:role, permissions:permissions,
-      status:"دعوة معلّقة", cls:"pa", invitedDate: new Date().toISOString().slice(0,10), inviteLink:inviteLink
+  var btn = document.getElementById("invite-team-submit-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "جارٍ الإضافة..."; }
+
+  try {
+    await apiFetch("/auth/team", {
+      method: "POST",
+      body: JSON.stringify({ email: email, password: password })
     });
-    simulateSendEmail(email, "دعوة للانضمام لفريق إن مصر للصناعة — " + role);
-    toast("📧 تم إرسال رابط الدعوة إلى " + email);
+    toast("✅ تم إضافة " + email + " كمساعد إداري — هيقدر يدخل فورًا بنفس البيانات");
+    if (typeof closeM === "function") closeM("invite-team-modal");
+    await loadTeamMembers();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إضافة المساعد"));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "➕ إضافة المساعد"; }
   }
-  if (typeof closeM === "function") closeM("invite-team-modal");
-  renderTeamMembersTable();
 }
 window.confirmInviteTeam = confirmInviteTeam;
 
-function resendTeamInvite(id) {
-  var m = TEAM_MEMBERS.find(function(x){ return x.id === id; });
-  if (!m) return;
-  simulateSendEmail(m.email, "تذكير: دعوة للانضمام لفريق إن مصر للصناعة");
-  toast("تم إعادة إرسال الدعوة إلى " + m.email);
-}
-window.resendTeamInvite = resendTeamInvite;
-
-function removeTeamMember(id) {
-  var idx = TEAM_MEMBERS.findIndex(function(x){ return x.id === id; });
-  if (idx === -1) return;
-  var name = TEAM_MEMBERS[idx].name;
-  TEAM_MEMBERS.splice(idx, 1);
-  toast("تم إزالة " + name + " من الفريق");
-  renderTeamMembersTable();
+async function removeTeamMember(id) {
+  if (!confirm("تأكيد إزالة هذا المساعد من الفريق؟ هيفقد القدرة على الدخول فورًا.")) return;
+  try {
+    await apiFetch("/auth/team/" + id, { method: "DELETE" });
+    toast("تم إزالة المساعد من الفريق");
+    await loadTeamMembers();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذرت إزالة المساعد"));
+  }
 }
 window.removeTeamMember = removeTeamMember;
 
@@ -7757,33 +7685,41 @@ function renderTeamMembersTable() {
   var box = document.getElementById("team-members-table");
   if (!box) return;
   box.innerHTML = TEAM_MEMBERS.length ? TEAM_MEMBERS.map(function(m) {
-    var permsBadges = m.permissions.map(function(p){ return '<span class="pill pb2" style="margin:2px;font-size:10px">' + p + '</span>'; }).join("");
+    var isOwner = m.role === "SUPER_ADMIN";
+    var statusLabel = m.isActive ? "نشط" : "معطّل";
+    var statusCls = m.isActive ? "pg" : "pa";
+    var lastLogin = m.lastLoginAt ? new Date(m.lastLoginAt).toLocaleDateString("ar-EG") : "لم يسجّل دخول بعد";
     return '<div class="card" style="margin-bottom:12px"><div class="cb">' +
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:8px">' +
-      '<div><div style="font-weight:700;font-size:14px">' + m.name + ' <span class="pill ' + m.cls + '" style="margin-right:6px">' + m.status + '</span></div>' +
-      '<div style="font-size:12px;color:var(--ts);margin-top:4px;direction:ltr;text-align:right">' + m.email + '</div>' +
-      '<div style="font-size:12px;color:var(--ts);margin-top:2px">الوظيفة: ' + m.role + ' · دُعي في ' + m.invitedDate + '</div></div>' +
-      '<div style="display:flex;gap:6px;flex-shrink:0">' +
-      (m.status === "دعوة معلّقة" ? '<button class="bl" style="font-size:11px;padding:5px 10px;border-radius:6px" onclick="resendTeamInvite(\'' + m.id + '\')">إعادة إرسال</button>' : '') +
-      '<button class="bl" style="font-size:11px;padding:5px 10px;border-radius:6px" onclick="openInviteTeamModal(\'' + m.id + '\')">تعديل الصلاحيات</button>' +
-      '<button style="background:rgba(206,17,38,.08);color:#CE1126;border:1px solid rgba(206,17,38,.25);border-radius:6px;padding:5px 10px;cursor:pointer;font-family:inherit;font-size:11px" onclick="removeTeamMember(\'' + m.id + '\')">إزالة</button>' +
-      '</div></div>' +
-      '<div style="margin-top:6px">' + permsBadges + '</div>' +
-      '</div></div>';
-  }).join("") : '<div style="font-size:13px;color:var(--ts);padding:20px 0;text-align:center">لا يوجد أعضاء فريق حتى الآن — ابدئي بدعوة أول عضو</div>';
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">' +
+      '<div><div style="font-weight:700;font-size:14px;direction:ltr;text-align:right">' + m.email +
+        ' <span class="pill ' + statusCls + '" style="margin-right:6px">' + statusLabel + '</span>' +
+        (isOwner ? ' <span class="pill pb2" style="margin-right:4px">🛡️ المالك</span>' : '') + '</div>' +
+      '<div style="font-size:12px;color:var(--ts);margin-top:4px">آخر دخول: ' + lastLogin + '</div></div>' +
+      (isOwner ? '' : '<button style="background:rgba(206,17,38,.08);color:#CE1126;border:1px solid rgba(206,17,38,.25);border-radius:6px;padding:5px 10px;cursor:pointer;font-family:inherit;font-size:11px;flex-shrink:0" onclick="removeTeamMember(\'' + m.id + '\')">إزالة</button>') +
+      '</div></div></div>';
+  }).join("") : '<div style="font-size:13px;color:var(--ts);padding:20px 0;text-align:center">لا يوجد أعضاء فريق حتى الآن — ابدئي بإضافة أول مساعد</div>';
 
   var totalEl = document.getElementById("team-total-count");
   var activeEl = document.getElementById("team-active-count");
   var pendingEl = document.getElementById("team-pending-count");
   if (totalEl) totalEl.textContent = TEAM_MEMBERS.length;
-  if (activeEl) activeEl.textContent = TEAM_MEMBERS.filter(function(m){ return m.status === "نشط"; }).length;
-  if (pendingEl) pendingEl.textContent = TEAM_MEMBERS.filter(function(m){ return m.status === "دعوة معلّقة"; }).length;
+  if (activeEl) activeEl.textContent = TEAM_MEMBERS.filter(function(m){ return m.isActive; }).length;
+  // No pending-invite concept server-side yet (accounts are created active
+  // immediately) — kept at 0 rather than faking a number.
+  if (pendingEl) pendingEl.textContent = "0";
 }
 window.renderTeamMembersTable = renderTeamMembersTable;
 
-document.addEventListener("DOMContentLoaded", function() {
+async function loadTeamMembers() {
+  if (!window.isLoggedIn || window.loggedInRole !== "owner") return;
+  try {
+    TEAM_MEMBERS = await apiFetch("/auth/team");
+  } catch (err) {
+    TEAM_MEMBERS = [];
+  }
   renderTeamMembersTable();
-});
+}
+window.loadTeamMembers = loadTeamMembers;
 
 // ══════════════════════════════════════════════════════════════════
 // BUSINESS TEAM & PERMISSIONS — for supplier/company dashboards
