@@ -97,6 +97,16 @@ export class AuthController {
     return this.auth.removeTeamMember(id, req.user.sub);
   }
 
+  @Post('change-password')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({ summary: 'تغيير كلمة المرور (للمستخدم الحالي)' })
+  changePassword(@Body() body: { currentPassword?: string; newPassword: string }, @Request() req: any) {
+    return this.auth.changePassword(req.user.sub, body.currentPassword, body.newPassword);
+  }
+
+
   @Post('login')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @ApiOperation({ summary: 'تسجيل الدخول' })

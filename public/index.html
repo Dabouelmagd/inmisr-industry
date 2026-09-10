@@ -2482,7 +2482,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
 <div class="page" id="page-admin">
   <div class="al">
     <div class="as2">
-      <div style="display:flex;align-items:center;gap:9px;padding:11px;background:rgba(124,58,237,.1);border-radius:9px;margin-bottom:14px;border:1px solid rgba(124,58,237,.25)"><div style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#7C3AED,#5B21B6);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">🛡️</div><div><div style="font-size:13px;font-weight:700">سوبر أدمن</div><div style="font-size:11px;color:var(--tt)">داتا لايف</div></div></div>
+      <div style="display:flex;align-items:center;gap:9px;padding:11px;background:rgba(124,58,237,.1);border-radius:9px;margin-bottom:14px;border:1px solid rgba(124,58,237,.25);cursor:pointer" onclick="openChangePasswordModal()" title="تغيير كلمة المرور"><div style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#7C3AED,#5B21B6);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">🛡️</div><div style="flex:1"><div style="font-size:13px;font-weight:700">سوبر أدمن</div><div style="font-size:11px;color:var(--tt)">داتا لايف</div></div><div style="font-size:11px;color:var(--tt)">⚙️</div></div>
       <div class="asc">الرئيسية</div>
       <button class="asb on" data-admin="overview"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>نظرة عامة</button>
       <button class="asb" data-admin="solar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>☀️ شمسك طاقتك <span style="background:rgba(245,158,11,.2);color:#D97706;padding:1px 6px;border-radius:8px;font-size:11px;margin-right:4px">جديد</span></button>
@@ -2820,6 +2820,20 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
     <div style="margin-bottom:18px"><span class="lbl">كلمة المرور</span><input class="inp" id="invite-team-password" type="text" placeholder="8 أحرف على الأقل" dir="ltr"></div>
 
     <button class="bc" style="width:100%;padding:11px;font-size:13px" id="invite-team-submit-btn" onclick="confirmInviteTeam()">➕ إضافة المساعد</button>
+  </div>
+</div>
+
+<div class="mov" id="change-password-modal">
+  <div class="modal" style="max-width:420px">
+    <button class="mc" onclick="closeM('change-password-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
+    <div style="font-size:16px;font-weight:700;margin-bottom:18px">تغيير كلمة المرور</div>
+
+    <div style="margin-bottom:12px"><span class="lbl">كلمة المرور الحالية</span><input class="inp" id="cp-current" type="password" dir="ltr" placeholder="••••••••"></div>
+    <div style="margin-bottom:12px"><span class="lbl">كلمة المرور الجديدة</span><input class="inp" id="cp-new" type="password" dir="ltr" placeholder="8 أحرف على الأقل"></div>
+    <div style="margin-bottom:18px"><span class="lbl">تأكيد كلمة المرور الجديدة</span><input class="inp" id="cp-confirm" type="password" dir="ltr" placeholder="••••••••"></div>
+    <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ts);margin-bottom:16px;cursor:pointer"><input type="checkbox" id="cp-show" onchange="toggleChangePasswordVisibility()"> إظهار كلمات المرور</label>
+
+    <button class="bc" style="width:100%;padding:11px;font-size:13px" id="cp-submit-btn" onclick="confirmChangePassword()">💾 حفظ كلمة المرور الجديدة</button>
   </div>
 </div>
 
@@ -3357,7 +3371,12 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         </div>
       </div>
       <div style="margin-bottom:12px"><span class="lbl">البريد الإلكتروني / رقم الهاتف</span><input class="inp" id="login-email" placeholder="info@company.com" dir="ltr"></div>
-      <div style="margin-bottom:6px"><span class="lbl">كلمة المرور</span><input class="inp" type="password" id="login-password" placeholder="••••••••" dir="ltr"></div>
+      <div style="margin-bottom:6px"><span class="lbl">كلمة المرور</span>
+        <div style="position:relative">
+          <input class="inp" type="password" id="login-password" placeholder="••••••••" dir="ltr" style="padding-left:38px">
+          <button type="button" onclick="toggleLoginPasswordVisibility()" id="login-password-toggle" style="position:absolute;left:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:15px;color:var(--ts);padding:4px" aria-label="إظهار/إخفاء كلمة المرور">👁️</button>
+        </div>
+      </div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ts);cursor:pointer"><input type="checkbox" id="login-remember" style="width:13px;height:13px">تذكرني</label>
         <span style="font-size:12px;color:var(--red);cursor:pointer" onclick="openForgotPasswordFlow()">نسيت كلمة المرور؟</span>
@@ -7448,6 +7467,65 @@ window.socialLogin = function(provider) {
     }
   }, 900);
 };
+
+function openChangePasswordModal() {
+  document.getElementById("cp-current").value = "";
+  document.getElementById("cp-new").value = "";
+  document.getElementById("cp-confirm").value = "";
+  document.getElementById("cp-show").checked = false;
+  ["cp-current","cp-new","cp-confirm"].forEach(function(id){ document.getElementById(id).type = "password"; });
+  if (typeof openM === "function") openM("change-password-modal");
+}
+window.openChangePasswordModal = openChangePasswordModal;
+
+function toggleChangePasswordVisibility() {
+  var show = document.getElementById("cp-show").checked;
+  ["cp-current","cp-new","cp-confirm"].forEach(function(id){ document.getElementById(id).type = show ? "text" : "password"; });
+}
+window.toggleChangePasswordVisibility = toggleChangePasswordVisibility;
+
+async function confirmChangePassword() {
+  var current = document.getElementById("cp-current").value;
+  var next = document.getElementById("cp-new").value;
+  var confirmVal = document.getElementById("cp-confirm").value;
+
+  if (!current) { toast("⚠️ الرجاء إدخال كلمة المرور الحالية"); return; }
+  if (!next || next.length < 8) { toast("⚠️ كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل"); return; }
+  if (next !== confirmVal) { toast("⚠️ كلمة المرور الجديدة وتأكيدها غير متطابقين"); return; }
+
+  var btn = document.getElementById("cp-submit-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "جارٍ الحفظ..."; }
+
+  try {
+    await apiFetch("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({ currentPassword: current, newPassword: next })
+    });
+    toast("✅ تم تغيير كلمة المرور — يرجى تسجيل الدخول مرة أخرى");
+    if (typeof closeM === "function") closeM("change-password-modal");
+    // The server revokes all sessions on password change, so the local
+    // session is stale now too — clear it and send them back to login.
+    window.localStorage.removeItem("inmisr_access_token");
+    window.localStorage.removeItem("inmisr_refresh_token");
+    window.isLoggedIn = false;
+    setTimeout(function(){ goTo("home"); if (typeof openOwnerLogin === "function") openOwnerLogin(); }, 1200);
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تغيير كلمة المرور"));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "💾 حفظ كلمة المرور الجديدة"; }
+  }
+}
+window.confirmChangePassword = confirmChangePassword;
+
+function toggleLoginPasswordVisibility() {
+  var input = document.getElementById("login-password");
+  var btn = document.getElementById("login-password-toggle");
+  if (!input) return;
+  var showing = input.type === "text";
+  input.type = showing ? "password" : "text";
+  if (btn) btn.textContent = showing ? "👁️" : "🙈";
+}
+window.toggleLoginPasswordVisibility = toggleLoginPasswordVisibility;
 
 window.submitLogin = async function() {
   if (!selectedLoginType) { toast("الرجاء اختيار نوع الحساب"); return; }

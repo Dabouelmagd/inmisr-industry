@@ -39,7 +39,7 @@ export class AuthService {
     const exists = await this.prisma.user.findFirst({
       where: {
         OR: [
-          dto.email ? { email: dto.email } : {},
+          dto.email ? { email: { equals: dto.email, mode: 'insensitive' } } : {},
           dto.phone ? { phoneHash: await this.hashPhone(dto.phone) } : {},
         ],
       },
@@ -98,8 +98,27 @@ export class AuthService {
     });
   }
 
+  // ── CHANGE PASSWORD (authenticated user, for their own account) ──
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    if (!newPassword || newPassword.length < 8) {
+      throw new BadRequestException('كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل');
+    }
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new BadRequestException('المستخدم غير موجود');
+
+    if (user.passwordHash) {
+      const valid = currentPassword && await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!valid) throw new UnauthorizedException('كلمة المرور الحالية غير صحيحة');
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 12);
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: newHash } });
+    await this.prisma.refreshToken.updateMany({ where: { userId, isRevoked: false }, data: { isRevoked: true } });
+    return { message: 'تم تغيير كلمة المرور بنجاح — يرجى تسجيل الدخول مرة أخرى' };
+  }
+
   async createTeamMember(dto: { email: string; password: string }) {
-    const exists = await this.prisma.user.findFirst({ where: { email: dto.email } });
+    const exists = await this.prisma.user.findFirst({ where: { email: { equals: dto.email, mode: 'insensitive' } } });
     if (exists) throw new ConflictException('البريد الإلكتروني مسجل مسبقاً');
     if (!dto.password || dto.password.length < 8) {
       throw new BadRequestException('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
@@ -144,7 +163,9 @@ export class AuthService {
     const user = await this.prisma.user.findFirst({
       where: {
         OR: [
-          dto.emailOrPhone.includes('@') ? { email: dto.emailOrPhone } : {},
+          dto.emailOrPhone.includes('@')
+            ? { email: { equals: dto.emailOrPhone, mode: 'insensitive' } }
+            : {},
           { phoneHash: await this.hashPhone(dto.emailOrPhone) },
         ],
       },
