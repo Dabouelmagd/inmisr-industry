@@ -2610,7 +2610,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   </div>
 
   <div id="inc-sub-gov">
-    <div style="display:flex;flex-direction:column;gap:10px"><div class="card" style="border-right:3px solid #CE1126"><div class="cb" style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;gap:12px;align-items:center"><span style="font-size:24px">🔩</span><div><div style="font-size:13px;font-weight:700">مصنع براغي وصواميل صناعية</div><div style="font-size:12px;color:var(--ts);margin-top:3px">الحديد · العاشر من رمضان · استثمار 2.4M · ROI 31%</div></div></div><div style="display:flex;gap:7px;flex-shrink:0"><span class="pill pr">أولوية عالية</span><button class="bl" style="font-size:12px;padding:6px 12px;border-radius:6px" data-edit-gov="gov1">تعديل</button><button style="background:rgba(206,17,38,.1);color:#EF4444;border:1px solid rgba(206,17,38,.2);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:inherit" data-remove-gov="gov1">حذف</button></div></div></div><div class="card" style="border-right:3px solid #C09300"><div class="cb" style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;gap:12px;align-items:center"><span style="font-size:24px">♻️</span><div><div style="font-size:13px;font-weight:700">إعادة تدوير البلاستيك الصناعي</div><div style="font-size:12px;color:var(--ts);margin-top:3px">مواد التدوير · السادات · استثمار 1.8M · ROI 26%</div></div></div><div style="display:flex;gap:7px;flex-shrink:0"><span class="pill pa">أولوية متوسطة</span><button class="bl" style="font-size:12px;padding:6px 12px;border-radius:6px" data-edit-gov="gov2">تعديل</button><button style="background:rgba(206,17,38,.1);color:#EF4444;border:1px solid rgba(206,17,38,.2);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:inherit" data-remove-gov="gov2">حذف</button></div></div></div><div class="card" style="border-right:3px solid #3B82F6"><div class="cb" style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;gap:12px;align-items:center"><span style="font-size:24px">⚡</span><div><div style="font-size:13px;font-weight:700">تصنيع كابلات كهربائية</div><div style="font-size:12px;color:var(--ts);margin-top:3px">الأدوات الكهربائية · العاشر · استثمار 3.2M · ROI 38%</div></div></div><div style="display:flex;gap:7px;flex-shrink:0"><span class="pill pr">أولوية عالية</span><button class="bl" style="font-size:12px;padding:6px 12px;border-radius:6px" data-edit-gov="gov3">تعديل</button><button style="background:rgba(206,17,38,.1);color:#EF4444;border:1px solid rgba(206,17,38,.2);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:inherit" data-remove-gov="gov3">حذف</button></div></div></div></div>
+    <div id="inc-gov-list" style="display:flex;flex-direction:column;gap:10px"><div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">جارٍ التحميل...</div></div>
   </div>
 
   <div id="inc-sub-sme" style="display:none">
@@ -3206,10 +3206,9 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
     <div class="g2" style="gap:12px;margin-bottom:12px">
       <div><span class="lbl">القطاع</span><input class="inp" id="gov-sector" placeholder="مثال: الحديد"></div>
       <div><span class="lbl">المنطقة</span><input class="inp" id="gov-region" placeholder="مثال: العاشر من رمضان"></div>
-      <div><span class="lbl">الاستثمار المطلوب</span><input class="inp" id="gov-investment" placeholder="مثال: 2.4M"></div>
-      <div><span class="lbl">فترة الاسترداد</span><input class="inp" id="gov-payback" placeholder="مثال: 22 شهر"></div>
+      <div><span class="lbl">الاستثمار المطلوب (جنيه)</span><input class="inp" type="number" id="gov-investment" placeholder="مثال: 2400000"></div>
+      <div><span class="lbl">فترة الاسترداد (بالشهور)</span><input class="inp" type="number" id="gov-payback" placeholder="مثال: 22"></div>
       <div><span class="lbl">نسبة ROI %</span><input class="inp" type="number" id="gov-roi" placeholder="31"></div>
-      <div><span class="lbl">الأولوية</span><select class="sel" id="gov-priority"><option>عالية</option><option>متوسطة</option></select></div>
     </div>
     <button class="bc" style="width:100%;padding:11px;border-radius:9px" onclick="saveGovStudy()">حفظ دراسة الجدوى</button>
   </div>
@@ -4287,6 +4286,9 @@ document.addEventListener("DOMContentLoaded",function(){
     }
     if (name === "disputes") {
       loadAdminDisputes();
+    }
+    if (name === "incubator") {
+      loadGovStudies();
     }
     if (name === "promocodes") {
       if (typeof renderPromoCodesTable === "function") renderPromoCodesTable();
@@ -5468,7 +5470,8 @@ document.addEventListener("click", function(e) {
 
 var LOYALTY_TIERS = [{"id": "bronze", "name": "برونزي", "icon": "🥉", "min_points": 0, "color": "#A8742F", "perks": ["شارة موثق أساسية", "دعم عبر البريد الإلكتروني"]}, {"id": "silver", "name": "فضي", "icon": "🥈", "min_points": 2000, "color": "#9CA3AF", "perks": ["خصم 3% على رسوم الشحن", "رد أسرع على الدعم (24 ساعة)"]}, {"id": "gold", "name": "ذهبي", "icon": "🥇", "min_points": 5000, "color": "#C09300", "perks": ["خصم 8% على رسوم الشحن", "أولوية ظهور في نتائج RFQ", "مدير حساب مخصص"]}, {"id": "platinum", "name": "بلاتيني", "icon": "💎", "min_points": 10000, "color": "#64B5F6", "perks": ["خصم 15% على رسوم الشحن", "أولوية قصوى في RFQ", "تقارير تحليلية شهرية مجانية", "دعوة لفعاليات إن مصر السنوية"]}];
 var SME_PROJECTS = [{"id": "sme1", "name": "مصنع تدوير عبوات بلاستيك صغير", "owner": "محمد عادل", "sector": "مواد قابلة للتدوير", "region": "العاشر من رمضان", "investment": "450,000 ج.م", "status": "pending", "submitted": "منذ 2 أيام", "summary": "خط إنتاج صغير لتدوير عبوات PET وتحويلها لحبيبات قابلة للبيع للمصانع"}, {"id": "sme2", "name": "ورشة تصنيع قطع غيار CNC", "owner": "سارة حلمي", "sector": "الصناعات الهندسية", "region": "6 أكتوبر", "investment": "280,000 ج.م", "status": "approved", "submitted": "منذ أسبوع", "summary": "ورشة تصنيع دقيق لقطع غيار صناعية بالطلب لمصانع المنطقة"}, {"id": "sme3", "name": "معمل تعبئة زيوت نباتية محلية", "owner": "أحمد سامي", "sector": "الصناعات الغذائية", "region": "الفيوم", "investment": "620,000 ج.م", "status": "pending", "submitted": "منذ يوم", "summary": "تعبئة وتغليف زيوت نباتية من محاصيل محلية بعلامة تجارية جديدة"}, {"id": "sme4", "name": "خط تجميع لوحات شمسية صغيرة", "owner": "ياسمين فؤاد", "sector": "مكونات الطاقة الشمسية", "region": "العبور", "investment": "890,000 ج.م", "status": "hidden", "submitted": "منذ 3 أيام", "summary": "تجميع ألواح شمسية للسوق المحلي من مكونات مستوردة"}];
-var GOV_FEASIBILITY = [{"id": "gov1", "title": "مصنع براغي وصواميل صناعية", "sector": "الحديد", "region": "العاشر من رمضان", "investment": "2.4M", "payback": "22 شهر", "roi": "31", "demand": 91, "icon": "🔩", "color": "#CE1126", "priority": "عالية"}, {"id": "gov2", "title": "إعادة تدوير البلاستيك الصناعي", "sector": "مواد التدوير", "region": "السادات", "investment": "1.8M", "payback": "28 شهر", "roi": "26", "demand": 73, "icon": "♻️", "color": "#C09300", "priority": "متوسطة"}, {"id": "gov3", "title": "تصنيع كابلات كهربائية", "sector": "الأدوات الكهربائية", "region": "العاشر", "investment": "3.2M", "payback": "18 شهر", "roi": "38", "demand": 83, "icon": "⚡", "color": "#3B82F6", "priority": "عالية"}];
+// Real feasibility studies loaded from GET /incubator/admin/studies (see loadGovStudies below).
+var GOV_FEASIBILITY = [];
 var NOTIFICATIONS = [{"id": "n1", "icon": "📋", "text": "عرض سعر جديد على طلبك RFQ-0897 من حديد مصر للتجارة", "time": "منذ 10 دقائق", "read": false}, {"id": "n2", "icon": "✅", "text": "تم تأكيد استلام الإفراج عن Escrow للطلبية #0891", "time": "منذ ساعة", "read": false}, {"id": "n3", "icon": "🚚", "text": "الشحنة #0892 وصلت لنقطة التتبع: العاشر من رمضان", "time": "منذ 3 ساعات", "read": false}, {"id": "n4", "icon": "⭐", "text": "تلقيت تقييماً جديداً 5 نجوم من مصنع المستقبل للبناء", "time": "اليوم 9:15 ص", "read": true}, {"id": "n5", "icon": "🏆", "text": "تهانينا! انتقلتِ لمستوى الولاء الذهبي 🥇", "time": "أمس", "read": true}];
 var SUPPLIER_REVIEWS = {"حديد مصر للتجارة": [{"name": "مصنع المستقبل للبناء", "rating": 5, "text": "التزام كامل بالمواصفات والمواعيد. الشحنة وصلت في الوقت المحدد بالضبط.", "date": "منذ أسبوع"}, {"name": "شركة النيل للمقاولات", "rating": 4, "text": "جودة ممتازة لكن كان هناك تأخير يوم واحد في التسليم.", "date": "منذ شهر"}, {"name": "مصانع الدلتا", "rating": 5, "text": "أفضل مورد حديد تعاملنا معه على المنصة. شهادات الجودة موثقة بالكامل.", "date": "منذ شهرين"}], "طاقة مصر الشمسية": [{"name": "فيلا السلام للمقاولات", "rating": 5, "text": "الألواح بنفس الكفاءة المذكورة بالضبط. خدمة عملاء سريعة الرد.", "date": "منذ 3 أيام"}, {"name": "مصنع الأمل للأغذية", "rating": 5, "text": "تركيب نظام الطاقة الشمسية كامل لمصنعنا — احترافية عالية.", "date": "منذ أسبوعين"}]};
 // ══════════════════════════════════════════════════════════════════
@@ -5633,49 +5636,91 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // ── Admin: gov feasibility studies ────────────────────────────────
 window.openGovStudyEditor = function(govId) {
-  var g = GOV_FEASIBILITY.find(function(x){ return x.id===govId; }) || {id:"",title:"",sector:"",region:"",investment:"",payback:"",roi:"",priority:"عالية"};
+  var g = GOV_FEASIBILITY.find(function(x){ return x.id===govId; }) || {id:"",title:"",sectorId:"",region:"",investmentReq:"",paybackMonths:"",roiEstimate:""};
   document.getElementById("gov-id").value = g.id;
   document.getElementById("gov-title").value = g.title;
-  document.getElementById("gov-sector").value = g.sector;
+  document.getElementById("gov-sector").value = g.sectorId || "";
   document.getElementById("gov-region").value = g.region;
-  document.getElementById("gov-investment").value = g.investment;
-  document.getElementById("gov-payback").value = g.payback;
-  document.getElementById("gov-roi").value = g.roi;
-  document.getElementById("gov-priority").value = g.priority;
+  document.getElementById("gov-investment").value = g.investmentReq || "";
+  document.getElementById("gov-payback").value = g.paybackMonths || "";
+  document.getElementById("gov-roi").value = g.roiEstimate || "";
   document.getElementById("gov-modal-title").textContent = govId ? "تعديل دراسة الجدوى" : "دراسة جدوى جديدة";
   document.getElementById("gov-study-modal").classList.add("open");
 };
 
-window.saveGovStudy = function() {
-  var id = document.getElementById("gov-id").value || ("gov" + (GOV_FEASIBILITY.length + 1));
-  var title = document.getElementById("gov-title").value;
-  if (!title.trim()) { toast("الرجاء إدخال عنوان الفرصة"); return; }
-  var existing = GOV_FEASIBILITY.find(function(g){ return g.id===id; });
-  var data = {
-    id: id, title: title,
-    sector: document.getElementById("gov-sector").value,
-    region: document.getElementById("gov-region").value,
-    investment: document.getElementById("gov-investment").value,
-    payback: document.getElementById("gov-payback").value,
-    roi: document.getElementById("gov-roi").value,
-    priority: document.getElementById("gov-priority").value,
-    icon: existing ? existing.icon : "🏭",
-    color: existing ? existing.color : "#C09300",
-    demand: existing ? existing.demand : 80
+window.saveGovStudy = async function() {
+  var id = document.getElementById("gov-id").value;
+  var title = document.getElementById("gov-title").value.trim();
+  if (!title) { toast("الرجاء إدخال عنوان الفرصة"); return; }
+
+  var payload = {
+    title: title,
+    sectorId: document.getElementById("gov-sector").value.trim(),
+    region: document.getElementById("gov-region").value.trim(),
+    investmentReq: Number(document.getElementById("gov-investment").value) || 0,
+    paybackMonths: Number(document.getElementById("gov-payback").value) || 0,
+    roiEstimate: Number(document.getElementById("gov-roi").value) || 0,
+    demandDataJson: {}
   };
-  if (existing) { Object.assign(existing, data); }
-  else { GOV_FEASIBILITY.push(data); }
-  document.getElementById("gov-study-modal").classList.remove("open");
-  toast("تم حفظ دراسة الجدوى ✓ — ستظهر للمستثمرين في صفحة الحاضنة");
-  renderIncubatorPublic();
+
+  try {
+    if (id) {
+      await apiFetch("/incubator/admin/studies/" + id, { method: "PATCH", body: JSON.stringify(payload) });
+    } else {
+      payload.status = "PUBLISHED";
+      await apiFetch("/incubator/admin/studies", { method: "POST", body: JSON.stringify(payload) });
+    }
+    document.getElementById("gov-study-modal").classList.remove("open");
+    toast("تم حفظ دراسة الجدوى ✓ — ستظهر للمستثمرين في صفحة الحاضنة");
+    loadGovStudies();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر حفظ دراسة الجدوى"));
+  }
 };
 
-window.removeGovStudy = function(govId) {
-  GOV_FEASIBILITY = GOV_FEASIBILITY.filter(function(g){ return g.id !== govId; });
-  toast("تم حذف دراسة الجدوى");
-  var card = document.querySelector('[data-remove-gov="'+govId+'"]');
-  if (card) { var c = card.closest(".card"); if (c) c.remove(); }
+window.removeGovStudy = async function(govId) {
+  if (!confirm("تأكيد حذف دراسة الجدوى دي نهائيًا؟")) return;
+  try {
+    await apiFetch("/incubator/admin/studies/" + govId, { method: "DELETE" });
+    toast("تم حذف دراسة الجدوى");
+    loadGovStudies();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر حذف دراسة الجدوى"));
+  }
 };
+
+async function loadGovStudies() {
+  var box = document.getElementById("inc-gov-list");
+  try {
+    GOV_FEASIBILITY = await apiFetch("/incubator/admin/studies");
+    renderIncubatorPublic();
+  } catch (err) {
+    if (box) box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">⚠️ تعذر تحميل دراسات الجدوى: ' + (err.message || "") + '</div>';
+  }
+}
+window.loadGovStudies = loadGovStudies;
+
+function renderIncubatorPublic() {
+  var box = document.getElementById("inc-gov-list");
+  if (!box) return;
+  if (!GOV_FEASIBILITY.length) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">لا توجد دراسات جدوى بعد — ابدئي بإضافة فرصة استثمارية</div>';
+    return;
+  }
+  box.innerHTML = GOV_FEASIBILITY.map(function(g) {
+    var statusLabel = g.status === "PUBLISHED" ? "منشورة" : (g.status || "مسودة");
+    var statusCls = g.status === "PUBLISHED" ? "pg" : "pa";
+    return '<div class="card" style="border-right:3px solid #C09300"><div class="cb" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">' +
+      '<div style="display:flex;gap:12px;align-items:center"><span style="font-size:24px">🏭</span>' +
+      '<div><div style="font-size:13px;font-weight:700">' + g.title + '</div>' +
+      '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + (g.sectorId || "—") + ' · ' + (g.region || "—") + ' · استثمار ' + formatEgp(g.investmentReq) + ' · ROI ' + g.roiEstimate + '%</div></div></div>' +
+      '<div style="display:flex;gap:7px;flex-shrink:0"><span class="pill ' + statusCls + '">' + statusLabel + '</span>' +
+      '<button class="bl" style="font-size:12px;padding:6px 12px;border-radius:6px" onclick="openGovStudyEditor(\'' + g.id + '\')">تعديل</button>' +
+      '<button style="background:rgba(206,17,38,.1);color:#EF4444;border:1px solid rgba(206,17,38,.2);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:inherit" onclick="removeGovStudy(\'' + g.id + '\')">حذف</button></div>' +
+      '</div></div>';
+  }).join("");
+}
+window.renderIncubatorPublic = renderIncubatorPublic;
 
 window.toggleSmeVisibility = function(smeId) {
   var s = SME_PROJECTS.find(function(x){ return x.id===smeId; });

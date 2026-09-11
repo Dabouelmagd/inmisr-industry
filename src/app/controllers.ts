@@ -430,6 +430,51 @@ export class IncubatorController {
   getMarketGaps() {
     return this.incubator.analyzeMarketGaps();
   }
+
+  // ── Admin: manage feasibility studies (owner dashboard) ──────────
+  @Get('admin/studies')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'كل دراسات الجدوى بما فيها المسودات (أدمن)' })
+  adminListStudies(@Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.incubator.adminListStudies();
+  }
+
+  @Post('admin/studies')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'إضافة دراسة جدوى جديدة (أدمن)' })
+  createStudy(@Body() dto: any, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.incubator.createStudy(dto);
+  }
+
+  @Patch('admin/studies/:id')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تعديل دراسة جدوى (أدمن)' })
+  updateStudy(@Param('id') id: string, @Body() dto: any, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.incubator.updateStudy(id, dto);
+  }
+
+  @Delete('admin/studies/:id')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'حذف دراسة جدوى (أدمن)' })
+  deleteStudy(@Param('id') id: string, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.incubator.deleteStudy(id);
+  }
 }
 
 // ── Notifications Controller ───────────────────────────────────────

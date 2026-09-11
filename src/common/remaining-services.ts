@@ -320,6 +320,49 @@ export class IncubatorService {
       opportunityScore: Math.min(100, Math.floor(Number(g.unmetCount) * 3.5)),
     }));
   }
+
+  // ── ADMIN: manage feasibility studies (owner dashboard "الحاضنة") ──
+  async adminListStudies() {
+    return this.prisma.feasibilityStudy.findMany({ orderBy: { createdAt: 'desc' } });
+  }
+
+  async createStudy(dto: {
+    title: string; sectorId: string; region: string;
+    investmentReq: number; roiEstimate: number; paybackMonths: number;
+    demandDataJson: any; factoriesJson?: any; fundingJson?: any; status?: string;
+  }) {
+    return this.prisma.feasibilityStudy.create({
+      data: {
+        title: dto.title,
+        sectorId: dto.sectorId,
+        region: dto.region,
+        investmentReq: dto.investmentReq,
+        roiEstimate: dto.roiEstimate,
+        paybackMonths: dto.paybackMonths,
+        demandDataJson: dto.demandDataJson || {},
+        factoriesJson: dto.factoriesJson || [],
+        fundingJson: dto.fundingJson || [],
+        status: dto.status || 'PUBLISHED',
+      },
+    });
+  }
+
+  async updateStudy(id: string, dto: Partial<{
+    title: string; sectorId: string; region: string;
+    investmentReq: number; roiEstimate: number; paybackMonths: number;
+    demandDataJson: any; factoriesJson: any; fundingJson: any; status: string;
+  }>) {
+    const existing = await this.prisma.feasibilityStudy.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('دراسة الجدوى غير موجودة');
+    return this.prisma.feasibilityStudy.update({ where: { id }, data: dto });
+  }
+
+  async deleteStudy(id: string) {
+    const existing = await this.prisma.feasibilityStudy.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('دراسة الجدوى غير موجودة');
+    await this.prisma.feasibilityStudy.delete({ where: { id } });
+    return { message: 'تم حذف دراسة الجدوى' };
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════
