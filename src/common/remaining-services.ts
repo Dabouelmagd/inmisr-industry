@@ -414,6 +414,46 @@ export class FactoryNeedService {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// REVERSE LOGISTICS SERVICE — طلبات استرجاع / مرتجعات الخامات
+// ══════════════════════════════════════════════════════════════════
+
+@Injectable()
+export class ReverseLogisticsService {
+  constructor(private prisma: PrismaService) {}
+
+  async submit(companyId: string, dto: { product: string; quantity?: string; reason: string }) {
+    if (!dto.product?.trim()) throw new BadRequestException('اسم المنتج / الخامة المرتجعة مطلوب');
+    return this.prisma.reverseLogisticsRequest.create({
+      data: { companyId, product: dto.product, quantity: dto.quantity, reason: dto.reason, status: 'PENDING' },
+    });
+  }
+
+  async listMine(companyId: string) {
+    return this.prisma.reverseLogisticsRequest.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async adminList(status?: string) {
+    return this.prisma.reverseLogisticsRequest.findMany({
+      where: status ? { status } : undefined,
+      include: { company: { select: { nameAr: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async adminReview(id: string, approve: boolean) {
+    const request = await this.prisma.reverseLogisticsRequest.findUnique({ where: { id } });
+    if (!request) throw new NotFoundException('الطلب غير موجود');
+    if (request.status !== 'PENDING') throw new BadRequestException('تمت مراجعة هذا الطلب بالفعل');
+    return this.prisma.reverseLogisticsRequest.update({
+      where: { id }, data: { status: approve ? 'APPROVED' : 'REJECTED' },
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // INCUBATOR SERVICE
 // ══════════════════════════════════════════════════════════════════
 // ─── incubator/incubator.service.ts ───────────────────────────────

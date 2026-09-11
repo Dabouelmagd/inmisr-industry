@@ -14,7 +14,7 @@ import { RfqService, CreateRfqDto, CreateQuoteDto } from '../rfq/rfq.service';
 import { EscrowService, DisputeDto } from '../escrow/escrow.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AntiLeakageService } from '../common/anti-leakage.service';
-import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
+import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
 
 // ── Auth Guards (simplified) ───────────────────────────────────────
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -561,6 +561,51 @@ export class FactoryNeedController {
       throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
     }
     return this.factoryNeeds.adminReview(id, !!body.approve);
+  }
+}
+
+// ── Reverse Logistics Controller ─────────────────────────────────
+@ApiTags('reverse-logistics')
+@Controller('reverse-logistics')
+export class ReverseLogisticsController {
+  constructor(private reverse: ReverseLogisticsService) {}
+
+  @Post()
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تسجيل طلب استرجاع / مرتجعات' })
+  submit(@Body() dto: any, @Request() req: any) {
+    return this.reverse.submit(req.user.companyId, dto);
+  }
+
+  @Get('my')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'طلبات الاسترجاع الخاصة بي' })
+  listMine(@Request() req: any) {
+    return this.reverse.listMine(req.user.companyId);
+  }
+
+  @Get('admin/requests')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'كل طلبات الاسترجاع (أدمن)' })
+  adminList(@Query('status') status: string, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.reverse.adminList(status);
+  }
+
+  @Post('admin/:id/review')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'الموافقة على طلب استرجاع أو رفضه (أدمن)' })
+  adminReview(@Param('id') id: string, @Body() body: { approve: boolean }, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.reverse.adminReview(id, !!body.approve);
   }
 }
 

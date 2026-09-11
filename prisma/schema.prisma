@@ -275,6 +275,7 @@ model Company {
   inspectionRequests InspectionRequest[]
   trainingEnrollments TrainingEnrollment[]
   factoryNeeds        FactoryNeed[]
+  reverseLogisticsRequests ReverseLogisticsRequest[]
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -706,6 +707,21 @@ model FactoryNeed {
 
   @@index([companyId, status])
   @@map("factory_needs")
+}
+
+model ReverseLogisticsRequest {
+  id        String   @id @default(uuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  product   String
+  quantity  String?
+  reason    String
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId, status])
+  @@map("reverse_logistics_requests")
 }
 
 model FeasibilityStudy {

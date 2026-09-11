@@ -4277,6 +4277,7 @@ document.addEventListener("DOMContentLoaded",function(){
       loadRealInspectionAdmin();
       loadRealTrainingAdmin();
       loadRealFactoryNeedsAdmin();
+      loadRealReverseAdmin();
       renderAdminServiceTables();
     }
     if (name === "team") {
@@ -4993,6 +4994,7 @@ function scrollToDashSection(key, btn) {
   if (key === "myservices" && typeof renderFinancingMiniList === "function") renderFinancingMiniList();
   if (key === "myservices" && typeof loadMyInspectionRequests === "function") loadMyInspectionRequests();
   if (key === "myservices" && typeof loadMyTrainingEnrollments === "function") loadMyTrainingEnrollments();
+  if (key === "myservices" && typeof loadMyReverseRequests === "function") loadMyReverseRequests();
 
   document.querySelectorAll("#dash-sidebar .asb").forEach(function(b){ b.classList.remove("on"); });
   if (btn) btn.classList.add("on");
@@ -7049,38 +7051,52 @@ function renderTrainingList() {
 }
 
 // ── REVERSE LOGISTICS ────────────────────────────────────────────
-function submitReverseLogistics() {
+async function submitReverseLogistics() {
   if (!requireLoginForService(submitReverseLogistics)) return;
   var productEl = document.getElementById("rev-req-product");
   var qtyEl = document.getElementById("rev-req-qty");
   var reasonEl = document.getElementById("rev-req-reason");
   var product = productEl ? productEl.value.trim() : "";
   if (!product) { toast("الرجاء إدخال اسم المنتج أو الخامة المرتجعة"); return; }
-  var item = {
-    id: nextServiceId("REV"), product:product,
-    qty: qtyEl ? qtyEl.value : "", reason: reasonEl ? reasonEl.value : "",
-    status:"قيد المراجعة", cls:"pa", pending:true
-  };
-  REVERSE_REQUESTS.unshift(item);
-  if (productEl) productEl.value = "";
-  if (qtyEl) qtyEl.value = "";
-  toast("تم تسجيل طلب اللوجيستيات العكسية — سيتم التنسيق مع شريك الشحن لاستلام الشحنة");
-  renderReverseList();
-  renderAdminServiceTables();
-  updateServicesBadge();
+  try {
+    await apiFetch("/reverse-logistics", {
+      method: "POST",
+      body: JSON.stringify({
+        product: product,
+        quantity: qtyEl ? qtyEl.value : undefined,
+        reason: reasonEl ? reasonEl.value : ""
+      })
+    });
+    if (productEl) productEl.value = "";
+    if (qtyEl) qtyEl.value = "";
+    toast("تم تسجيل طلب اللوجيستيات العكسية — سيتم التنسيق مع شريك الشحن لاستلام الشحنة");
+    loadMyReverseRequests();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تسجيل طلب الاسترجاع"));
+  }
 }
+window.submitReverseLogistics = submitReverseLogistics;
 
-function renderReverseList() {
+async function loadMyReverseRequests() {
+  if (!window.isLoggedIn) return;
   var box = document.getElementById("reverse-requests-list");
   if (!box) return;
-  if (!REVERSE_REQUESTS.length) { box.innerHTML = '<div style="font-size:13px;color:var(--ts)">لا توجد طلبات استرجاع حتى الآن</div>'; return; }
-  box.innerHTML = '<div style="font-size:13px;font-weight:700;margin-bottom:8px">طلباتك الأخيرة</div>' +
-    REVERSE_REQUESTS.map(function(r) {
-      return '<div class="row"><div><div style="font-weight:700;font-size:13px">' + r.id + '</div>' +
-        '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + r.product + ' · ' + r.reason + '</div></div>' +
-        '<span class="pill ' + r.cls + '">' + r.status + '</span></div>';
-    }).join("");
+  try {
+    var list = await apiFetch("/reverse-logistics/my");
+    if (!list.length) { box.innerHTML = '<div style="font-size:13px;color:var(--ts)">لا توجد طلبات استرجاع حتى الآن</div>'; return; }
+    var statusLabel = { PENDING: "قيد المراجعة", APPROVED: "تمت الموافقة ✓", REJECTED: "مرفوض" };
+    var statusCls = { PENDING: "pa", APPROVED: "pg", REJECTED: "pr" };
+    box.innerHTML = '<div style="font-size:13px;font-weight:700;margin-bottom:8px">طلباتك الأخيرة</div>' +
+      list.map(function(r) {
+        return '<div class="row"><div><div style="font-weight:700;font-size:13px">#' + r.id.slice(-8) + '</div>' +
+          '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + r.product + ' · ' + r.reason + '</div></div>' +
+          '<span class="pill ' + (statusCls[r.status] || "pa") + '">' + (statusLabel[r.status] || r.status) + '</span></div>';
+      }).join("");
+  } catch (err) { /* silent */ }
 }
+window.loadMyReverseRequests = loadMyReverseRequests;
+function renderReverseList() { loadMyReverseRequests(); }
+window.renderReverseList = renderReverseList;
 
 // ── FACTORY NEEDS (بوابة المصانع الكبرى) ────────────────────────
 function openFactoryNeedModal() {
@@ -7321,12 +7337,14 @@ function approveServiceItem(group, id) {
   if (group === "financing") { reviewFinancingAdmin(id, true); return; }
   if (group === "inspection" || group === "audit") { reviewInspectionAdmin(id, true); return; }
   if (group === "factory") { reviewFactoryNeedAdmin(id, true); return; }
+  if (group === "reverse") { reviewReverseAdmin(id, true); return; }
   setServiceStatus(group, id, "تمت الموافقة ✓", "pg", false);
 }
 function rejectServiceItem(group, id) {
   if (group === "financing") { reviewFinancingAdmin(id, false); return; }
   if (group === "inspection" || group === "audit") { reviewInspectionAdmin(id, false); return; }
   if (group === "factory") { reviewFactoryNeedAdmin(id, false); return; }
+  if (group === "reverse") { reviewReverseAdmin(id, false); return; }
   setServiceStatus(group, id, "مرفوض", "pr", false);
 }
 window.approveServiceItem = approveServiceItem;
@@ -7424,6 +7442,40 @@ async function reviewFactoryNeedAdmin(id, approve) {
   }
 }
 window.reviewFactoryNeedAdmin = reviewFactoryNeedAdmin;
+
+// ── REVERSE LOGISTICS (admin side, real backend) ───────────────────
+async function loadRealReverseAdmin() {
+  try {
+    var list = await apiFetch("/reverse-logistics/admin/requests");
+    var statusLabel = { PENDING: "قيد المراجعة", APPROVED: "تمت الموافقة ✓", REJECTED: "مرفوض" };
+    var statusCls = { PENDING: "pa", APPROVED: "pg", REJECTED: "pr" };
+    REVERSE_REQUESTS = list.map(function(r) {
+      return {
+        id: r.id,
+        product: r.product + " — " + ((r.company && r.company.nameAr) || "—"),
+        reason: r.reason,
+        status: statusLabel[r.status] || r.status,
+        cls: statusCls[r.status] || "pa",
+        pending: r.status === "PENDING"
+      };
+    });
+    renderAdminServiceTables();
+  } catch (err) {
+    toast("⚠️ تعذر تحميل طلبات الاسترجاع: " + (err.message || ""));
+  }
+}
+window.loadRealReverseAdmin = loadRealReverseAdmin;
+
+async function reviewReverseAdmin(id, approve) {
+  try {
+    await apiFetch("/reverse-logistics/admin/" + id + "/review", { method: "POST", body: JSON.stringify({ approve: approve }) });
+    toast(approve ? "✅ تمت الموافقة على طلب الاسترجاع" : "تم رفض طلب الاسترجاع");
+    loadRealReverseAdmin();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإجراء"));
+  }
+}
+window.reviewReverseAdmin = reviewReverseAdmin;
 
 // ── FINANCING (admin side, real backend) ──────────────────────────
 async function loadRealFinancingAdmin() {
