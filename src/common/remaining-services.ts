@@ -616,6 +616,37 @@ export class PromoCodeService {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// TRADE APPLICATION SERVICE — تقديم أفراد على وظائف/فرص حرفية (بدون تسجيل دخول)
+// ══════════════════════════════════════════════════════════════════
+
+@Injectable()
+export class TradeApplicationService {
+  constructor(private prisma: PrismaService) {}
+
+  async submit(dto: { name: string; phone: string; governorate?: string; appliedFor: string; type: string }) {
+    if (!dto.name?.trim() || !dto.phone?.trim()) {
+      throw new BadRequestException('الاسم ورقم التليفون مطلوبان');
+    }
+    return this.prisma.tradeApplication.create({
+      data: {
+        name: dto.name, phone: dto.phone, governorate: dto.governorate,
+        appliedFor: dto.appliedFor, type: dto.type, contacted: false,
+      },
+    });
+  }
+
+  async adminList() {
+    return this.prisma.tradeApplication.findMany({ orderBy: { createdAt: 'desc' } });
+  }
+
+  async adminToggleContacted(id: string) {
+    const app = await this.prisma.tradeApplication.findUnique({ where: { id } });
+    if (!app) throw new NotFoundException('الطلب غير موجود');
+    return this.prisma.tradeApplication.update({ where: { id }, data: { contacted: !app.contacted } });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // INCUBATOR SERVICE
 // ══════════════════════════════════════════════════════════════════
 // ─── incubator/incubator.service.ts ───────────────────────────────

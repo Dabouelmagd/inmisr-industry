@@ -4278,6 +4278,7 @@ document.addEventListener("DOMContentLoaded",function(){
       loadRealFactoryNeedsAdmin();
       loadRealReverseAdmin();
       loadRealJobPostingsAdmin();
+      loadTradeApplicationsAdmin();
       renderAdminServiceTables();
     }
     if (name === "team") {
@@ -7012,44 +7013,56 @@ window.renderJobPostingsMyList = renderJobPostingsMyList;
 
 // ── Trade-program applications & job applications (individuals, no login) ──
 var TRADE_APP_SEQ = 100;
+// Real applications loaded via loadTradeApplicationsAdmin().
 var TRADE_APPLICATIONS = [];
 
 function openTradeApplyModal(label, type) {
   document.getElementById("trade-apply-title").textContent = "التقديم على: " + label;
   document.getElementById("trade-apply-for").value = label;
   document.getElementById("trade-apply-type").value = type;
-  var acc = (window.loggedInRole === "worker") ? DEMO_ACCOUNTS.worker : null;
-  document.getElementById("trade-apply-name").value = acc ? acc.name : "";
-  document.getElementById("trade-apply-phone").value = acc ? acc.phone : "";
+  document.getElementById("trade-apply-name").value = "";
+  document.getElementById("trade-apply-phone").value = "";
   if (typeof openM === "function") openM("trade-apply-modal");
 }
 window.openTradeApplyModal = openTradeApplyModal;
 
-function confirmTradeApply() {
+async function confirmTradeApply() {
   var name = document.getElementById("trade-apply-name").value.trim();
   var phone = document.getElementById("trade-apply-phone").value.trim();
   var gov = document.getElementById("trade-apply-gov").value;
   var appliedFor = document.getElementById("trade-apply-for").value;
   var type = document.getElementById("trade-apply-type").value;
   if (!name || !phone) { toast("الرجاء إدخال الاسم ورقم التليفون"); return; }
-  TRADE_APP_SEQ += 1;
-  TRADE_APPLICATIONS.unshift({
-    id: "APP-" + TRADE_APP_SEQ, name:name, phone:phone, governorate:gov,
-    appliedFor:appliedFor, type:type, contacted:false
-  });
-  if (typeof closeM === "function") closeM("trade-apply-modal");
-  toast("تم استلام طلبك — سيتواصل معك فريق إن مصر قريبًا");
-  renderTradeApplicationsAdmin();
-  renderWorkerDashboard();
+  try {
+    await apiFetch("/trade-applications", {
+      method: "POST",
+      body: JSON.stringify({ name: name, phone: phone, governorate: gov, appliedFor: appliedFor, type: type })
+    });
+    if (typeof closeM === "function") closeM("trade-apply-modal");
+    toast("تم استلام طلبك — سيتواصل معك فريق إن مصر قريبًا");
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إرسال الطلب"));
+  }
 }
 window.confirmTradeApply = confirmTradeApply;
 
-function toggleTradeAppContacted(id) {
-  var a = TRADE_APPLICATIONS.find(function(x){ return x.id === id; });
-  if (!a) return;
-  a.contacted = !a.contacted;
-  renderTradeApplicationsAdmin();
-  if (typeof renderWorkerDashboard === "function") renderWorkerDashboard();
+async function loadTradeApplicationsAdmin() {
+  try {
+    TRADE_APPLICATIONS = await apiFetch("/trade-applications/admin/all");
+    renderTradeApplicationsAdmin();
+  } catch (err) {
+    toast("⚠️ تعذر تحميل الطلبات الفردية: " + (err.message || ""));
+  }
+}
+window.loadTradeApplicationsAdmin = loadTradeApplicationsAdmin;
+
+async function toggleTradeAppContacted(id) {
+  try {
+    await apiFetch("/trade-applications/admin/" + id + "/toggle-contacted", { method: "POST" });
+    loadTradeApplicationsAdmin();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإجراء"));
+  }
 }
 window.toggleTradeAppContacted = toggleTradeAppContacted;
 
@@ -7099,7 +7112,6 @@ window.renderWorkerDashboard = renderWorkerDashboard;
 document.addEventListener("DOMContentLoaded", function() {
   renderJobPostingsList();
   renderJobPostingsMyList();
-  renderTradeApplicationsAdmin();
   renderWorkerDashboard();
 });
 

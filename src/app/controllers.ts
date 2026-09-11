@@ -14,7 +14,7 @@ import { RfqService, CreateRfqDto, CreateQuoteDto } from '../rfq/rfq.service';
 import { EscrowService, DisputeDto } from '../escrow/escrow.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AntiLeakageService } from '../common/anti-leakage.service';
-import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
+import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
 
 // ── Auth Guards (simplified) ───────────────────────────────────────
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -745,6 +745,41 @@ export class PromoCodeController {
   revoke(@Param('id') id: string, @Request() req: any) {
     this.requireAdmin(req);
     return this.promo.revoke(id);
+  }
+}
+
+// ── Trade Application Controller (job-seekers, no account needed) ──
+@ApiTags('trade-applications')
+@Controller('trade-applications')
+export class TradeApplicationController {
+  constructor(private trade: TradeApplicationService) {}
+
+  @Post()
+  @ApiOperation({ summary: 'تقديم فردي على وظيفة أو فرصة حرفية (بدون تسجيل دخول)' })
+  submit(@Body() dto: any) {
+    return this.trade.submit(dto);
+  }
+
+  @Get('admin/all')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'كل الطلبات الفردية (أدمن)' })
+  adminList(@Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.trade.adminList();
+  }
+
+  @Post('admin/:id/toggle-contacted')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تبديل حالة التواصل مع المتقدم (أدمن)' })
+  toggleContacted(@Param('id') id: string, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.trade.adminToggleContacted(id);
   }
 }
 

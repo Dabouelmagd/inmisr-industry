@@ -774,6 +774,20 @@ model PromoCode {
   @@map("promo_codes")
 }
 
+model TradeApplication {
+  id          String   @id @default(uuid())
+  name        String
+  phone       String
+  governorate String?
+  appliedFor  String
+  type        String
+  contacted   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("trade_applications")
+}
+
 model FeasibilityStudy {
   id             String   @id @default(uuid())
   title          String
