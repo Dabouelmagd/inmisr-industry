@@ -110,6 +110,11 @@ enum DisputeStatus {
   RESOLVED_SUPPLIER
   ESCALATED
 }
+enum ProductStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
 enum AdStatus {
   DRAFT
   PENDING
@@ -348,6 +353,9 @@ model Product {
   imagesJson  Json     @default("[]")
   docsJson    Json     @default("[]")
   isActive    Boolean  @default(true)
+  status      ProductStatus @default(APPROVED)
+  reviewedBy  String?
+  reviewedAt  DateTime?
   views       Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -355,6 +363,7 @@ model Product {
   @@index([companyId, isActive])
   @@index([categoryId, isActive])
   @@index([views])
+  @@index([status])
   @@map("products")
 }
 

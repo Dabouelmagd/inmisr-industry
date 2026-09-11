@@ -2624,7 +2624,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
     <button class="bc" style="border-radius:8px;padding:8px 16px;font-size:13px" onclick="openOwnerAddProduct()">+ إضافة منتج مباشرة</button>
   </div>
   <div style="font-size:13px;color:var(--ts);margin-bottom:14px">منتجات مقترحة من الموردين تنتظر المراجعة قبل ظهورها على المنصة</div>
-  <div class="tw"><table class="tbl"><thead><tr><th>المنتج</th><th>القطاع</th><th>السعر التقريبي</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody><tr><td><strong>صفائح ألومنيوم مطلية بالبودرة</strong><div style="font-size:11px;color:var(--tt);margin-top:2px">الشركة المصرية للألومنيوم · منذ يوم</div></td><td>الألومنيوم</td><td style="color:var(--gold);font-weight:600">72,000 ج.م/طن</td><td><span class="pill pa">معلق</span></td><td style="white-space:nowrap"><button class="bc" style="font-size:11px;padding:4px 10px;border-radius:5px" data-approve-product="pp1">نشر</button> <button class="bl" style="font-size:11px;padding:4px 10px;border-radius:5px" data-reject-product="pp1">رفض</button></td></tr><tr><td><strong>خيوط بوليستر معاد تدويرها (rPET)</strong><div style="font-size:11px;color:var(--tt);margin-top:2px">الدلتا للبوليستر · منذ 3 أيام</div></td><td>صناعة البوليستر</td><td style="color:var(--gold);font-weight:600">21,500 ج.م/طن</td><td><span class="pill pa">معلق</span></td><td style="white-space:nowrap"><button class="bc" style="font-size:11px;padding:4px 10px;border-radius:5px" data-approve-product="pp2">نشر</button> <button class="bl" style="font-size:11px;padding:4px 10px;border-radius:5px" data-reject-product="pp2">رفض</button></td></tr><tr><td><strong>مضخة طرد مركزي مغمورة 50HP</strong><div style="font-size:11px;color:var(--tt);margin-top:2px">النيل للمعدات الصناعية · منذ أسبوع</div></td><td>مضخات ومواتير الأجهزة</td><td style="color:var(--gold);font-weight:600">185,000 ج.م</td><td><span class="pill pg">منشور</span></td><td style="white-space:nowrap"><button class="bl" style="font-size:11px;padding:4px 10px;border-radius:5px" data-view-product="pp3">عرض التفاصيل</button></td></tr></tbody></table></div>
+  <div id="admin-products-pending-table"><div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">جارٍ التحميل...</div></div>
 </div>
       <div id="atab-sectors" style="display:none">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
@@ -4289,6 +4289,9 @@ document.addEventListener("DOMContentLoaded",function(){
     }
     if (name === "incubator") {
       loadGovStudies();
+    }
+    if (name === "products") {
+      loadPendingProducts();
     }
     if (name === "promocodes") {
       if (typeof renderPromoCodesTable === "function") renderPromoCodesTable();
@@ -8156,6 +8159,49 @@ async function reviewAdCampaign(id, approve) {
   }
 }
 window.reviewAdCampaign = reviewAdCampaign;
+
+// ── Owner dashboard: Products review queue (GET/POST /products/admin/pending, /products/:id/review) ──
+async function loadPendingProducts() {
+  var box = document.getElementById("admin-products-pending-table");
+  if (box) box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">جارٍ التحميل...</div>';
+  try {
+    var pending = await apiFetch("/products/admin/pending");
+    renderPendingProducts(pending);
+  } catch (err) {
+    if (box) box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">⚠️ تعذر التحميل: ' + (err.message || "") + '</div>';
+  }
+}
+window.loadPendingProducts = loadPendingProducts;
+
+function renderPendingProducts(list) {
+  var box = document.getElementById("admin-products-pending-table");
+  if (!box) return;
+  if (!list.length) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">لا توجد منتجات معلّقة للمراجعة حالياً ✅</div>';
+    return;
+  }
+  box.innerHTML = '<div class="tw"><table class="tbl"><thead><tr><th>المنتج</th><th>المورد</th><th>القطاع</th><th>السعر التقريبي</th><th>إجراء</th></tr></thead><tbody>' +
+    list.map(function(p) {
+      var priceRange = p.priceMin ? (formatEgp(p.priceMin) + (p.priceMax && p.priceMax !== p.priceMin ? " — " + formatEgp(p.priceMax) : "") + "/" + p.unit) : "—";
+      return '<tr><td><strong>' + p.nameAr + '</strong></td>' +
+        '<td>' + ((p.company && p.company.nameAr) || "—") + '</td>' +
+        '<td>' + ((p.category && p.category.nameAr) || "—") + '</td>' +
+        '<td style="color:var(--gold);font-weight:600">' + priceRange + '</td>' +
+        '<td style="white-space:nowrap"><button class="bc" style="font-size:11px;padding:4px 10px;border-radius:5px" onclick="reviewProduct(\'' + p.id + '\', true)">نشر</button> ' +
+        '<button class="bl" style="font-size:11px;padding:4px 10px;border-radius:5px" onclick="reviewProduct(\'' + p.id + '\', false)">رفض</button></td></tr>';
+    }).join("") + '</tbody></table></div>';
+}
+
+async function reviewProduct(id, approve) {
+  try {
+    await apiFetch("/products/" + id + "/review", { method: "POST", body: JSON.stringify({ approve: approve }) });
+    toast(approve ? "✅ تم نشر المنتج على المنصة" : "تم رفض المنتج");
+    loadPendingProducts();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإجراء"));
+  }
+}
+window.reviewProduct = reviewProduct;
 
 // ══════════════════════════════════════════════════════════════════
 // BUSINESS TEAM & PERMISSIONS — for supplier/company dashboards

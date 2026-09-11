@@ -29,7 +29,7 @@ export class ProductsService {
     companyId?: string; categoryId?: string; search?: string;
     minPrice?: number; maxPrice?: number; page?: number; limit?: number;
   }) {
-    const where: any = { isActive: true };
+    const where: any = { isActive: true, status: 'APPROVED' };
     if (query.companyId)  where.companyId  = query.companyId;
     if (query.categoryId) where.categoryId = query.categoryId;
     if (query.search) {
@@ -98,7 +98,7 @@ export class ProductsService {
     }
 
     return this.prisma.product.create({
-      data: { ...dto, companyId },
+      data: { ...dto, companyId, status: 'PENDING' },
       include: { category: { select: { nameAr: true } } },
     });
   }
@@ -115,6 +115,28 @@ export class ProductsService {
     if (!product) throw new NotFoundException();
     if (product.companyId !== companyId) throw new ForbiddenException();
     return this.prisma.product.update({ where: { id }, data: { isActive: false } });
+  }
+
+  // ── ADMIN: review queue (owner dashboard "المنتجات والخامات") ────
+  async adminListPending() {
+    return this.prisma.product.findMany({
+      where: { status: 'PENDING' },
+      include: {
+        category: { select: { nameAr: true } },
+        company: { select: { nameAr: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async adminReview(id: string, adminId: string, approve: boolean) {
+    const product = await this.prisma.product.findUnique({ where: { id } });
+    if (!product) throw new NotFoundException('المنتج غير موجود');
+    if (product.status !== 'PENDING') throw new BadRequestException('تمت مراجعة هذا المنتج بالفعل');
+    return this.prisma.product.update({
+      where: { id },
+      data: { status: approve ? 'APPROVED' : 'REJECTED', reviewedBy: adminId, reviewedAt: new Date() },
+    });
   }
 }
 
@@ -168,6 +190,29 @@ export class ProductsController {
   @ApiOperation({ summary: 'حذف منتج' })
   remove(@Param('id') id: string, @Request() req: any) {
     return this.products.remove(id, req.user.companyId);
+  }
+
+  // ── Admin: review queue (owner dashboard) ────────────────────────
+  @Get('admin/pending')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'المنتجات المعلّقة للمراجعة (أدمن)' })
+  adminPending(@Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.products.adminListPending();
+  }
+
+  @Post(':id/review')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'الموافقة على منتج أو رفضه (أدمن)' })
+  review(@Param('id') id: string, @Body() body: { approve: boolean }, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.products.adminReview(id, req.user.sub, !!body.approve);
   }
 }
 
