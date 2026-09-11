@@ -4276,6 +4276,7 @@ document.addEventListener("DOMContentLoaded",function(){
       loadRealFinancingAdmin();
       loadRealInspectionAdmin();
       loadRealTrainingAdmin();
+      loadRealFactoryNeedsAdmin();
       renderAdminServiceTables();
     }
     if (name === "team") {
@@ -6670,11 +6671,8 @@ var INSPECTION_REQUESTS = [];
 
 var TRAINING_ENROLLMENTS = [];
 var REVERSE_REQUESTS = [];
-var FACTORY_NEEDS = [
-  {id:"NEED-001", company:"مصانع الدلتا للنسيج", region:"المحلة", desc:"تبحث عن مورد خيوط بوليستر معاد تدويرها — 40 طن/شهر", status:"معتمد ✓", cls:"pg", pending:false},
-  {id:"NEED-002", company:"الشركة المصرية للألومنيوم", region:"برج العرب", desc:"تطلب مورّد قطاعات ألومنيوم مقاس مخصص — تعاقد سنوي", status:"معتمد ✓", cls:"pg", pending:false},
-  {id:"NEED-003", company:"حديد مصر للتجارة", region:"العاشر من رمضان", desc:"فرصة توريد سبائك حديد صلب — صفقة ربع سنوية", status:"معتمد ✓", cls:"pg", pending:false}
-];
+// Real needs loaded via loadRealFactoryNeedsAdmin() (admin) / loadFactoryNeedsPublic() (public feed).
+var FACTORY_NEEDS = [];
 
 var PENDING_ACTION_AFTER_LOGIN = null;
 
@@ -7087,55 +7085,72 @@ function renderReverseList() {
 // ── FACTORY NEEDS (بوابة المصانع الكبرى) ────────────────────────
 function openFactoryNeedModal() {
   if (!requireLoginForService(openFactoryNeedModal)) return;
-  document.getElementById("fneed-company").value = "";
   document.getElementById("fneed-desc").value = "";
   document.getElementById("fneed-qty").value = "";
   if (typeof openM === "function") openM("factory-need-modal");
 }
 window.openFactoryNeedModal = openFactoryNeedModal;
 
-function confirmFactoryNeedSubmit() {
-  var companyEl = document.getElementById("fneed-company");
+async function confirmFactoryNeedSubmit() {
   var typeEl = document.getElementById("fneed-type");
   var descEl = document.getElementById("fneed-desc");
   var qtyEl = document.getElementById("fneed-qty");
-  var company = companyEl.value.trim();
   var desc = descEl.value.trim();
-  if (!company || !desc) { toast("الرجاء إدخال اسم المنشأة ووصف الاحتياج"); return; }
-  var fullDesc = typeEl.value + " — " + desc + (qtyEl.value.trim() ? " (" + qtyEl.value.trim() + ")" : "");
-  var item = { id: nextServiceId("NEED"), company:company, region:"", desc:fullDesc, status:"قيد المراجعة", cls:"pa", pending:true };
-  FACTORY_NEEDS.unshift(item);
-  if (typeof closeM === "function") closeM("factory-need-modal");
-  toast("تم نشر طلب الاحتياج — سيظهر للموردين على هذه الصفحة فورًا، وتقدر تتابع حالته من لوحة التحكم");
-  renderFactoryPostings();
-  renderFactoryNeedsMyList();
-  renderAdminServiceTables();
-  updateServicesBadge();
+  if (!desc) { toast("الرجاء إدخال وصف الاحتياج"); return; }
+  try {
+    await apiFetch("/factory-needs", {
+      method: "POST",
+      body: JSON.stringify({
+        needType: typeEl.value,
+        description: desc,
+        quantity: qtyEl.value.trim() || undefined
+      })
+    });
+    if (typeof closeM === "function") closeM("factory-need-modal");
+    toast("تم نشر طلب الاحتياج — سيظهر للموردين على هذه الصفحة فورًا (بعلامة قيد المراجعة لحين اعتماده)، وتقدر تتابع حالته من لوحة التحكم");
+    loadFactoryNeedsPublic();
+    loadMyFactoryNeeds();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر نشر طلب الاحتياج"));
+  }
 }
 window.confirmFactoryNeedSubmit = confirmFactoryNeedSubmit;
 
-function renderFactoryPostings() {
+async function loadFactoryNeedsPublic() {
   var box = document.getElementById("factory-postings-list");
   if (!box) return;
-  var visible = FACTORY_NEEDS.filter(function(n){ return n.status !== "مرفوض"; });
-  box.innerHTML = visible.length ? visible.map(function(n) {
-    return '<div class="row"><div><div style="font-weight:700;font-size:13px">' + n.company +
-      (n.pending ? ' <span class="pill pa" style="margin-right:6px;font-size:9px">قيد المراجعة</span>' : '') + '</div>' +
-      '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + n.desc + (n.region ? ' · ' + n.region : '') + '</div></div>' +
-      '<button class="bl" style="padding:7px 14px;font-size:12px;flex-shrink:0" onclick="toast(\'تم تسجيل اهتمامك — سيتواصل معك فريق ' + n.company + '\')">تقديم عرض</button></div>';
-  }).join("") : '<div style="font-size:13px;color:var(--ts);padding:14px 0">لا توجد عروض إنتاج متاحة حاليًا</div>';
+  try {
+    var list = await apiFetch("/factory-needs");
+    box.innerHTML = list.length ? list.map(function(n) {
+      var companyName = (n.company && n.company.nameAr) || "—";
+      var pendingBadge = n.status === "PENDING" ? ' <span class="pill pa" style="margin-right:6px;font-size:9px">قيد المراجعة</span>' : '';
+      return '<div class="row"><div><div style="font-weight:700;font-size:13px">' + companyName + pendingBadge + '</div>' +
+        '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + n.needType + ' — ' + n.description + (n.quantity ? ' (' + n.quantity + ')' : '') + '</div></div>' +
+        '<button class="bl" style="padding:7px 14px;font-size:12px;flex-shrink:0" onclick="toast(\'تم تسجيل اهتمامك — سيتواصل معك فريق ' + companyName + '\')">تقديم عرض</button></div>';
+    }).join("") : '<div style="font-size:13px;color:var(--ts);padding:14px 0">لا توجد عروض إنتاج متاحة حاليًا</div>';
+  } catch (err) { /* silent */ }
 }
+window.loadFactoryNeedsPublic = loadFactoryNeedsPublic;
+function renderFactoryPostings() { loadFactoryNeedsPublic(); }
 window.renderFactoryPostings = renderFactoryPostings;
 
-function renderFactoryNeedsMyList() {
+async function loadMyFactoryNeeds() {
+  if (!window.isLoggedIn) return;
   var box = document.getElementById("factory-needs-mylist");
   if (!box) return;
-  box.innerHTML = FACTORY_NEEDS.length ? FACTORY_NEEDS.map(function(n) {
-    return '<div class="row"><div><div style="font-weight:700;font-size:13px">' + n.company + '</div>' +
-      '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + n.desc + (n.region ? ' · ' + n.region : '') + '</div></div>' +
-      '<span class="pill ' + n.cls + '">' + n.status + '</span></div>';
-  }).join("") : '<div style="font-size:13px;color:var(--ts)">لا توجد طلبات منشورة حتى الآن</div>';
+  try {
+    var list = await apiFetch("/factory-needs/my");
+    var statusLabel = { PENDING: "قيد المراجعة", APPROVED: "معتمد ✓", REJECTED: "مرفوض" };
+    var statusCls = { PENDING: "pa", APPROVED: "pg", REJECTED: "pr" };
+    box.innerHTML = list.length ? list.map(function(n) {
+      return '<div class="row"><div><div style="font-weight:700;font-size:13px">' + n.needType + '</div>' +
+        '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + n.description + (n.quantity ? ' · ' + n.quantity : '') + '</div></div>' +
+        '<span class="pill ' + (statusCls[n.status] || "pa") + '">' + (statusLabel[n.status] || n.status) + '</span></div>';
+    }).join("") : '<div style="font-size:13px;color:var(--ts)">لا توجد طلبات منشورة حتى الآن</div>';
+  } catch (err) { /* silent */ }
 }
+window.loadMyFactoryNeeds = loadMyFactoryNeeds;
+function renderFactoryNeedsMyList() { loadMyFactoryNeeds(); }
 window.renderFactoryNeedsMyList = renderFactoryNeedsMyList;
 
 // ══════════════════════════════════════════════════════════════
@@ -7305,11 +7320,13 @@ window.openVerifPreview = openVerifPreview;
 function approveServiceItem(group, id) {
   if (group === "financing") { reviewFinancingAdmin(id, true); return; }
   if (group === "inspection" || group === "audit") { reviewInspectionAdmin(id, true); return; }
+  if (group === "factory") { reviewFactoryNeedAdmin(id, true); return; }
   setServiceStatus(group, id, "تمت الموافقة ✓", "pg", false);
 }
 function rejectServiceItem(group, id) {
   if (group === "financing") { reviewFinancingAdmin(id, false); return; }
   if (group === "inspection" || group === "audit") { reviewInspectionAdmin(id, false); return; }
+  if (group === "factory") { reviewFactoryNeedAdmin(id, false); return; }
   setServiceStatus(group, id, "مرفوض", "pr", false);
 }
 window.approveServiceItem = approveServiceItem;
@@ -7372,6 +7389,41 @@ async function loadRealTrainingAdmin() {
   }
 }
 window.loadRealTrainingAdmin = loadRealTrainingAdmin;
+
+// ── FACTORY NEEDS (admin side, real backend) ───────────────────────
+async function loadRealFactoryNeedsAdmin() {
+  try {
+    var list = await apiFetch("/factory-needs/admin/all");
+    var statusLabel = { PENDING: "قيد المراجعة", APPROVED: "معتمد ✓", REJECTED: "مرفوض" };
+    var statusCls = { PENDING: "pa", APPROVED: "pg", REJECTED: "pr" };
+    FACTORY_NEEDS = list.map(function(n) {
+      return {
+        id: n.id,
+        company: (n.company && n.company.nameAr) || "—",
+        region: "",
+        desc: n.needType + " — " + n.description + (n.quantity ? " (" + n.quantity + ")" : ""),
+        status: statusLabel[n.status] || n.status,
+        cls: statusCls[n.status] || "pa",
+        pending: n.status === "PENDING"
+      };
+    });
+    renderAdminServiceTables();
+  } catch (err) {
+    toast("⚠️ تعذر تحميل طلبات الاحتياج: " + (err.message || ""));
+  }
+}
+window.loadRealFactoryNeedsAdmin = loadRealFactoryNeedsAdmin;
+
+async function reviewFactoryNeedAdmin(id, approve) {
+  try {
+    await apiFetch("/factory-needs/admin/" + id + "/review", { method: "POST", body: JSON.stringify({ approve: approve }) });
+    toast(approve ? "✅ تمت الموافقة على طلب الاحتياج" : "تم رفض طلب الاحتياج");
+    loadRealFactoryNeedsAdmin();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإجراء"));
+  }
+}
+window.reviewFactoryNeedAdmin = reviewFactoryNeedAdmin;
 
 // ── FINANCING (admin side, real backend) ──────────────────────────
 async function loadRealFinancingAdmin() {
@@ -9240,7 +9292,6 @@ window.openForgotPasswordFlow = function() {
     <div style="font-size:16px;font-weight:700;margin-bottom:4px">نشر طلب احتياج للصناعات المغذية</div>
     <div style="font-size:12px;color:var(--ts);margin-bottom:18px">وصّفي احتياجك بوضوح — سيظهر فورًا على الصفحة للموردين والصناعات المغذية، وفي لوحة تحكمك لمتابعة الردود</div>
 
-    <div style="margin-bottom:12px"><span class="lbl">اسم المنشأة</span><input class="inp" id="fneed-company" placeholder="اسم مصنعك أو شركتك"></div>
     <div style="margin-bottom:12px"><span class="lbl">نوع الاحتياج</span>
       <select class="sel" id="fneed-type">
         <option>مادة خام</option>

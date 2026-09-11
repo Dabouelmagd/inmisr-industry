@@ -356,6 +356,64 @@ export class TrainingService {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// FACTORY NEEDS SERVICE — طلبات احتياج المصانع الكبرى للصناعات المغذية
+// ══════════════════════════════════════════════════════════════════
+
+@Injectable()
+export class FactoryNeedService {
+  constructor(private prisma: PrismaService) {}
+
+  async submit(companyId: string, dto: { needType: string; description: string; quantity?: string }) {
+    if (!dto.description?.trim()) throw new BadRequestException('وصف الاحتياج مطلوب');
+    return this.prisma.factoryNeed.create({
+      data: {
+        companyId,
+        needType: dto.needType,
+        description: dto.description,
+        quantity: dto.quantity,
+        status: 'PENDING',
+      },
+    });
+  }
+
+  // Public feed: visible immediately (with a pending badge), only
+  // hidden once an admin explicitly rejects it -- matches the existing
+  // "سيظهر فورًا" (shows immediately) promise made in the public UI.
+  async listPublic() {
+    return this.prisma.factoryNeed.findMany({
+      where: { status: { not: 'REJECTED' } },
+      include: { company: { select: { nameAr: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+    });
+  }
+
+  async listMine(companyId: string) {
+    return this.prisma.factoryNeed.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async adminList(status?: string) {
+    return this.prisma.factoryNeed.findMany({
+      where: status ? { status } : undefined,
+      include: { company: { select: { nameAr: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async adminReview(id: string, approve: boolean) {
+    const need = await this.prisma.factoryNeed.findUnique({ where: { id } });
+    if (!need) throw new NotFoundException('الطلب غير موجود');
+    if (need.status !== 'PENDING') throw new BadRequestException('تمت مراجعة هذا الطلب بالفعل');
+    return this.prisma.factoryNeed.update({
+      where: { id }, data: { status: approve ? 'APPROVED' : 'REJECTED' },
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // INCUBATOR SERVICE
 // ══════════════════════════════════════════════════════════════════
 // ─── incubator/incubator.service.ts ───────────────────────────────
