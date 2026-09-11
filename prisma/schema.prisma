@@ -642,6 +642,7 @@ model FinanceApplication {
   interestRate   Float
   monthlyPayment Float
   bankPartner    String
+  purpose        String?
   status         String   @default("PENDING")
   orderId        String?
   approvedAt     DateTime?

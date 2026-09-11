@@ -38,6 +38,7 @@ import {
 // ── Business Services ────────────────────────────────────────────
 import { InvoiceService }         from '../finance/invoice.service';
 import { PaymentService, PaymentController } from '../finance/payment.service';
+import { FinancingService, FinancingController } from '../finance/financing.service';
 import { LoyaltyService }         from '../loyalty/loyalty.service';
 import { AdminService }           from '../admin/admin.service';
 import { ReportsService }         from '../admin/reports.service';
@@ -110,6 +111,8 @@ import { PaymobWebhookController, FawryWebhookController } from '../escrow/paymo
     UploadController,
     // Admin & extras
     AdminController, LoyaltyController, TwoFaController, InvoicesController,
+    // Financing
+    FinancingController,
     // Webhooks
     PaymobWebhookController, FawryWebhookController,
   ],
@@ -125,7 +128,7 @@ import { PaymobWebhookController, FawryWebhookController } from '../escrow/paymo
     // Auth extras
     TwoFaService, PasswordResetService,
     // Business
-    InvoiceService, PaymentService, LoyaltyService,
+    InvoiceService, PaymentService, FinancingService, LoyaltyService,
     AdminService, ReportsService, OcrService, MapsService,
     ProductsService, ReviewsService, CategoriesService, SubscriptionsService,
     AdsService, PriceForecastService,

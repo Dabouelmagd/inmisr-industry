@@ -1749,11 +1749,11 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
       <div class="card"><div class="cb">
         <div style="font-size:15px;font-weight:700;margin-bottom:16px">طلب تمويل صناعي</div>
         <div class="g2">
-          <div><span class="lbl">اسم المنشأة</span><input class="inp" id="fin-req-name" placeholder="اسم شركتك أو مصنعك"></div>
           <div><span class="lbl">الغرض من التمويل</span>
             <select class="sel" id="fin-req-purpose"><option>شراء آلات ومعدات</option><option>رأس مال عامل</option><option>توسعة خط إنتاج</option><option>تحويل للطاقة الشمسية</option></select>
           </div>
           <div><span class="lbl">المبلغ المطلوب (ج.م)</span><input class="inp" type="number" id="fin-req-amount" placeholder="مثال: 1000000"></div>
+          <div><span class="lbl">مدة السداد (بالشهور)</span><input class="inp" type="number" id="fin-req-months" placeholder="مثال: 24" value="24"></div>
           <div><span class="lbl">جهة التمويل المفضلة</span>
             <select class="sel" id="fin-req-bank"><option>CIB</option><option>بنك التنمية الصناعية</option><option>QNB الأهلي</option><option>مرن — حسب أفضل عرض</option></select>
           </div>
@@ -4273,6 +4273,7 @@ document.addEventListener("DOMContentLoaded",function(){
       refreshSolarAdminTable();
     }
     if (name === "services") {
+      loadRealFinancingAdmin();
       renderAdminServiceTables();
     }
     if (name === "team") {
@@ -4986,6 +4987,7 @@ function scrollToDashSection(key, btn) {
     if (el) el.style.display = (sharedAllowed && targetId === id) ? "block" : "none";
   });
   if (key === "team" && typeof renderBizTeamTable === "function") renderBizTeamTable();
+  if (key === "myservices" && typeof renderFinancingMiniList === "function") renderFinancingMiniList();
 
   document.querySelectorAll("#dash-sidebar .asb").forEach(function(b){ b.classList.remove("on"); });
   if (btn) btn.classList.add("on");
@@ -6698,45 +6700,57 @@ function runPendingActionAfterLogin() {
 }
 window.runPendingActionAfterLogin = runPendingActionAfterLogin;
 
-// ── FINANCING ───────────────────────────────────────────────────
-function submitFinancingRequest() {
+// ── FINANCING (real backend: POST/GET /finance) ───────────────────
+async function submitFinancingRequest() {
   if (!requireLoginForService(submitFinancingRequest)) return;
-  var nameEl = document.getElementById("fin-req-name");
-  var purposeEl = document.getElementById("fin-req-purpose");
   var amountEl = document.getElementById("fin-req-amount");
+  var monthsEl = document.getElementById("fin-req-months");
+  var purposeEl = document.getElementById("fin-req-purpose");
   var bankEl = document.getElementById("fin-req-bank");
-  var name = nameEl ? nameEl.value.trim() : "";
-  var amount = amountEl ? amountEl.value.trim() : "";
-  if (!name || !amount) {
-    toast("الرجاء إدخال اسم المنشأة والمبلغ المطلوب");
-    return;
-  }
-  var item = {
-    id: nextServiceId("FIN"), name:name,
-    purpose: purposeEl ? purposeEl.value : "",
-    amount: amount, bank: bankEl ? bankEl.value : "",
-    status:"قيد المراجعة", cls:"pa", pending:true
-  };
-  FINANCING_REQUESTS.unshift(item);
-  if (nameEl) nameEl.value = "";
-  if (amountEl) amountEl.value = "";
-  toast("تم إرسال طلب التمويل — سيتواصل معك فريق إن مصر خلال 48 ساعة عمل");
-  renderFinancingMiniList();
-  renderAdminServiceTables();
-  updateServicesBadge();
-}
 
-function renderFinancingMiniList() {
-  var box = document.getElementById("fin-requests-list");
-  if (!box) return;
-  if (!FINANCING_REQUESTS.length) { box.innerHTML = '<div style="font-size:13px;color:var(--ts)">لا توجد طلبات تمويل حتى الآن</div>'; return; }
-  box.innerHTML = '<div style="font-size:13px;font-weight:700;margin-bottom:8px">آخر طلبات التمويل</div>' +
-    FINANCING_REQUESTS.map(function(r) {
-      return '<div class="row"><div><div style="font-weight:700;font-size:13px">' + r.id + '</div>' +
-        '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + r.name + ' — ' + r.amount + ' ج.م · ' + r.purpose + '</div></div>' +
-        '<span class="pill ' + r.cls + '">' + r.status + '</span></div>';
-    }).join("");
+  var amount = amountEl ? Number(amountEl.value) : 0;
+  var months = monthsEl ? Number(monthsEl.value) : 0;
+  if (!amount || amount <= 0) { toast("الرجاء إدخال المبلغ المطلوب"); return; }
+  if (!months || months <= 0) { toast("الرجاء إدخال مدة السداد بالشهور"); return; }
+
+  try {
+    await apiFetch("/finance/apply", {
+      method: "POST",
+      body: JSON.stringify({
+        amount: amount,
+        durationMonths: months,
+        bankPartner: bankEl ? bankEl.value : "CIB",
+        purpose: purposeEl ? purposeEl.value : undefined
+      })
+    });
+    if (amountEl) amountEl.value = "";
+    toast("تم إرسال طلب التمويل — سيتواصل معك فريق إن مصر خلال 48 ساعة عمل");
+    renderFinancingMiniList();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إرسال طلب التمويل"));
+  }
 }
+window.submitFinancingRequest = submitFinancingRequest;
+
+async function renderFinancingMiniList() {
+  var box = document.getElementById("fin-requests-list");
+  if (!box || !window.isLoggedIn) return;
+  try {
+    var list = await apiFetch("/finance/my");
+    if (!list.length) { box.innerHTML = '<div style="font-size:13px;color:var(--ts)">لا توجد طلبات تمويل حتى الآن</div>'; return; }
+    var statusLabel = { PENDING: "قيد المراجعة", APPROVED: "تمت الموافقة ✓", REJECTED: "مرفوض" };
+    var statusCls = { PENDING: "pa", APPROVED: "pg", REJECTED: "pr" };
+    box.innerHTML = '<div style="font-size:13px;font-weight:700;margin-bottom:8px">آخر طلبات التمويل</div>' +
+      list.map(function(r) {
+        return '<div class="row"><div><div style="font-weight:700;font-size:13px">' + formatEgp(r.amount) + ' — ' + r.bankPartner + '</div>' +
+          '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + (r.purpose || "") + ' · قسط شهري ' + formatEgp(r.monthlyPayment) + '</div></div>' +
+          '<span class="pill ' + (statusCls[r.status] || "pa") + '">' + (statusLabel[r.status] || r.status) + '</span></div>';
+      }).join("");
+  } catch (err) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--ts)">⚠️ تعذر تحميل طلبات التمويل</div>';
+  }
+}
+window.renderFinancingMiniList = renderFinancingMiniList;
 
 // ── INSPECTION ───────────────────────────────────────────────────
 function submitInspectionRequest() {
@@ -7242,13 +7256,52 @@ function openVerifPreview(name, docs, since) {
 window.openVerifPreview = openVerifPreview;
 
 function approveServiceItem(group, id) {
+  if (group === "financing") { reviewFinancingAdmin(id, true); return; }
   setServiceStatus(group, id, "تمت الموافقة ✓", "pg", false);
 }
 function rejectServiceItem(group, id) {
+  if (group === "financing") { reviewFinancingAdmin(id, false); return; }
   setServiceStatus(group, id, "مرفوض", "pr", false);
 }
 window.approveServiceItem = approveServiceItem;
 window.rejectServiceItem = rejectServiceItem;
+
+// ── FINANCING (admin side, real backend) ──────────────────────────
+async function loadRealFinancingAdmin() {
+  try {
+    var list = await apiFetch("/finance/admin/applications");
+    var statusLabel = { PENDING: "قيد المراجعة", APPROVED: "تمت الموافقة ✓", REJECTED: "مرفوض" };
+    var statusCls = { PENDING: "pa", APPROVED: "pg", REJECTED: "pr" };
+    FINANCING_REQUESTS = list.map(function(r) {
+      return {
+        id: r.id,
+        name: (r.company && r.company.nameAr) || "—",
+        purpose: r.purpose || "—",
+        amount: formatEgp(r.amount),
+        bank: r.bankPartner,
+        status: statusLabel[r.status] || r.status,
+        cls: statusCls[r.status] || "pa",
+        pending: r.status === "PENDING"
+      };
+    });
+    renderAdminServiceTables();
+  } catch (err) {
+    toast("⚠️ تعذر تحميل طلبات التمويل: " + (err.message || ""));
+  }
+}
+window.loadRealFinancingAdmin = loadRealFinancingAdmin;
+
+async function reviewFinancingAdmin(id, approve) {
+  try {
+    await apiFetch("/finance/admin/" + id + "/review", { method: "POST", body: JSON.stringify({ approve: approve }) });
+    toast(approve ? "✅ تمت الموافقة على طلب التمويل" : "تم رفض طلب التمويل");
+    loadRealFinancingAdmin();
+    loadAdminOverview();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإجراء"));
+  }
+}
+window.reviewFinancingAdmin = reviewFinancingAdmin;
 
 function setServiceStatus(group, id, status, cls, pending) {
   var arr = { financing:FINANCING_REQUESTS, inspection:INSPECTION_REQUESTS,
