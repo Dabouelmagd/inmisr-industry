@@ -4275,6 +4275,7 @@ document.addEventListener("DOMContentLoaded",function(){
     if (name === "services") {
       loadRealFinancingAdmin();
       loadRealInspectionAdmin();
+      loadRealTrainingAdmin();
       renderAdminServiceTables();
     }
     if (name === "team") {
@@ -4990,6 +4991,7 @@ function scrollToDashSection(key, btn) {
   if (key === "team" && typeof renderBizTeamTable === "function") renderBizTeamTable();
   if (key === "myservices" && typeof renderFinancingMiniList === "function") renderFinancingMiniList();
   if (key === "myservices" && typeof loadMyInspectionRequests === "function") loadMyInspectionRequests();
+  if (key === "myservices" && typeof loadMyTrainingEnrollments === "function") loadMyTrainingEnrollments();
 
   document.querySelectorAll("#dash-sidebar .asb").forEach(function(b){ b.classList.remove("on"); });
   if (btn) btn.classList.add("on");
@@ -6813,16 +6815,36 @@ async function loadMyInspectionRequests() {
 }
 window.loadMyInspectionRequests = loadMyInspectionRequests;
 
-// ── TRAINING ─────────────────────────────────────────────────────
-function enrollTraining(courseName) {
+// ── TRAINING (real backend: POST /training/enroll, GET /training/my) ──
+async function enrollTraining(courseName) {
   if (!requireLoginForService(function(){ enrollTraining(courseName); })) return;
-  var item = { id: nextServiceId("TRN"), course: courseName, status:"مؤكد ✓", cls:"pg", pending:false };
-  TRAINING_ENROLLMENTS.unshift(item);
-  toast("تم تسجيلك في دورة " + courseName + " — سيصلك تأكيد على بريدك الإلكتروني");
-  renderTrainingList();
-  renderAdminServiceTables();
-  updateServicesBadge();
+  try {
+    await apiFetch("/training/enroll", { method: "POST", body: JSON.stringify({ courseName: courseName }) });
+    toast("تم تسجيلك في دورة " + courseName + " — سيصلك تأكيد على بريدك الإلكتروني");
+    loadMyTrainingEnrollments();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر التسجيل في الدورة"));
+  }
 }
+window.enrollTraining = enrollTraining;
+
+async function loadMyTrainingEnrollments() {
+  if (!window.isLoggedIn) return;
+  var box = document.getElementById("training-enrollments-list");
+  if (!box) return;
+  try {
+    var list = await apiFetch("/training/my");
+    var statusLabel = { CONFIRMED: "مؤكد ✓", CANCELLED: "ملغي" };
+    var statusCls = { CONFIRMED: "pg", CANCELLED: "pr" };
+    box.innerHTML = list.length ? list.map(function(r) {
+      return '<div class="row"><div><div style="font-weight:700;font-size:13px">' + r.courseName + '</div></div>' +
+        '<span class="pill ' + (statusCls[r.status] || "pa") + '">' + (statusLabel[r.status] || r.status) + '</span></div>';
+    }).join("") : '<div style="font-size:13px;color:var(--ts)">لا توجد تسجيلات حتى الآن</div>';
+  } catch (err) { /* silent */ }
+}
+window.loadMyTrainingEnrollments = loadMyTrainingEnrollments;
+function renderTrainingList() { loadMyTrainingEnrollments(); }
+window.renderTrainingList = renderTrainingList;
 
 function requestGroupTraining() {
   if (!requireLoginForService(requestGroupTraining)) return;
@@ -7328,6 +7350,28 @@ async function reviewInspectionAdmin(id, approve) {
   }
 }
 window.reviewInspectionAdmin = reviewInspectionAdmin;
+
+// ── TRAINING (admin side — read-only list, enrollments are auto-confirmed) ──
+async function loadRealTrainingAdmin() {
+  try {
+    var list = await apiFetch("/training/admin/enrollments");
+    var statusLabel = { CONFIRMED: "مؤكد ✓", CANCELLED: "ملغي" };
+    var statusCls = { CONFIRMED: "pg", CANCELLED: "pr" };
+    TRAINING_ENROLLMENTS = list.map(function(r) {
+      return {
+        id: r.id,
+        course: r.courseName + " — " + ((r.company && r.company.nameAr) || "—"),
+        status: statusLabel[r.status] || r.status,
+        cls: statusCls[r.status] || "pg",
+        pending: false
+      };
+    });
+    renderAdminServiceTables();
+  } catch (err) {
+    toast("⚠️ تعذر تحميل تسجيلات التدريب: " + (err.message || ""));
+  }
+}
+window.loadRealTrainingAdmin = loadRealTrainingAdmin;
 
 // ── FINANCING (admin side, real backend) ──────────────────────────
 async function loadRealFinancingAdmin() {

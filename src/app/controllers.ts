@@ -14,7 +14,7 @@ import { RfqService, CreateRfqDto, CreateQuoteDto } from '../rfq/rfq.service';
 import { EscrowService, DisputeDto } from '../escrow/escrow.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AntiLeakageService } from '../common/anti-leakage.service';
-import { GeoService, FinanceService, InspectionService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
+import { GeoService, FinanceService, InspectionService, TrainingService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
 
 // ── Auth Guards (simplified) ───────────────────────────────────────
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -465,6 +465,51 @@ export class InspectionController {
       throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
     }
     return this.inspection.adminReview(id, !!body.approve, body.notes);
+  }
+}
+
+// ── Training Controller ──────────────────────────────────────────
+@ApiTags('training')
+@Controller('training')
+export class TrainingController {
+  constructor(private training: TrainingService) {}
+
+  @Post('enroll')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'التسجيل في دورة تدريبية' })
+  enroll(@Body() body: { courseName: string }, @Request() req: any) {
+    return this.training.enroll(req.user.companyId, body.courseName);
+  }
+
+  @Get('my')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تسجيلاتي في الدورات' })
+  listMine(@Request() req: any) {
+    return this.training.listMine(req.user.companyId);
+  }
+
+  @Get('admin/enrollments')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'كل تسجيلات الدورات (أدمن)' })
+  adminList(@Query('status') status: string, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.training.adminList(status);
+  }
+
+  @Post('admin/:id/cancel')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'إلغاء تسجيل دورة (أدمن)' })
+  adminCancel(@Param('id') id: string, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.training.adminCancel(id);
   }
 }
 

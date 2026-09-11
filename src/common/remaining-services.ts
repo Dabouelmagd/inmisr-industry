@@ -319,6 +319,43 @@ export class InspectionService {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// TRAINING SERVICE — تسجيلات دورات الشركات والمصانع
+// ══════════════════════════════════════════════════════════════════
+
+@Injectable()
+export class TrainingService {
+  constructor(private prisma: PrismaService) {}
+
+  async enroll(companyId: string, courseName: string) {
+    if (!courseName?.trim()) throw new BadRequestException('اسم الدورة مطلوب');
+    return this.prisma.trainingEnrollment.create({
+      data: { companyId, courseName, status: 'CONFIRMED' },
+    });
+  }
+
+  async listMine(companyId: string) {
+    return this.prisma.trainingEnrollment.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async adminList(status?: string) {
+    return this.prisma.trainingEnrollment.findMany({
+      where: status ? { status } : undefined,
+      include: { company: { select: { nameAr: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async adminCancel(id: string) {
+    const enrollment = await this.prisma.trainingEnrollment.findUnique({ where: { id } });
+    if (!enrollment) throw new NotFoundException('التسجيل غير موجود');
+    return this.prisma.trainingEnrollment.update({ where: { id }, data: { status: 'CANCELLED' } });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // INCUBATOR SERVICE
 // ══════════════════════════════════════════════════════════════════
 // ─── incubator/incubator.service.ts ───────────────────────────────

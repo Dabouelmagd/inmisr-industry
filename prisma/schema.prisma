@@ -273,6 +273,7 @@ model Company {
   financeApps        FinanceApplication[]
   adCampaigns        AdCampaign[]
   inspectionRequests InspectionRequest[]
+  trainingEnrollments TrainingEnrollment[]
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -676,6 +677,19 @@ model InspectionRequest {
   @@index([companyId, status])
   @@index([kind, status])
   @@map("inspection_requests")
+}
+
+model TrainingEnrollment {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id])
+  courseName String
+  status     String   @default("CONFIRMED")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([companyId, status])
+  @@map("training_enrollments")
 }
 
 model FeasibilityStudy {
