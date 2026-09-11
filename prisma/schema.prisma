@@ -810,6 +810,9 @@ model AdSlot {
   basePriceWeekly  Float
   maxConcurrentAds Int        @default(1)
   isActive         Boolean    @default(true)
+  adsenseFallbackEnabled Boolean @default(false)
+  adsenseClientId  String?
+  adsenseSlotId    String?
   campaigns        AdBooking[]
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
@@ -824,6 +827,11 @@ model AdBooking {
   slotId          String
   slot            AdSlot    @relation(fields: [slotId], references: [id])
   targetSector    String?
+  targetZone      String?
+  targetUserType  String?   // SUPPLIER / BUYER / null=any
+  dailyStartHour  Int?      // dayparting: 0-23, both null = all day
+  dailyEndHour    Int?
+  frequencyCap    Int?      // max impressions per visitor per day (enforced client-side)
   bannerUrl       String
   destinationUrl  String
   startDate       DateTime
@@ -833,14 +841,51 @@ model AdBooking {
   paymentStatus   String    @default("UNPAID")   // UNPAID / PAID / REFUNDED
   reviewStatus    String    @default("PENDING_REVIEW") // PENDING_REVIEW / APPROVED / REJECTED / CANCELLED
   rejectionReason String?
+  suspended       Boolean   @default(false)
+  suspendedReason String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  metrics AdMetric[]
+  metrics  AdMetric[]
+  variants AdVariant[]
+  alerts   AdAlert[]
 
   @@index([slotId, startDate, endDate])
   @@index([reviewStatus])
   @@map("ad_bookings")
+}
+
+// A/B creative testing — a booking with 0 variants serves its own
+// bannerUrl/destinationUrl directly (backward compatible); 1+ variants
+// means the weighted split below decides which creative is served.
+model AdVariant {
+  id             String    @id @default(uuid())
+  bookingId      String
+  booking        AdBooking @relation(fields: [bookingId], references: [id])
+  label          String    // "A" / "B"
+  bannerUrl      String
+  destinationUrl String
+  weightPct      Int       @default(50)
+  impressions    Int       @default(0)
+  clicks         Int       @default(0)
+  createdAt      DateTime  @default(now())
+
+  @@map("ad_variants")
+}
+
+// Real-time anomaly detection output — surfaced as an in-dashboard
+// toast/banner (fetched on load) and optionally forwarded to an
+// external webhook (Slack/Telegram/email relay) if configured.
+model AdAlert {
+  id         String    @id @default(uuid())
+  bookingId  String
+  booking    AdBooking @relation(fields: [bookingId], references: [id])
+  type       String    // SPIKE / UNDERPERFORMING
+  message    String
+  resolved   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  @@map("ad_alerts")
 }
 
 model AdMetric {

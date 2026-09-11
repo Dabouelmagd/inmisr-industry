@@ -2587,6 +2587,9 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
       <div class="kc"><div class="kl">متوسط CTR</div><div class="kv" id="adsv2-kpi-ctr">—</div></div>
     </div>
 
+    <div style="font-size:14px;font-weight:700;margin-bottom:10px">⚠️ تنبيهات لحظية (رصد الشذوذ)</div>
+    <div id="adsv2-alerts-panel" style="margin-bottom:20px"><div style="font-size:13px;color:var(--ts);padding:10px 0">جارٍ التحميل...</div></div>
+
     <div style="font-size:14px;font-weight:700;margin-bottom:10px">كتالوج المساحات والأسعار</div>
     <div id="adsv2-slots-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px"></div>
 
@@ -7642,7 +7645,11 @@ async function loadAdsV2Admin() {
         var monthly = Math.round(s.basePriceWeekly * 4 * 0.85);
         var quarterly = Math.round(s.basePriceWeekly * 12 * 0.70);
         return '<div class="card"><div class="cb">' +
-          '<div style="font-size:13px;font-weight:700;margin-bottom:6px">' + s.name + '</div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">' +
+          '<div style="font-size:13px;font-weight:700">' + s.name + '</div>' +
+          '<label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--ts);cursor:pointer;white-space:nowrap">' +
+          '<input type="checkbox" ' + (s.adsenseFallbackEnabled ? "checked" : "") + ' onchange="toggleAdsenseFallback(\'' + s.id + '\', this.checked)"> AdSense احتياطي' +
+          '</label></div>' +
           '<div style="font-size:11px;color:var(--ts);margin-bottom:10px">' + s.dimensions + ' · حد أقصى ' + s.maxConcurrentAds + ' إعلان متزامن</div>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:11px;text-align:center">' +
           '<div style="background:var(--bg3);border-radius:6px;padding:6px"><div style="color:var(--tt)">أسبوعي</div><div style="font-weight:700;color:var(--gold)">' + formatEgp(s.basePriceWeekly) + '</div></div>' +
@@ -7653,9 +7660,58 @@ async function loadAdsV2Admin() {
     }
   } catch (err) { /* silent */ }
 
+  loadAdsV2Alerts();
   loadAdsV2Inventory();
 }
 window.loadAdsV2Admin = loadAdsV2Admin;
+
+async function toggleAdsenseFallback(slotId, enabled) {
+  try {
+    await apiFetch("/ads-v2/admin/slots/" + slotId + "/adsense", {
+      method: "PATCH",
+      body: JSON.stringify({ enabled: enabled })
+    });
+    toast(enabled ? "✅ تم تفعيل AdSense الاحتياطي لهذه المساحة" : "تم تعطيل AdSense الاحتياطي");
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإجراء"));
+  }
+}
+window.toggleAdsenseFallback = toggleAdsenseFallback;
+
+async function loadAdsV2Alerts() {
+  var box = document.getElementById("adsv2-alerts-panel");
+  if (!box) return;
+  try {
+    var alerts = await apiFetch("/ads-v2/admin/alerts");
+    if (!alerts.length) {
+      box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:10px 0">لا توجد تنبيهات حالية ✅</div>';
+      return;
+    }
+    box.innerHTML = alerts.map(function(a) {
+      var isSpike = a.type === "SPIKE";
+      return '<div class="card" style="border-right:3px solid ' + (isSpike ? "#EF4444" : "#F59E0B") + ';margin-bottom:8px">' +
+        '<div class="cb" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">' +
+        '<div><div style="font-size:12px;font-weight:600">' + a.message + '</div>' +
+        '<div style="font-size:10px;color:var(--tt);margin-top:3px">' + ((a.booking && a.booking.advertiser && a.booking.advertiser.nameAr) || "—") + ' · ' + ((a.booking && a.booking.slot && a.booking.slot.name) || "") + '</div></div>' +
+        '<button class="bl" style="font-size:11px;padding:4px 10px;border-radius:6px;flex-shrink:0" onclick="resolveAdsV2Alert(\'' + a.id + '\')">تعليم كمُعالَج</button>' +
+        '</div></div>';
+    }).join("");
+  } catch (err) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:10px 0">⚠️ تعذر تحميل التنبيهات</div>';
+  }
+}
+window.loadAdsV2Alerts = loadAdsV2Alerts;
+
+async function resolveAdsV2Alert(id) {
+  try {
+    await apiFetch("/ads-v2/admin/alerts/" + id + "/resolve", { method: "POST" });
+    toast("تم تعليم التنبيه كمُعالَج");
+    loadAdsV2Alerts();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإجراء"));
+  }
+}
+window.resolveAdsV2Alert = resolveAdsV2Alert;
 
 async function loadAdsV2Inventory() {
   var box = document.getElementById("adsv2-inventory-table");
@@ -7737,6 +7793,79 @@ async function adsV2Cancel(id) {
   }
 }
 window.adsV2Cancel = adsV2Cancel;
+
+// ── CLIENT-SIDE AD RENDERING: native-first, AdSense fallback, frequency cap ──
+// Usage: renderAdSlot('HERO_SPOTLIGHT', 'my-container-div-id', {sector: 'الحديد'});
+// Call this from wherever a placement's container div lives on the page
+// (home hero, header ticker, supplier feed, section divider, exit modal).
+async function renderAdSlot(locationKey, containerId, opts) {
+  opts = opts || {};
+  var container = document.getElementById(containerId);
+  if (!container) return;
+
+  var qs = [];
+  if (opts.sector) qs.push("sector=" + encodeURIComponent(opts.sector));
+  if (opts.zone) qs.push("zone=" + encodeURIComponent(opts.zone));
+  var userType = opts.userType || (window.loggedInRole === "supplier" ? "SUPPLIER" : window.loggedInRole === "company" ? "BUYER" : null);
+  if (userType) qs.push("userType=" + encodeURIComponent(userType));
+
+  var result;
+  try {
+    result = await apiFetch("/ads-v2/serve/" + locationKey + (qs.length ? "?" + qs.join("&") : ""));
+  } catch (err) {
+    return; // never break the page layout over an ad-fetch failure
+  }
+
+  // Frequency capping (client-side, per visitor per day — no server-side
+  // user tracking needed): skip any candidate already shown enough times today.
+  var today = new Date().toISOString().slice(0, 10);
+  var ad = null;
+  for (var i = 0; i < (result.ads || []).length; i++) {
+    var candidate = result.ads[i];
+    if (candidate.frequencyCap) {
+      var capKey = "adcap:" + candidate.campaignId + ":" + today;
+      var seenCount = parseInt(localStorage.getItem(capKey) || "0", 10);
+      if (seenCount >= candidate.frequencyCap) continue;
+    }
+    ad = candidate;
+    break;
+  }
+
+  if (ad) {
+    if (ad.frequencyCap) {
+      var capKey2 = "adcap:" + ad.campaignId + ":" + today;
+      localStorage.setItem(capKey2, String(parseInt(localStorage.getItem(capKey2) || "0", 10) + 1));
+    }
+    var variantQs = ad.variantId ? "?variant=" + ad.variantId : "";
+    var clickUrl = API_BASE + "/ads-v2/click/" + ad.campaignId + variantQs;
+    container.innerHTML = '<a href="' + clickUrl + '" target="_blank" rel="noopener sponsored" style="display:block;position:relative">' +
+      '<img src="' + ad.bannerUrl + '" alt="' + (ad.advertiserName || "إعلان") + '" style="width:100%;height:auto;display:block;border-radius:8px">' +
+      '<span style="position:absolute;top:4px;left:4px;background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:2px 7px;border-radius:5px">إعلان</span></a>';
+    container.style.display = "";
+    fetch(API_BASE + "/ads-v2/impression/" + ad.campaignId + variantQs, { method: "POST" }).catch(function(){});
+    return;
+  }
+
+  // No native ad matched this slot right now — waterfall to AdSense if enabled.
+  if (result.adsenseFallback && result.adsenseFallback.clientId) {
+    container.style.display = "";
+    container.innerHTML = '<ins class="adsbygoogle" style="display:block" data-ad-client="' + result.adsenseFallback.clientId + '" data-ad-slot="' + (result.adsenseFallback.slotId || "") + '" data-ad-format="auto" data-full-width-responsive="true"></ins>';
+    if (!window.__adsenseScriptLoaded) {
+      window.__adsenseScriptLoaded = true;
+      var s = document.createElement("script");
+      s.async = true;
+      s.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + result.adsenseFallback.clientId;
+      s.crossOrigin = "anonymous";
+      document.head.appendChild(s);
+    }
+    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) { /* AdSense not ready yet — safe to ignore */ }
+  } else {
+    // Nothing to show and no fallback configured — collapse the container
+    // cleanly instead of leaving an empty box that breaks the layout.
+    container.style.display = "none";
+  }
+}
+window.renderAdSlot = renderAdSlot;
 
 // ── FINANCING (admin side, real backend) ──────────────────────────
 async function loadRealFinancingAdmin() {
