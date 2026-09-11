@@ -4772,6 +4772,9 @@ window.switchAdsSubtab = function(btn, which) {
     var el = document.getElementById("ads-sub-" + s);
     if (el) el.style.display = (s === which) ? "block" : "none";
   });
+  if (which === "supplier" && typeof loadPendingAdCampaigns === "function") {
+    loadPendingAdCampaigns();
+  }
 };
 
 function approveAdRequest(reqId) {
@@ -8052,6 +8055,62 @@ async function resolveAdminDispute(id, winner) {
   }
 }
 window.resolveAdminDispute = resolveAdminDispute;
+
+// ── Owner dashboard: Ads approval queue (GET/POST /ads/admin/pending, /ads/:id/review) ──
+// NOTE: this only covers supplier-submitted campaigns (the real AdCampaign
+// table). The 'الأنواع والأسعار' / 'الحجوزات' / 'إعلانات الأونر المباشرة'
+// sub-tabs alongside it are a separate, richer system that has no backend
+// yet — still mock, not wired here.
+async function loadPendingAdCampaigns() {
+  var box = document.getElementById("ads-supplier-table");
+  var badgeEl = document.getElementById("ads-supplier-tab-badge");
+  var pendingCountEl = document.getElementById("ads-pending-count");
+  if (box) box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">جارٍ التحميل...</div>';
+  try {
+    var pending = await apiFetch("/ads/admin/pending");
+    if (badgeEl) badgeEl.textContent = pending.length;
+    if (pendingCountEl) pendingCountEl.textContent = pending.length;
+    renderPendingAdCampaigns(pending);
+  } catch (err) {
+    if (box) box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">⚠️ تعذر التحميل: ' + (err.message || "") + '</div>';
+  }
+}
+window.loadPendingAdCampaigns = loadPendingAdCampaigns;
+
+function renderPendingAdCampaigns(list) {
+  var box = document.getElementById("ads-supplier-table");
+  if (!box) return;
+  if (!list.length) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">لا توجد طلبات إعلانات معلّقة من الموردين حالياً</div>';
+    return;
+  }
+  box.innerHTML = '<div class="tw"><table class="tbl"><thead><tr><th>المورد</th><th>الحملة</th><th>النوع</th><th>الميزانية الكلية</th><th>الفترة</th><th>إجراء</th></tr></thead><tbody>' +
+    list.map(function(c) {
+      var start = new Date(c.startDate).toLocaleDateString("ar-EG");
+      var end = new Date(c.endDate).toLocaleDateString("ar-EG");
+      return '<tr>' +
+        '<td><strong>' + (c.companyName || "—") + '</strong></td>' +
+        '<td>' + c.name + '</td>' +
+        '<td>' + c.type + '</td>' +
+        '<td>' + formatEgp(c.totalBudget) + '</td>' +
+        '<td style="color:var(--ts)">' + start + ' — ' + end + '</td>' +
+        '<td style="white-space:nowrap"><button class="bc" style="font-size:12px;padding:3px 10px;border-radius:6px" onclick="reviewAdCampaign(\'' + c.id + '\', true)">موافقة</button> ' +
+        '<button class="bl" style="font-size:12px;padding:3px 10px;border-radius:6px" onclick="reviewAdCampaign(\'' + c.id + '\', false)">رفض</button></td>' +
+        '</tr>';
+    }).join("") + '</tbody></table></div>';
+}
+
+async function reviewAdCampaign(id, approve) {
+  if (!confirm(approve ? "تأكيد الموافقة على الحملة؟ هتبدأ تظهر فورًا." : "تأكيد رفض الحملة؟")) return;
+  try {
+    await apiFetch("/ads/" + id + "/review", { method: "POST", body: JSON.stringify({ approve: approve }) });
+    toast(approve ? "✅ تمت الموافقة على الحملة" : "تم رفض الحملة");
+    loadPendingAdCampaigns();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإجراء"));
+  }
+}
+window.reviewAdCampaign = reviewAdCampaign;
 
 // ══════════════════════════════════════════════════════════════════
 // BUSINESS TEAM & PERMISSIONS — for supplier/company dashboards

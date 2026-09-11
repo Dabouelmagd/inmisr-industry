@@ -2,7 +2,7 @@
 // نظام الإعلانات الممولة — Sponsored listings + CPC/CPM tracking
 // موردو GROWTH/ELITE يمكنهم ترقية ظهورهم في نتائج البحث
 
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -46,11 +46,28 @@ interface AdCampaign {
 export class AdsService {
   private readonly logger = new Logger(AdsService.name);
 
-  // In production: store in PostgreSQL with Prisma
-  // Using in-memory map for structure demonstration
-  private campaigns = new Map<string, AdCampaign>();
-
   constructor(private prisma: PrismaService) {}
+
+  // Real DB rows (impressions/clicks/spent/conversions as flat columns) ->
+  // the same nested AdCampaign shape every existing caller already expects.
+  private toApiShape(c: any): AdCampaign {
+    return {
+      id: c.id, companyId: c.companyId, name: c.name, type: c.type,
+      bidModel: c.bidModel, bidAmount: c.bidAmount, dailyBudget: c.dailyBudget,
+      totalBudget: c.totalBudget, startDate: c.startDate, endDate: c.endDate,
+      status: c.status,
+      targetSectors: (c.targetSectors as any) || [],
+      targetCities: (c.targetCities as any) || [],
+      creativeJson: c.creativeJson,
+      stats: {
+        impressions: c.impressions,
+        clicks: c.clicks,
+        spent: c.spent,
+        ctr: c.impressions > 0 ? (c.clicks / c.impressions) * 100 : 0,
+        conversions: c.conversions,
+      },
+    };
+  }
 
   // ── CREATE CAMPAIGN ───────────────────────────────────────────
   async createCampaign(companyId: string, dto: CreateCampaignDto): Promise<AdCampaign> {
@@ -63,27 +80,26 @@ export class AdsService {
       throw new BadRequestException('الإعلانات متاحة فقط لخطتي GROWTH وELITE');
     }
 
-    const id = `ad-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const campaign: AdCampaign = {
-      id, companyId,
-      name:         dto.name,
-      type:         dto.type,
-      bidModel:     dto.bidModel,
-      bidAmount:    dto.bidAmount,
-      dailyBudget:  dto.dailyBudget,
-      totalBudget:  dto.totalBudget,
-      startDate:    new Date(dto.startDate),
-      endDate:      new Date(dto.endDate),
-      status:       'PENDING',
-      targetSectors: dto.targetSectors,
-      targetCities:  dto.targetCities,
-      creativeJson:  dto.creative,
-      stats:        { impressions: 0, clicks: 0, spent: 0, ctr: 0, conversions: 0 },
-    };
+    const created = await this.prisma.adCampaign.create({
+      data: {
+        companyId,
+        name:         dto.name,
+        type:         dto.type,
+        bidModel:     dto.bidModel,
+        bidAmount:    dto.bidAmount,
+        dailyBudget:  dto.dailyBudget,
+        totalBudget:  dto.totalBudget,
+        startDate:    new Date(dto.startDate),
+        endDate:      new Date(dto.endDate),
+        status:       'PENDING',
+        targetSectors: dto.targetSectors || [],
+        targetCities:  dto.targetCities || [],
+        creativeJson:  dto.creative as any,
+      },
+    });
 
-    this.campaigns.set(id, campaign);
-    this.logger.log(`Campaign created: ${id} by company ${companyId}`);
-    return campaign;
+    this.logger.log(`Campaign created: ${created.id} by company ${companyId}`);
+    return this.toApiShape(created);
   }
 
   // ── GET SPONSORED ADS for a context ──────────────────────────
@@ -94,78 +110,76 @@ export class AdsService {
     limit?:  number;
   }): Promise<AdCampaign[]> {
     const now = new Date();
-    const active = [...this.campaigns.values()].filter(c => {
-      if (c.status !== 'ACTIVE') return false;
-      if (c.type !== context.type) return false;
-      if (c.startDate > now || c.endDate < now) return false;
-      if (c.stats.spent >= c.totalBudget) return false;
-      if (context.sector && c.targetSectors?.length &&
-          !c.targetSectors.includes(context.sector)) return false;
-      if (context.city && c.targetCities?.length &&
-          !c.targetCities.includes(context.city)) return false;
-      return true;
+    let campaigns = await this.prisma.adCampaign.findMany({
+      where: { status: 'ACTIVE', type: context.type, startDate: { lte: now }, endDate: { gte: now } },
+      orderBy: { bidAmount: 'desc' },
     });
 
-    // Sort by bid amount (highest bid = highest position)
-    return active
-      .sort((a, b) => b.bidAmount - a.bidAmount)
-      .slice(0, context.limit || 3);
+    campaigns = campaigns.filter(c => c.spent < c.totalBudget);
+    if (context.sector) {
+      campaigns = campaigns.filter(c => {
+        const sectors = c.targetSectors as any;
+        return !sectors?.length || sectors.includes(context.sector as string);
+      });
+    }
+    if (context.city) {
+      campaigns = campaigns.filter(c => {
+        const cities = c.targetCities as any;
+        return !cities?.length || cities.includes(context.city as string);
+      });
+    }
+
+    return campaigns.slice(0, context.limit || 3).map(c => this.toApiShape(c));
   }
 
   // ── RECORD IMPRESSION ────────────────────────────────────────
   async recordImpression(campaignId: string, sessionId: string) {
-    const campaign = this.campaigns.get(campaignId);
+    const campaign = await this.prisma.adCampaign.findUnique({ where: { id: campaignId } });
     if (!campaign) return;
 
-    campaign.stats.impressions++;
-    if (campaign.bidModel === 'CPM') {
-      const cost = campaign.bidAmount / 1000;
-      campaign.stats.spent += cost;
-      await this.checkDailyBudget(campaign);
-    }
-    campaign.stats.ctr = campaign.stats.impressions > 0
-      ? (campaign.stats.clicks / campaign.stats.impressions) * 100
-      : 0;
+    const data: any = { impressions: { increment: 1 } };
+    if (campaign.bidModel === 'CPM') data.spent = { increment: campaign.bidAmount / 1000 };
+
+    const updated = await this.prisma.adCampaign.update({ where: { id: campaignId }, data });
+    await this.checkDailyBudget(updated);
   }
 
   // ── RECORD CLICK ─────────────────────────────────────────────
   async recordClick(campaignId: string, userId?: string): Promise<{ allowed: boolean; url: string }> {
-    const campaign = this.campaigns.get(campaignId);
+    const campaign = await this.prisma.adCampaign.findUnique({ where: { id: campaignId } });
     if (!campaign || campaign.status !== 'ACTIVE') return { allowed: false, url: '' };
 
-    campaign.stats.clicks++;
-    if (campaign.bidModel === 'CPC') {
-      campaign.stats.spent += campaign.bidAmount;
-      await this.checkDailyBudget(campaign);
-    }
-    campaign.stats.ctr = campaign.stats.impressions > 0
-      ? (campaign.stats.clicks / campaign.stats.impressions) * 100
-      : 0;
+    const data: any = { clicks: { increment: 1 } };
+    if (campaign.bidModel === 'CPC') data.spent = { increment: campaign.bidAmount };
 
-    this.logger.log(`Ad click: ${campaignId}, total clicks: ${campaign.stats.clicks}, spent: ${campaign.stats.spent}`);
-    return { allowed: true, url: campaign.creativeJson.destinationUrl };
+    const updated = await this.prisma.adCampaign.update({ where: { id: campaignId }, data });
+    await this.checkDailyBudget(updated);
+
+    this.logger.log(`Ad click: ${campaignId}, total clicks: ${updated.clicks}, spent: ${updated.spent}`);
+    return { allowed: true, url: (campaign.creativeJson as any).destinationUrl };
   }
 
   // ── RECORD CONVERSION (RFQ created) ──────────────────────────
   async recordConversion(campaignId: string) {
-    const campaign = this.campaigns.get(campaignId);
-    if (campaign) campaign.stats.conversions++;
+    await this.prisma.adCampaign.update({
+      where: { id: campaignId },
+      data: { conversions: { increment: 1 } },
+    }).catch(() => { /* campaign may not exist — ignore, matches old no-op behavior */ });
   }
 
   // ── CAMPAIGN ANALYTICS ────────────────────────────────────────
   async getCampaignStats(companyId: string) {
-    const companyCampaigns = [...this.campaigns.values()]
-      .filter(c => c.companyId === companyId);
+    const companyCampaigns = await this.prisma.adCampaign.findMany({ where: { companyId } });
 
     const total = companyCampaigns.reduce((acc, c) => ({
-      impressions: acc.impressions + c.stats.impressions,
-      clicks:      acc.clicks      + c.stats.clicks,
-      spent:       acc.spent       + c.stats.spent,
-      conversions: acc.conversions + c.stats.conversions,
+      impressions: acc.impressions + c.impressions,
+      clicks:      acc.clicks      + c.clicks,
+      spent:       acc.spent       + c.spent,
+      conversions: acc.conversions + c.conversions,
     }), { impressions: 0, clicks: 0, spent: 0, conversions: 0 });
 
     return {
-      campaigns: companyCampaigns,
+      campaigns: companyCampaigns.map(c => this.toApiShape(c)),
       totals: {
         ...total,
         avgCtr: total.impressions > 0 ? (total.clicks / total.impressions) * 100 : 0,
@@ -176,27 +190,48 @@ export class AdsService {
   }
 
   async pauseCampaign(id: string, companyId: string) {
-    const campaign = this.campaigns.get(id);
+    const campaign = await this.prisma.adCampaign.findUnique({ where: { id } });
     if (!campaign) throw new NotFoundException();
     if (campaign.companyId !== companyId) throw new BadRequestException('Forbidden');
-    campaign.status = 'PAUSED';
-    return campaign;
+    const updated = await this.prisma.adCampaign.update({ where: { id }, data: { status: 'PAUSED' } });
+    return this.toApiShape(updated);
   }
 
   async resumeCampaign(id: string, companyId: string) {
-    const campaign = this.campaigns.get(id);
+    const campaign = await this.prisma.adCampaign.findUnique({ where: { id } });
     if (!campaign) throw new NotFoundException();
     if (campaign.companyId !== companyId) throw new BadRequestException('Forbidden');
-    campaign.status = 'ACTIVE';
-    return campaign;
+    const updated = await this.prisma.adCampaign.update({ where: { id }, data: { status: 'ACTIVE' } });
+    return this.toApiShape(updated);
   }
 
-  private async checkDailyBudget(campaign: AdCampaign) {
-    // Simple daily budget check — in production: track per-day spend
-    if (campaign.stats.spent >= campaign.totalBudget) {
-      campaign.status = 'COMPLETED';
+  private async checkDailyBudget(campaign: any) {
+    // Simple total-budget check — in production: track per-day spend separately
+    if (campaign.spent >= campaign.totalBudget && campaign.status === 'ACTIVE') {
+      await this.prisma.adCampaign.update({ where: { id: campaign.id }, data: { status: 'COMPLETED' } });
       this.logger.log(`Campaign ${campaign.id} budget exhausted — paused`);
     }
+  }
+
+  // ── ADMIN: approval queue (owner dashboard "الإعلانات") ───────
+  async getPendingCampaigns() {
+    const campaigns = await this.prisma.adCampaign.findMany({
+      where: { status: 'PENDING' },
+      include: { company: { select: { nameAr: true, nameEn: true } } },
+      orderBy: { createdAt: 'asc' },
+    });
+    return campaigns.map(c => Object.assign(this.toApiShape(c), { companyName: c.company?.nameAr }));
+  }
+
+  async reviewCampaign(id: string, approve: boolean) {
+    const campaign = await this.prisma.adCampaign.findUnique({ where: { id } });
+    if (!campaign) throw new NotFoundException();
+    if (campaign.status !== 'PENDING') throw new BadRequestException('الحملة تمت مراجعتها بالفعل');
+    const updated = await this.prisma.adCampaign.update({
+      where: { id },
+      data: { status: approve ? 'ACTIVE' : 'REJECTED' },
+    });
+    return this.toApiShape(updated);
   }
 }
 
@@ -246,6 +281,29 @@ export class AdsController {
   @ApiOperation({ summary: 'حملاتي الإعلانية + إحصائيات' })
   myCampaigns(@Request() req: any) {
     return this.ads.getCampaignStats(req.user.companyId);
+  }
+
+  // ── Admin approval queue (owner dashboard) ─────────────────────
+  @Get('admin/pending')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'الحملات الإعلانية المعلّقة للمراجعة (أدمن)' })
+  getPending(@Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.ads.getPendingCampaigns();
+  }
+
+  @Post(':id/review')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'الموافقة على حملة إعلانية أو رفضها (أدمن)' })
+  review(@Param('id') id: string, @Body() body: { approve: boolean }, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.ads.reviewCampaign(id, !!body.approve);
   }
 
   @Post(':id/impression')
