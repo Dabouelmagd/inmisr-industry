@@ -14,7 +14,7 @@ import { RfqService, CreateRfqDto, CreateQuoteDto } from '../rfq/rfq.service';
 import { EscrowService, DisputeDto } from '../escrow/escrow.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AntiLeakageService } from '../common/anti-leakage.service';
-import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
+import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
 
 // ── Auth Guards (simplified) ───────────────────────────────────────
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -606,6 +606,57 @@ export class ReverseLogisticsController {
       throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
     }
     return this.reverse.adminReview(id, !!body.approve);
+  }
+}
+
+// ── Job Posting Controller ───────────────────────────────────────
+@ApiTags('job-postings')
+@Controller('job-postings')
+export class JobPostingController {
+  constructor(private jobs: JobPostingService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'إعلانات الوظائف المنشورة (عامة)' })
+  listPublic() {
+    return this.jobs.listPublic();
+  }
+
+  @Post()
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'نشر إعلان وظيفة جديد' })
+  submit(@Body() dto: any, @Request() req: any) {
+    return this.jobs.submit(req.user.companyId, dto);
+  }
+
+  @Get('my')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'إعلانات الوظائف الخاصة بمنشأتي' })
+  listMine(@Request() req: any) {
+    return this.jobs.listMine(req.user.companyId);
+  }
+
+  @Get('admin/all')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'كل إعلانات الوظائف (أدمن)' })
+  adminList(@Query('status') status: string, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.jobs.adminList(status);
+  }
+
+  @Post('admin/:id/review')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'الموافقة على إعلان وظيفة أو رفضه (أدمن)' })
+  adminReview(@Param('id') id: string, @Body() body: { approve: boolean }, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.jobs.adminReview(id, !!body.approve);
   }
 }
 

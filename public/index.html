@@ -2066,7 +2066,6 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   <div class="modal" style="max-width:480px">
     <button class="mc" onclick="closeM('job-posting-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
     <div style="font-size:16px;font-weight:700;margin-bottom:16px">الإعلان عن نقص عمالة</div>
-    <div style="margin-bottom:12px"><span class="lbl">اسم المصنع / المنشأة</span><input class="inp" id="job-factory" placeholder="اسم مصنعك"></div>
     <div class="g2" style="margin-bottom:12px">
       <div><span class="lbl">نوع الوظيفة المطلوبة</span><input class="inp" id="job-type" placeholder="مثال: عامل تشغيل آلات"></div>
       <div><span class="lbl">عدد العمال المطلوب</span><input class="inp" type="number" id="job-count" placeholder="10"></div>
@@ -4278,6 +4277,7 @@ document.addEventListener("DOMContentLoaded",function(){
       loadRealTrainingAdmin();
       loadRealFactoryNeedsAdmin();
       loadRealReverseAdmin();
+      loadRealJobPostingsAdmin();
       renderAdminServiceTables();
     }
     if (name === "team") {
@@ -4995,6 +4995,7 @@ function scrollToDashSection(key, btn) {
   if (key === "myservices" && typeof loadMyInspectionRequests === "function") loadMyInspectionRequests();
   if (key === "myservices" && typeof loadMyTrainingEnrollments === "function") loadMyTrainingEnrollments();
   if (key === "myservices" && typeof loadMyReverseRequests === "function") loadMyReverseRequests();
+  if (key === "myservices" && typeof loadMyJobPostings === "function") loadMyJobPostings();
 
   document.querySelectorAll("#dash-sidebar .asb").forEach(function(b){ b.classList.remove("on"); });
   if (btn) btn.classList.add("on");
@@ -6881,36 +6882,36 @@ function goToTrainingTab(target) {
 window.goToTrainingTab = goToTrainingTab;
 
 // ── Job postings (factories announcing labor shortages) ─────────
-var JOB_POSTINGS = [
-  {id:"JOB-001", factory:"مصانع الدلتا للنسيج", jobType:"عامل تشغيل ماكينات خياطة صناعية", count:15, region:"المحلة", details:"خبرة سنة على الأقل — نظام 3 ورديات", status:"معتمد ✓", cls:"pg", pending:false},
-  {id:"JOB-002", factory:"حديد مصر للتجارة", jobType:"فني لحام معتمد", count:6, region:"العاشر من رمضان", details:"شهادة لحام مفضّلة وليست شرطًا — تدريب على رأس العمل متاح", status:"معتمد ✓", cls:"pg", pending:false}
-];
+// Real postings loaded via loadRealJobPostingsAdmin() (admin) / loadJobPostingsPublic() (public feed).
+var JOB_POSTINGS = [];
 
 function openJobPostingModal() {
   if (!requireLoginForService(openJobPostingModal)) return;
-  ["job-factory","job-type","job-count","job-region","job-details"].forEach(function(id){
+  ["job-type","job-count","job-region","job-details"].forEach(function(id){
     var el = document.getElementById(id); if (el) el.value = "";
   });
   if (typeof openM === "function") openM("job-posting-modal");
 }
 window.openJobPostingModal = openJobPostingModal;
 
-function confirmJobPosting() {
-  var factory = document.getElementById("job-factory").value.trim();
+async function confirmJobPosting() {
   var jobType = document.getElementById("job-type").value.trim();
   var count = document.getElementById("job-count").value.trim();
   var region = document.getElementById("job-region").value.trim();
   var details = document.getElementById("job-details").value.trim();
-  if (!factory || !jobType || !count) { toast("الرجاء إدخال اسم المصنع، الوظيفة المطلوبة، وعدد العمال"); return; }
-  var item = { id: nextServiceId("JOB"), factory:factory, jobType:jobType, count:count, region:region, details:details, status:"قيد المراجعة", cls:"pa", pending:true };
-  JOB_POSTINGS.unshift(item);
-  if (typeof closeM === "function") closeM("job-posting-modal");
-  toast("تم نشر إعلان الوظيفة — سيظهر للباحثين عن عمل فورًا");
-  renderJobPostingsList();
-  renderJobPostingsMyList();
-  renderAdminServiceTables();
-  updateServicesBadge();
-  if (typeof renderWorkerDashboard === "function") renderWorkerDashboard();
+  if (!jobType || !count) { toast("الرجاء إدخال الوظيفة المطلوبة وعدد العمال"); return; }
+  try {
+    await apiFetch("/job-postings", {
+      method: "POST",
+      body: JSON.stringify({ jobType: jobType, count: Number(count), region: region || undefined, details: details || undefined })
+    });
+    if (typeof closeM === "function") closeM("job-posting-modal");
+    toast("تم نشر إعلان الوظيفة — سيظهر للباحثين عن عمل فورًا");
+    loadJobPostingsPublic();
+    loadMyJobPostings();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر نشر إعلان الوظيفة"));
+  }
 }
 window.confirmJobPosting = confirmJobPosting;
 
@@ -6919,28 +6920,41 @@ function applyToJob(jobId, factory) {
 }
 window.applyToJob = applyToJob;
 
-function renderJobPostingsList() {
+async function loadJobPostingsPublic() {
   var box = document.getElementById("job-postings-list");
   if (!box) return;
-  var visible = JOB_POSTINGS.filter(function(j){ return j.status !== "مرفوض"; });
-  box.innerHTML = visible.length ? visible.map(function(j) {
-    return '<div class="row"><div><div style="font-weight:700;font-size:13px">' + j.factory +
-      (j.pending ? ' <span class="pill pa" style="margin-right:6px;font-size:9px">قيد المراجعة</span>' : '') + '</div>' +
-      '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + j.jobType + ' — ' + j.count + ' عامل · ' + j.region + (j.details ? ' · ' + j.details : '') + '</div></div>' +
-      '<button class="bc" style="padding:7px 14px;font-size:12px;flex-shrink:0" onclick="applyToJob(\'' + j.id + '\',\'' + j.factory + '\')">تقدم للوظيفة</button></div>';
-  }).join("") : '<div style="font-size:13px;color:var(--ts);padding:14px 0">لا توجد فرص عمل معلنة حاليًا</div>';
+  try {
+    var list = await apiFetch("/job-postings");
+    box.innerHTML = list.length ? list.map(function(j) {
+      var factory = (j.company && j.company.nameAr) || "—";
+      var pendingBadge = j.status === "PENDING" ? ' <span class="pill pa" style="margin-right:6px;font-size:9px">قيد المراجعة</span>' : '';
+      return '<div class="row"><div><div style="font-weight:700;font-size:13px">' + factory + pendingBadge + '</div>' +
+        '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + j.jobType + ' — ' + j.count + ' عامل' + (j.region ? ' · ' + j.region : '') + (j.details ? ' · ' + j.details : '') + '</div></div>' +
+        '<button class="bc" style="padding:7px 14px;font-size:12px;flex-shrink:0" onclick="applyToJob(\'' + j.id + '\',\'' + factory + '\')">تقدم للوظيفة</button></div>';
+    }).join("") : '<div style="font-size:13px;color:var(--ts);padding:14px 0">لا توجد فرص عمل معلنة حاليًا</div>';
+  } catch (err) { /* silent */ }
 }
+window.loadJobPostingsPublic = loadJobPostingsPublic;
+function renderJobPostingsList() { loadJobPostingsPublic(); }
 window.renderJobPostingsList = renderJobPostingsList;
 
-function renderJobPostingsMyList() {
+async function loadMyJobPostings() {
+  if (!window.isLoggedIn) return;
   var box = document.getElementById("job-postings-mylist");
   if (!box) return;
-  box.innerHTML = JOB_POSTINGS.length ? JOB_POSTINGS.map(function(j) {
-    return '<div class="row"><div><div style="font-weight:700;font-size:13px">' + j.jobType + '</div>' +
-      '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + j.count + ' عامل · ' + j.region + '</div></div>' +
-      '<span class="pill ' + j.cls + '">' + j.status + '</span></div>';
-  }).join("") : '<div style="font-size:13px;color:var(--ts)">لا توجد إعلانات وظائف منشورة حتى الآن</div>';
+  try {
+    var list = await apiFetch("/job-postings/my");
+    var statusLabel = { PENDING: "قيد المراجعة", APPROVED: "معتمد ✓", REJECTED: "مرفوض" };
+    var statusCls = { PENDING: "pa", APPROVED: "pg", REJECTED: "pr" };
+    box.innerHTML = list.length ? list.map(function(j) {
+      return '<div class="row"><div><div style="font-weight:700;font-size:13px">' + j.jobType + '</div>' +
+        '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + j.count + ' عامل' + (j.region ? ' · ' + j.region : '') + '</div></div>' +
+        '<span class="pill ' + (statusCls[j.status] || "pa") + '">' + (statusLabel[j.status] || j.status) + '</span></div>';
+    }).join("") : '<div style="font-size:13px;color:var(--ts)">لا توجد إعلانات وظائف منشورة حتى الآن</div>';
+  } catch (err) { /* silent */ }
 }
+window.loadMyJobPostings = loadMyJobPostings;
+function renderJobPostingsMyList() { loadMyJobPostings(); }
 window.renderJobPostingsMyList = renderJobPostingsMyList;
 
 // ── Trade-program applications & job applications (individuals, no login) ──
@@ -7338,6 +7352,7 @@ function approveServiceItem(group, id) {
   if (group === "inspection" || group === "audit") { reviewInspectionAdmin(id, true); return; }
   if (group === "factory") { reviewFactoryNeedAdmin(id, true); return; }
   if (group === "reverse") { reviewReverseAdmin(id, true); return; }
+  if (group === "jobs") { reviewJobPostingAdmin(id, true); return; }
   setServiceStatus(group, id, "تمت الموافقة ✓", "pg", false);
 }
 function rejectServiceItem(group, id) {
@@ -7345,6 +7360,7 @@ function rejectServiceItem(group, id) {
   if (group === "inspection" || group === "audit") { reviewInspectionAdmin(id, false); return; }
   if (group === "factory") { reviewFactoryNeedAdmin(id, false); return; }
   if (group === "reverse") { reviewReverseAdmin(id, false); return; }
+  if (group === "jobs") { reviewJobPostingAdmin(id, false); return; }
   setServiceStatus(group, id, "مرفوض", "pr", false);
 }
 window.approveServiceItem = approveServiceItem;
@@ -7476,6 +7492,41 @@ async function reviewReverseAdmin(id, approve) {
   }
 }
 window.reviewReverseAdmin = reviewReverseAdmin;
+
+// ── JOB POSTINGS (admin side, real backend) ─────────────────────────
+async function loadRealJobPostingsAdmin() {
+  try {
+    var list = await apiFetch("/job-postings/admin/all");
+    var statusLabel = { PENDING: "قيد المراجعة", APPROVED: "معتمد ✓", REJECTED: "مرفوض" };
+    var statusCls = { PENDING: "pa", APPROVED: "pg", REJECTED: "pr" };
+    JOB_POSTINGS = list.map(function(j) {
+      return {
+        id: j.id,
+        factory: (j.company && j.company.nameAr) || "—",
+        jobType: j.jobType, count: j.count, region: j.region || "",
+        details: j.details || "",
+        status: statusLabel[j.status] || j.status,
+        cls: statusCls[j.status] || "pa",
+        pending: j.status === "PENDING"
+      };
+    });
+    renderAdminServiceTables();
+  } catch (err) {
+    toast("⚠️ تعذر تحميل إعلانات الوظائف: " + (err.message || ""));
+  }
+}
+window.loadRealJobPostingsAdmin = loadRealJobPostingsAdmin;
+
+async function reviewJobPostingAdmin(id, approve) {
+  try {
+    await apiFetch("/job-postings/admin/" + id + "/review", { method: "POST", body: JSON.stringify({ approve: approve }) });
+    toast(approve ? "✅ تمت الموافقة على إعلان الوظيفة" : "تم رفض إعلان الوظيفة");
+    loadRealJobPostingsAdmin();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإجراء"));
+  }
+}
+window.reviewJobPostingAdmin = reviewJobPostingAdmin;
 
 // ── FINANCING (admin side, real backend) ──────────────────────────
 async function loadRealFinancingAdmin() {

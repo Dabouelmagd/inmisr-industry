@@ -454,6 +454,57 @@ export class ReverseLogisticsService {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// JOB POSTING SERVICE — إعلانات وظائف المصانع (طلب عمالة)
+// ══════════════════════════════════════════════════════════════════
+
+@Injectable()
+export class JobPostingService {
+  constructor(private prisma: PrismaService) {}
+
+  async submit(companyId: string, dto: { jobType: string; count: number; region?: string; details?: string }) {
+    if (!dto.jobType?.trim()) throw new BadRequestException('نوع الوظيفة مطلوب');
+    if (!dto.count || dto.count <= 0) throw new BadRequestException('عدد العمال المطلوب يجب أن يكون أكبر من صفر');
+    return this.prisma.jobPosting.create({
+      data: { companyId, jobType: dto.jobType, count: dto.count, region: dto.region, details: dto.details, status: 'PENDING' },
+    });
+  }
+
+  // Public feed: visible immediately (with a pending badge), hidden only if rejected.
+  async listPublic() {
+    return this.prisma.jobPosting.findMany({
+      where: { status: { not: 'REJECTED' } },
+      include: { company: { select: { nameAr: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+    });
+  }
+
+  async listMine(companyId: string) {
+    return this.prisma.jobPosting.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async adminList(status?: string) {
+    return this.prisma.jobPosting.findMany({
+      where: status ? { status } : undefined,
+      include: { company: { select: { nameAr: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async adminReview(id: string, approve: boolean) {
+    const posting = await this.prisma.jobPosting.findUnique({ where: { id } });
+    if (!posting) throw new NotFoundException('الإعلان غير موجود');
+    if (posting.status !== 'PENDING') throw new BadRequestException('تمت مراجعة هذا الإعلان بالفعل');
+    return this.prisma.jobPosting.update({
+      where: { id }, data: { status: approve ? 'APPROVED' : 'REJECTED' },
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // INCUBATOR SERVICE
 // ══════════════════════════════════════════════════════════════════
 // ─── incubator/incubator.service.ts ───────────────────────────────

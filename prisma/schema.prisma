@@ -276,6 +276,7 @@ model Company {
   trainingEnrollments TrainingEnrollment[]
   factoryNeeds        FactoryNeed[]
   reverseLogisticsRequests ReverseLogisticsRequest[]
+  jobPostings              JobPosting[]
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -722,6 +723,22 @@ model ReverseLogisticsRequest {
 
   @@index([companyId, status])
   @@map("reverse_logistics_requests")
+}
+
+model JobPosting {
+  id        String   @id @default(uuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  jobType   String
+  count     Int
+  region    String?
+  details   String?
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId, status])
+  @@map("job_postings")
 }
 
 model FeasibilityStudy {
