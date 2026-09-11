@@ -14,7 +14,7 @@ import { RfqService, CreateRfqDto, CreateQuoteDto } from '../rfq/rfq.service';
 import { EscrowService, DisputeDto } from '../escrow/escrow.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AntiLeakageService } from '../common/anti-leakage.service';
-import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
+import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
 
 // ── Auth Guards (simplified) ───────────────────────────────────────
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -709,6 +709,42 @@ export class SmeProjectController {
       throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
     }
     return this.sme.toggleVisibility(id);
+  }
+}
+
+// ── Promo Code Controller (owner dashboard "أكواد العملاء") ──────
+@ApiTags('promo-codes')
+@Controller('promo-codes')
+@UseGuards(JwtGuard)
+@ApiBearerAuth()
+export class PromoCodeController {
+  constructor(private promo: PromoCodeService) {}
+
+  private requireAdmin(req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'كل أكواد الخصم (أدمن)' })
+  list(@Request() req: any) {
+    this.requireAdmin(req);
+    return this.promo.list();
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'إنشاء كود خصم جديد (أدمن)' })
+  create(@Body() dto: { type: string; plan: string; uses?: number; note?: string }, @Request() req: any) {
+    this.requireAdmin(req);
+    return this.promo.create(req.user.sub, dto);
+  }
+
+  @Post(':id/revoke')
+  @ApiOperation({ summary: 'إلغاء كود خصم (أدمن)' })
+  revoke(@Param('id') id: string, @Request() req: any) {
+    this.requireAdmin(req);
+    return this.promo.revoke(id);
   }
 }
 

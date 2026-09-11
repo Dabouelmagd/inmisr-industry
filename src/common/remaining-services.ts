@@ -572,6 +572,50 @@ export class SmeProjectService {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// PROMO CODE SERVICE — أكواد خصم/دعوة يُنشئها الأونر (أدمن فقط بالكامل)
+// ══════════════════════════════════════════════════════════════════
+
+function generatePromoCodeString(type: string): string {
+  const prefixMap: Record<string, string> = {
+    free_invite: 'FREE', sub_3: 'SUB3', sub_6: 'SUB6', sub_9: 'SUB9',
+    sub_12: 'SUB12', gift: 'GIFT', lifetime: 'LIFE',
+  };
+  const rand = Math.random().toString(36).slice(2, 6).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
+  return 'INMISR-' + (prefixMap[type] || 'CODE') + '-' + rand;
+}
+
+@Injectable()
+export class PromoCodeService {
+  constructor(private prisma: PrismaService) {}
+
+  async list() {
+    return this.prisma.promoCode.findMany({ orderBy: { createdAt: 'desc' } });
+  }
+
+  async create(adminId: string, dto: { type: string; plan: string; uses?: number; note?: string }) {
+    const uses = dto.uses && dto.uses > 0 ? dto.uses : 1;
+    let code = generatePromoCodeString(dto.type);
+    // Vanishingly unlikely, but guard against a random collision anyway.
+    while (await this.prisma.promoCode.findUnique({ where: { code } })) {
+      code = generatePromoCodeString(dto.type);
+    }
+    return this.prisma.promoCode.create({
+      data: {
+        code, type: dto.type, plan: dto.plan,
+        totalUses: uses, usesLeft: uses,
+        note: dto.note, status: 'ACTIVE', createdBy: adminId,
+      },
+    });
+  }
+
+  async revoke(id: string) {
+    const promo = await this.prisma.promoCode.findUnique({ where: { id } });
+    if (!promo) throw new NotFoundException('الكود غير موجود');
+    return this.prisma.promoCode.update({ where: { id }, data: { status: 'REVOKED', usesLeft: 0 } });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // INCUBATOR SERVICE
 // ══════════════════════════════════════════════════════════════════
 // ─── incubator/incubator.service.ts ───────────────────────────────

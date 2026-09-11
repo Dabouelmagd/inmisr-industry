@@ -4299,7 +4299,7 @@ document.addEventListener("DOMContentLoaded",function(){
       loadPendingProducts();
     }
     if (name === "promocodes") {
-      if (typeof renderPromoCodesTable === "function") renderPromoCodesTable();
+      if (typeof loadPromoCodesAdmin === "function") loadPromoCodesAdmin();
     }
     if (name === "reports") {
       if (typeof renderSystemReportsPanel === "function") renderSystemReportsPanel();
@@ -8788,15 +8788,8 @@ var PROMO_TYPE_LABELS = {
   gift: {label:"هدية", icon:"🎁"},
   lifetime: {label:"اشتراك مدى الحياة", icon:"💎"}
 };
-var PROMO_CODES = [
-  {code:"INMISR-WELCOME-7K2M", type:"free_invite", plan:"any", uses:1, usesLeft:1, note:"كود تجريبي عام", status:"نشط", created:"2026-06-20"}
-];
-
-function generatePromoCodeString(type) {
-  var prefixMap = {free_invite:"FREE", sub_3:"SUB3", sub_6:"SUB6", sub_9:"SUB9", sub_12:"SUB12", gift:"GIFT", lifetime:"LIFE"};
-  var rand = Math.random().toString(36).slice(2,6).toUpperCase() + Math.random().toString(36).slice(2,6).toUpperCase();
-  return "INMISR-" + (prefixMap[type] || "CODE") + "-" + rand;
-}
+// Real codes loaded via loadPromoCodesAdmin().
+var PROMO_CODES = [];
 
 function openPromoCodeModal() {
   document.getElementById("promo-type").selectedIndex = 0;
@@ -8807,19 +8800,22 @@ function openPromoCodeModal() {
 }
 window.openPromoCodeModal = openPromoCodeModal;
 
-function confirmGeneratePromoCode() {
+async function confirmGeneratePromoCode() {
   var type = document.getElementById("promo-type").value;
   var plan = document.getElementById("promo-plan").value;
   var uses = parseInt(document.getElementById("promo-uses").value, 10) || 1;
   var note = document.getElementById("promo-note").value.trim();
-  var code = generatePromoCodeString(type);
-  PROMO_CODES.unshift({
-    code: code, type: type, plan: plan, uses: uses, usesLeft: uses,
-    note: note || "—", status: "نشط", created: new Date().toISOString().slice(0,10)
-  });
-  if (typeof closeM === "function") closeM("promo-code-modal");
-  renderPromoCodesTable();
-  toast("✅ تم إنشاء الكود: " + code);
+  try {
+    var created = await apiFetch("/promo-codes", {
+      method: "POST",
+      body: JSON.stringify({ type: type, plan: plan, uses: uses, note: note || undefined })
+    });
+    if (typeof closeM === "function") closeM("promo-code-modal");
+    loadPromoCodesAdmin();
+    toast("✅ تم إنشاء الكود: " + created.code);
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إنشاء الكود"));
+  }
 }
 window.confirmGeneratePromoCode = confirmGeneratePromoCode;
 
@@ -8832,37 +8828,53 @@ function copyPromoCode(code) {
 }
 window.copyPromoCode = copyPromoCode;
 
-function revokePromoCode(code) {
-  var item = PROMO_CODES.find(function(c){ return c.code === code; });
-  if (item) { item.status = "ملغى"; item.usesLeft = 0; }
-  renderPromoCodesTable();
-  toast("تم إلغاء الكود " + code);
+async function revokePromoCode(id) {
+  try {
+    await apiFetch("/promo-codes/" + id + "/revoke", { method: "POST" });
+    toast("تم إلغاء الكود");
+    loadPromoCodesAdmin();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إلغاء الكود"));
+  }
 }
 window.revokePromoCode = revokePromoCode;
+
+async function loadPromoCodesAdmin() {
+  try {
+    PROMO_CODES = await apiFetch("/promo-codes");
+    renderPromoCodesTable();
+  } catch (err) {
+    var box = document.getElementById("promo-codes-table");
+    if (box) box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:20px 0;text-align:center">⚠️ تعذر تحميل الأكواد: ' + (err.message || "") + '</div>';
+  }
+}
+window.loadPromoCodesAdmin = loadPromoCodesAdmin;
 
 var PROMO_PLAN_LABELS = {"supplier-growth":"مورد — النمو ⭐","supplier-elite":"مورد — النخبة 🏆","company-business":"شركة — الأعمال ⭐","any":"أي باقة"};
 function renderPromoCodesTable() {
   var box = document.getElementById("promo-codes-table");
   if (!box) return;
+  var statusArLabel = { ACTIVE: "نشط", REVOKED: "ملغى", EXPIRED: "منتهي" };
   box.innerHTML = PROMO_CODES.length ? '<div style="display:flex;flex-direction:column;gap:10px">' + PROMO_CODES.map(function(c) {
     var meta = PROMO_TYPE_LABELS[c.type] || {label:c.type, icon:"🏷️"};
-    var pillCls = c.status === "نشط" ? "pg" : (c.status === "ملغى" ? "pr" : "pa");
+    var pillCls = c.status === "ACTIVE" ? "pg" : (c.status === "REVOKED" ? "pr" : "pa");
+    var createdDate = new Date(c.createdAt).toLocaleDateString("ar-EG");
     return '<div class="card"><div class="cb" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">' +
       '<div>' +
-      '<div style="font-weight:700;font-size:14px;direction:ltr;text-align:right">' + meta.icon + ' ' + c.code + ' <span class="pill ' + pillCls + '" style="margin-right:6px">' + c.status + '</span></div>' +
-      '<div style="font-size:12px;color:var(--ts);margin-top:4px">' + meta.label + ' · ' + (PROMO_PLAN_LABELS[c.plan] || c.plan) + ' · متبقي ' + c.usesLeft + ' من ' + c.uses + ' استخدام</div>' +
-      '<div style="font-size:11px;color:var(--tt);margin-top:2px">' + c.note + ' · أُنشئ في ' + c.created + '</div>' +
+      '<div style="font-weight:700;font-size:14px;direction:ltr;text-align:right">' + meta.icon + ' ' + c.code + ' <span class="pill ' + pillCls + '" style="margin-right:6px">' + (statusArLabel[c.status] || c.status) + '</span></div>' +
+      '<div style="font-size:12px;color:var(--ts);margin-top:4px">' + meta.label + ' · ' + (PROMO_PLAN_LABELS[c.plan] || c.plan) + ' · متبقي ' + c.usesLeft + ' من ' + c.totalUses + ' استخدام</div>' +
+      '<div style="font-size:11px;color:var(--tt);margin-top:2px">' + (c.note || "—") + ' · أُنشئ في ' + createdDate + '</div>' +
       '</div>' +
       '<div style="display:flex;gap:6px;flex-shrink:0">' +
       '<button class="bl" style="font-size:11px;padding:6px 12px;border-radius:6px" onclick="copyPromoCode(\'' + c.code + '\')">📋 نسخ</button>' +
-      (c.status === "نشط" ? '<button style="background:rgba(206,17,38,.08);color:#CE1126;border:1px solid rgba(206,17,38,.25);border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:11px" onclick="revokePromoCode(\'' + c.code + '\')">إلغاء</button>' : '') +
+      (c.status === "ACTIVE" ? '<button style="background:rgba(206,17,38,.08);color:#CE1126;border:1px solid rgba(206,17,38,.25);border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:11px" onclick="revokePromoCode(\'' + c.id + '\')">إلغاء</button>' : '') +
       '</div></div></div>';
   }).join("") + '</div>' : '<div style="font-size:13px;color:var(--ts);padding:20px 0;text-align:center">لا توجد أكواد حتى الآن — أنشئي أول كود لإرساله لعميلك</div>';
 
   document.getElementById("promo-total-count").textContent = PROMO_CODES.length;
-  document.getElementById("promo-active-count").textContent = PROMO_CODES.filter(function(c){ return c.status === "نشط"; }).length;
-  document.getElementById("promo-used-count").textContent = PROMO_CODES.filter(function(c){ return c.usesLeft === 0 && c.status !== "ملغى"; }).length;
-  document.getElementById("promo-expired-count").textContent = PROMO_CODES.filter(function(c){ return c.status === "منتهي"; }).length;
+  document.getElementById("promo-active-count").textContent = PROMO_CODES.filter(function(c){ return c.status === "ACTIVE"; }).length;
+  document.getElementById("promo-used-count").textContent = PROMO_CODES.filter(function(c){ return c.usesLeft === 0 && c.status !== "REVOKED"; }).length;
+  document.getElementById("promo-expired-count").textContent = PROMO_CODES.filter(function(c){ return c.status === "EXPIRED"; }).length;
 }
 window.renderPromoCodesTable = renderPromoCodesTable;
 

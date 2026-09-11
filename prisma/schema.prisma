@@ -758,6 +758,22 @@ model SmeProject {
   @@map("sme_projects")
 }
 
+model PromoCode {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  type      String
+  plan      String
+  totalUses Int
+  usesLeft  Int
+  note      String?
+  status    String   @default("ACTIVE")
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("promo_codes")
+}
+
 model FeasibilityStudy {
   id             String   @id @default(uuid())
   title          String
