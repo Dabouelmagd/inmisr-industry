@@ -391,6 +391,28 @@ export class FinanceController {
   myApplications(@Request() req: any) {
     return this.finance.getApplications(req.user.companyId);
   }
+
+  @Get('admin/applications')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'كل طلبات التمويل (أدمن)' })
+  adminApplications(@Query('status') status: string, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.finance.adminListApplications(status);
+  }
+
+  @Post('admin/:id/review')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'الموافقة على طلب تمويل أو رفضه (أدمن)' })
+  adminReview(@Param('id') id: string, @Body() body: { approve: boolean }, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.finance.adminReview(id, !!body.approve);
+  }
 }
 
 // ── Incubator Controller ───────────────────────────────────────────

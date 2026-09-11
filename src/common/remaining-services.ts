@@ -2,7 +2,7 @@
 // services/remaining.ts — Geo + Finance + Incubator + Orders + Messages
 // ═══════════════════════════════════════════════════════════════════
 
-import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 
 // ══════════════════════════════════════════════════════════════════
@@ -204,6 +204,7 @@ export class FinanceService {
         interestRate: dto.interestRate || 7.5,
         monthlyPayment: this.calculatePayment(dto.amount, dto.durationMonths, dto.interestRate || 7.5).monthlyPayment,
         bankPartner: dto.bankPartner || 'CIB',
+        purpose: dto.purpose,
         orderId: dto.orderId,
         status: 'PENDING',
       },
@@ -218,6 +219,29 @@ export class FinanceService {
       where: { companyId },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  // ── ADMIN: review queue (owner dashboard "طلبات الخدمات الصناعية") ──
+  async adminListApplications(status?: string) {
+    return this.prisma.financeApplication.findMany({
+      where: status ? { status } : undefined,
+      include: { company: { select: { nameAr: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async adminReview(id: string, approve: boolean) {
+    const application = await this.prisma.financeApplication.findUnique({ where: { id } });
+    if (!application) throw new NotFoundException('طلب التمويل غير موجود');
+    if (application.status !== 'PENDING') {
+      throw new BadRequestException('تمت مراجعة هذا الطلب بالفعل');
+    }
+    const updated = await this.prisma.financeApplication.update({
+      where: { id },
+      data: { status: approve ? 'APPROVED' : 'REJECTED', approvedAt: approve ? new Date() : null },
+    });
+    this.logger.log(`Finance application ${id} ${approve ? 'approved' : 'rejected'}`);
+    return updated;
   }
 }
 

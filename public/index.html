@@ -6714,7 +6714,7 @@ async function submitFinancingRequest() {
   if (!months || months <= 0) { toast("الرجاء إدخال مدة السداد بالشهور"); return; }
 
   try {
-    await apiFetch("/finance/apply", {
+    var result = await apiFetch("/finance/apply", {
       method: "POST",
       body: JSON.stringify({
         amount: amount,
@@ -6723,8 +6723,12 @@ async function submitFinancingRequest() {
         purpose: purposeEl ? purposeEl.value : undefined
       })
     });
+    if (result && result.status === "REQUIRES_MORE_HISTORY") {
+      toast("⚠️ " + result.message + " (لديك حالياً " + result.currentOrders + " من أصل " + result.required + ")");
+      return;
+    }
     if (amountEl) amountEl.value = "";
-    toast("تم إرسال طلب التمويل — سيتواصل معك فريق إن مصر خلال 48 ساعة عمل");
+    toast((result && result.message) || "تم إرسال طلب التمويل — سيتم مراجعته قريبًا");
     renderFinancingMiniList();
   } catch (err) {
     toast("⚠️ " + (err.message || "تعذر إرسال طلب التمويل"));
@@ -6736,7 +6740,7 @@ async function renderFinancingMiniList() {
   var box = document.getElementById("fin-requests-list");
   if (!box || !window.isLoggedIn) return;
   try {
-    var list = await apiFetch("/finance/my");
+    var list = await apiFetch("/finance/applications");
     if (!list.length) { box.innerHTML = '<div style="font-size:13px;color:var(--ts)">لا توجد طلبات تمويل حتى الآن</div>'; return; }
     var statusLabel = { PENDING: "قيد المراجعة", APPROVED: "تمت الموافقة ✓", REJECTED: "مرفوض" };
     var statusCls = { PENDING: "pa", APPROVED: "pg", REJECTED: "pr" };
