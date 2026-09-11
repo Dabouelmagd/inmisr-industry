@@ -2614,7 +2614,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
 
   <div id="inc-sub-sme" style="display:none">
     <div style="font-size:13px;color:var(--ts);margin-bottom:14px">راجعي مشروعات الشباب وحددي أيها يظهر للمستثمرين على الصفحة العامة</div>
-    <div class="tw"><table class="tbl"><thead><tr><th>المشروع</th><th>القطاع</th><th>المنطقة</th><th>الاستثمار</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody><tr><td><strong>مصنع تدوير عبوات بلاستيك صغير</strong><div style="font-size:11px;color:var(--tt);margin-top:2px">محمد عادل · منذ 2 أيام</div></td><td>مواد قابلة للتدوير</td><td>العاشر من رمضان</td><td style="color:var(--gold);font-weight:600">450,000 ج.م</td><td><span class="pill pa">معلق</span></td><td style="white-space:nowrap"><button class="bl" style="font-size:11px;padding:4px 9px;border-radius:5px" data-view-sme="sme1">عرض</button> <button class="bc" style="font-size:11px;padding:4px 9px;border-radius:5px" data-toggle-sme-visibility="sme1">إظهار للعامة</button></td></tr><tr><td><strong>ورشة تصنيع قطع غيار CNC</strong><div style="font-size:11px;color:var(--tt);margin-top:2px">سارة حلمي · منذ أسبوع</div></td><td>الصناعات الهندسية</td><td>6 أكتوبر</td><td style="color:var(--gold);font-weight:600">280,000 ج.م</td><td><span class="pill pg">معروض</span></td><td style="white-space:nowrap"><button class="bl" style="font-size:11px;padding:4px 9px;border-radius:5px" data-view-sme="sme2">عرض</button> <button class="bc" style="font-size:11px;padding:4px 9px;border-radius:5px" data-toggle-sme-visibility="sme2">إخفاء</button></td></tr><tr><td><strong>معمل تعبئة زيوت نباتية محلية</strong><div style="font-size:11px;color:var(--tt);margin-top:2px">أحمد سامي · منذ يوم</div></td><td>الصناعات الغذائية</td><td>الفيوم</td><td style="color:var(--gold);font-weight:600">620,000 ج.م</td><td><span class="pill pa">معلق</span></td><td style="white-space:nowrap"><button class="bl" style="font-size:11px;padding:4px 9px;border-radius:5px" data-view-sme="sme3">عرض</button> <button class="bc" style="font-size:11px;padding:4px 9px;border-radius:5px" data-toggle-sme-visibility="sme3">إظهار للعامة</button></td></tr><tr><td><strong>خط تجميع لوحات شمسية صغيرة</strong><div style="font-size:11px;color:var(--tt);margin-top:2px">ياسمين فؤاد · منذ 3 أيام</div></td><td>مكونات الطاقة الشمسية</td><td>العبور</td><td style="color:var(--gold);font-weight:600">890,000 ج.م</td><td><span class="pill pr">مخفي</span></td><td style="white-space:nowrap"><button class="bl" style="font-size:11px;padding:4px 9px;border-radius:5px" data-view-sme="sme4">عرض</button> <button class="bc" style="font-size:11px;padding:4px 9px;border-radius:5px" data-toggle-sme-visibility="sme4">إظهار للعامة</button></td></tr></tbody></table></div>
+    <div id="sme-admin-table"><div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">جارٍ التحميل...</div></div>
   </div>
 </div>
       <div id="atab-products" style="display:none">
@@ -5482,7 +5482,8 @@ document.addEventListener("click", function(e) {
 
 
 var LOYALTY_TIERS = [{"id": "bronze", "name": "برونزي", "icon": "🥉", "min_points": 0, "color": "#A8742F", "perks": ["شارة موثق أساسية", "دعم عبر البريد الإلكتروني"]}, {"id": "silver", "name": "فضي", "icon": "🥈", "min_points": 2000, "color": "#9CA3AF", "perks": ["خصم 3% على رسوم الشحن", "رد أسرع على الدعم (24 ساعة)"]}, {"id": "gold", "name": "ذهبي", "icon": "🥇", "min_points": 5000, "color": "#C09300", "perks": ["خصم 8% على رسوم الشحن", "أولوية ظهور في نتائج RFQ", "مدير حساب مخصص"]}, {"id": "platinum", "name": "بلاتيني", "icon": "💎", "min_points": 10000, "color": "#64B5F6", "perks": ["خصم 15% على رسوم الشحن", "أولوية قصوى في RFQ", "تقارير تحليلية شهرية مجانية", "دعوة لفعاليات إن مصر السنوية"]}];
-var SME_PROJECTS = [{"id": "sme1", "name": "مصنع تدوير عبوات بلاستيك صغير", "owner": "محمد عادل", "sector": "مواد قابلة للتدوير", "region": "العاشر من رمضان", "investment": "450,000 ج.م", "status": "pending", "submitted": "منذ 2 أيام", "summary": "خط إنتاج صغير لتدوير عبوات PET وتحويلها لحبيبات قابلة للبيع للمصانع"}, {"id": "sme2", "name": "ورشة تصنيع قطع غيار CNC", "owner": "سارة حلمي", "sector": "الصناعات الهندسية", "region": "6 أكتوبر", "investment": "280,000 ج.م", "status": "approved", "submitted": "منذ أسبوع", "summary": "ورشة تصنيع دقيق لقطع غيار صناعية بالطلب لمصانع المنطقة"}, {"id": "sme3", "name": "معمل تعبئة زيوت نباتية محلية", "owner": "أحمد سامي", "sector": "الصناعات الغذائية", "region": "الفيوم", "investment": "620,000 ج.م", "status": "pending", "submitted": "منذ يوم", "summary": "تعبئة وتغليف زيوت نباتية من محاصيل محلية بعلامة تجارية جديدة"}, {"id": "sme4", "name": "خط تجميع لوحات شمسية صغيرة", "owner": "ياسمين فؤاد", "sector": "مكونات الطاقة الشمسية", "region": "العبور", "investment": "890,000 ج.م", "status": "hidden", "submitted": "منذ 3 أيام", "summary": "تجميع ألواح شمسية للسوق المحلي من مكونات مستوردة"}];
+// Real projects loaded via loadSmeProjectsAdmin() (admin) / renderSmePublic() (public feed).
+var SME_PROJECTS = [];
 // Real feasibility studies loaded from GET /incubator/admin/studies (see loadGovStudies below).
 var GOV_FEASIBILITY = [];
 var NOTIFICATIONS = [{"id": "n1", "icon": "📋", "text": "عرض سعر جديد على طلبك RFQ-0897 من حديد مصر للتجارة", "time": "منذ 10 دقائق", "read": false}, {"id": "n2", "icon": "✅", "text": "تم تأكيد استلام الإفراج عن Escrow للطلبية #0891", "time": "منذ ساعة", "read": false}, {"id": "n3", "icon": "🚚", "text": "الشحنة #0892 وصلت لنقطة التتبع: العاشر من رمضان", "time": "منذ 3 ساعات", "read": false}, {"id": "n4", "icon": "⭐", "text": "تلقيت تقييماً جديداً 5 نجوم من مصنع المستقبل للبناء", "time": "اليوم 9:15 ص", "read": true}, {"id": "n5", "icon": "🏆", "text": "تهانينا! انتقلتِ لمستوى الولاء الذهبي 🥇", "time": "أمس", "read": true}];
@@ -5592,28 +5593,30 @@ document.addEventListener("DOMContentLoaded", function() {
 // INCUBATOR: SME PROJECTS + GOV FEASIBILITY STUDIES
 // ══════════════════════════════════════════════════════════════════
 
-function renderSmePublic() {
+async function renderSmePublic() {
   var grid = document.getElementById("sme-public-grid");
   if (!grid) return;
-  var visible = SME_PROJECTS.filter(function(s){ return s.status === "approved"; });
-  if (!visible.length) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--ts)">لا توجد مشروعات معروضة حالياً — تابعينا قريباً</div>';
-    return;
-  }
-  grid.innerHTML = visible.map(function(s) {
-    return '<div class="card"><div class="cb">' +
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">' +
-      '<span class="pill pg">معروض للتمويل</span>' +
-      '<span style="font-size:11px;color:var(--tt)">' + s.region + '</span></div>' +
-      '<div style="font-size:14px;font-weight:700;margin-bottom:6px">' + s.name + '</div>' +
-      '<div style="font-size:12px;color:var(--ts);margin-bottom:10px">' + s.sector + ' · بواسطة ' + s.owner + '</div>' +
-      '<div style="font-size:12px;color:var(--ts);line-height:1.7;margin-bottom:14px">' + s.summary + '</div>' +
-      '<div style="background:var(--bg3);border-radius:8px;padding:9px;text-align:center;margin-bottom:12px">' +
-      '<div style="font-size:9px;color:var(--tt)">الاستثمار المطلوب</div>' +
-      '<div style="font-size:15px;font-weight:700;color:var(--gold)">' + s.investment + '</div></div>' +
-      '<button class="bc" style="width:100%;padding:8px;font-size:13px;border-radius:8px" data-msg="interest">أنا مهتم بالتمويل</button>' +
-      '</div></div>';
-  }).join("");
+  try {
+    var visible = await apiFetch("/sme-projects");
+    if (!visible.length) {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--ts)">لا توجد مشروعات معروضة حالياً — تابعينا قريباً</div>';
+      return;
+    }
+    grid.innerHTML = visible.map(function(s) {
+      return '<div class="card"><div class="cb">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">' +
+        '<span class="pill pg">معروض للتمويل</span>' +
+        '<span style="font-size:11px;color:var(--tt)">' + s.region + '</span></div>' +
+        '<div style="font-size:14px;font-weight:700;margin-bottom:6px">' + s.name + '</div>' +
+        '<div style="font-size:12px;color:var(--ts);margin-bottom:10px">' + s.sectorLabel + ' · بواسطة ' + s.ownerName + '</div>' +
+        '<div style="font-size:12px;color:var(--ts);line-height:1.7;margin-bottom:14px">' + s.summary + '</div>' +
+        '<div style="background:var(--bg3);border-radius:8px;padding:9px;text-align:center;margin-bottom:12px">' +
+        '<div style="font-size:9px;color:var(--tt)">الاستثمار المطلوب</div>' +
+        '<div style="font-size:15px;font-weight:700;color:var(--gold)">' + formatEgp(s.investmentReq) + '</div></div>' +
+        '<button class="bc" style="width:100%;padding:8px;font-size:13px;border-radius:8px" data-msg="interest">أنا مهتم بالتمويل</button>' +
+        '</div></div>';
+    }).join("");
+  } catch (err) { /* silent */ }
 }
 
 window.openSmeUpload = function() {
@@ -5621,24 +5624,28 @@ window.openSmeUpload = function() {
   if (m) m.classList.add("open");
 };
 
-window.submitSmeProject = function() {
+window.submitSmeProject = async function() {
   var name = (document.getElementById("sme-name")||{}).value || "";
   var owner = (document.getElementById("sme-owner")||{}).value || "";
   if (!name.trim() || !owner.trim()) { toast("الرجاء إدخال اسم المشروع واسم صاحبه"); return; }
-  var newProject = {
-    id: "sme" + (SME_PROJECTS.length + 1),
-    name: name,
-    owner: owner,
-    sector: (document.getElementById("sme-sector")||{}).value || "أخرى",
-    region: (document.getElementById("sme-region")||{}).value || "أخرى",
-    investment: (parseFloat((document.getElementById("sme-investment")||{}).value)||0).toLocaleString("ar-EG") + " ج.م",
-    status: "pending",
-    submitted: "الآن",
-    summary: (document.getElementById("sme-summary")||{}).value || ""
-  };
-  SME_PROJECTS.push(newProject);
-  document.getElementById("sme-upload-modal").classList.remove("open");
-  toast("تم استلام مشروعك — سيراجعه فريق إن مصر خلال 3-5 أيام عمل");
+  try {
+    await apiFetch("/sme-projects", {
+      method: "POST",
+      body: JSON.stringify({
+        name: name,
+        ownerName: owner,
+        ownerPhone: (document.getElementById("sme-phone")||{}).value || undefined,
+        sectorLabel: (document.getElementById("sme-sector")||{}).value || "أخرى",
+        region: (document.getElementById("sme-region")||{}).value || "أخرى",
+        investmentReq: parseFloat((document.getElementById("sme-investment")||{}).value) || 0,
+        summary: (document.getElementById("sme-summary")||{}).value || ""
+      })
+    });
+    document.getElementById("sme-upload-modal").classList.remove("open");
+    toast("تم استلام مشروعك — سيراجعه فريق إن مصر خلال 3-5 أيام عمل");
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إرسال المشروع"));
+  }
 };
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -5735,12 +5742,57 @@ function renderIncubatorPublic() {
 }
 window.renderIncubatorPublic = renderIncubatorPublic;
 
-window.toggleSmeVisibility = function(smeId) {
-  var s = SME_PROJECTS.find(function(x){ return x.id===smeId; });
-  if (!s) return;
-  s.status = (s.status === "approved") ? "hidden" : "approved";
-  toast(s.status === "approved" ? "المشروع الآن معروض للمستثمرين ✓" : "تم إخفاء المشروع من العرض العام");
-  renderSmePublic();
+async function loadSmeProjectsAdmin() {
+  var box = document.getElementById("sme-admin-table");
+  if (!box) return;
+  try {
+    var list = await apiFetch("/sme-projects/admin/all");
+    SME_PROJECTS = list;
+    if (!list.length) {
+      box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">لا توجد مشروعات مرسلة حتى الآن</div>';
+      return;
+    }
+    var statusLabel = { PENDING: "معلق", APPROVED: "معروض", REJECTED: "مرفوض", HIDDEN: "مخفي" };
+    var statusCls = { PENDING: "pa", APPROVED: "pg", REJECTED: "pr", HIDDEN: "pr" };
+    box.innerHTML = '<div class="tw"><table class="tbl"><thead><tr><th>المشروع</th><th>القطاع</th><th>المنطقة</th><th>الاستثمار</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>' +
+      list.map(function(s) {
+        var actions = '<button class="bl" style="font-size:11px;padding:4px 9px;border-radius:5px" onclick="viewSmeProject(\'' + s.id + '\')">عرض</button> ';
+        if (s.status === "PENDING") {
+          actions += '<button class="bc" style="font-size:11px;padding:4px 9px;border-radius:5px" onclick="reviewSmeProjectAdmin(\'' + s.id + '\',true)">موافقة</button> ' +
+            '<button class="bl" style="font-size:11px;padding:4px 9px;border-radius:5px" onclick="reviewSmeProjectAdmin(\'' + s.id + '\',false)">رفض</button>';
+        } else if (s.status === "APPROVED" || s.status === "HIDDEN") {
+          actions += '<button class="bc" style="font-size:11px;padding:4px 9px;border-radius:5px" onclick="toggleSmeVisibility(\'' + s.id + '\')">' + (s.status === "APPROVED" ? "إخفاء" : "إظهار للعامة") + '</button>';
+        }
+        return '<tr><td><strong>' + s.name + '</strong><div style="font-size:11px;color:var(--tt);margin-top:2px">' + s.ownerName + '</div></td>' +
+          '<td>' + s.sectorLabel + '</td><td>' + s.region + '</td>' +
+          '<td style="color:var(--gold);font-weight:600">' + formatEgp(s.investmentReq) + '</td>' +
+          '<td><span class="pill ' + (statusCls[s.status] || "pa") + '">' + (statusLabel[s.status] || s.status) + '</span></td>' +
+          '<td style="white-space:nowrap">' + actions + '</td></tr>';
+      }).join("") + '</tbody></table></div>';
+  } catch (err) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">⚠️ تعذر تحميل مشروعات الشباب: ' + (err.message || "") + '</div>';
+  }
+}
+window.loadSmeProjectsAdmin = loadSmeProjectsAdmin;
+
+window.reviewSmeProjectAdmin = async function(id, approve) {
+  try {
+    await apiFetch("/sme-projects/admin/" + id + "/review", { method: "POST", body: JSON.stringify({ approve: approve }) });
+    toast(approve ? "✅ تمت الموافقة على المشروع — يظهر الآن للمستثمرين" : "تم رفض المشروع");
+    loadSmeProjectsAdmin();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإجراء"));
+  }
+};
+
+window.toggleSmeVisibility = async function(smeId) {
+  try {
+    var updated = await apiFetch("/sme-projects/admin/" + smeId + "/toggle-visibility", { method: "POST" });
+    toast(updated.status === "APPROVED" ? "المشروع الآن معروض للمستثمرين ✓" : "تم إخفاء المشروع من العرض العام");
+    loadSmeProjectsAdmin();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإجراء"));
+  }
 };
 
 window.viewSmeProject = function(smeId) {
@@ -5768,6 +5820,7 @@ document.addEventListener("click", function(e) {
       var el = document.getElementById("inc-sub-" + s);
       if (el) el.style.display = (s === which) ? "block" : "none";
     });
+    if (which === "sme" && typeof loadSmeProjectsAdmin === "function") loadSmeProjectsAdmin();
   }
 });
 // ══════════════════════════════════════════════════════════════════

@@ -741,6 +741,23 @@ model JobPosting {
   @@map("job_postings")
 }
 
+model SmeProject {
+  id            String   @id @default(uuid())
+  name          String
+  ownerName     String
+  ownerPhone    String?
+  sectorLabel   String
+  region        String
+  investmentReq Float
+  summary       String
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status])
+  @@map("sme_projects")
+}
+
 model FeasibilityStudy {
   id             String   @id @default(uuid())
   title          String

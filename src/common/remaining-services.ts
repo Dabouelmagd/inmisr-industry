@@ -505,6 +505,73 @@ export class JobPostingService {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// SME PROJECT SERVICE — مشروعات الشباب المقترحة للحاضنة (بدون تسجيل دخول)
+// ══════════════════════════════════════════════════════════════════
+
+@Injectable()
+export class SmeProjectService {
+  constructor(private prisma: PrismaService) {}
+
+  // No auth required — youth submitters don't need a platform account.
+  async submit(dto: {
+    name: string; ownerName: string; ownerPhone?: string;
+    sectorLabel: string; region: string; investmentReq: number; summary: string;
+  }) {
+    if (!dto.name?.trim() || !dto.ownerName?.trim()) {
+      throw new BadRequestException('اسم المشروع واسم صاحبه مطلوبان');
+    }
+    return this.prisma.smeProject.create({
+      data: {
+        name: dto.name, ownerName: dto.ownerName, ownerPhone: dto.ownerPhone,
+        sectorLabel: dto.sectorLabel, region: dto.region,
+        investmentReq: dto.investmentReq || 0, summary: dto.summary || '',
+        status: 'PENDING',
+      },
+    });
+  }
+
+  // Public feed: approved-only (hard gate — matches the original
+  // "مشروعك يبقى خاصاً حتى تتم الموافقة عليه" promise made at submission).
+  async listPublic() {
+    return this.prisma.smeProject.findMany({
+      where: { status: 'APPROVED' },
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+    });
+  }
+
+  async adminList(status?: string) {
+    return this.prisma.smeProject.findMany({
+      where: status ? { status } : undefined,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async adminReview(id: string, approve: boolean) {
+    const project = await this.prisma.smeProject.findUnique({ where: { id } });
+    if (!project) throw new NotFoundException('المشروع غير موجود');
+    if (project.status !== 'PENDING') throw new BadRequestException('تمت مراجعة هذا المشروع بالفعل');
+    return this.prisma.smeProject.update({
+      where: { id }, data: { status: approve ? 'APPROVED' : 'REJECTED' },
+    });
+  }
+
+  // Toggle an already-approved project's public visibility without
+  // re-running the pending->approved review (matches the original
+  // toggleSmeVisibility behavior).
+  async toggleVisibility(id: string) {
+    const project = await this.prisma.smeProject.findUnique({ where: { id } });
+    if (!project) throw new NotFoundException('المشروع غير موجود');
+    if (project.status !== 'APPROVED' && project.status !== 'HIDDEN') {
+      throw new BadRequestException('لازم الموافقة على المشروع أولاً قبل التحكم في ظهوره');
+    }
+    return this.prisma.smeProject.update({
+      where: { id }, data: { status: project.status === 'APPROVED' ? 'HIDDEN' : 'APPROVED' },
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // INCUBATOR SERVICE
 // ══════════════════════════════════════════════════════════════════
 // ─── incubator/incubator.service.ts ───────────────────────────────

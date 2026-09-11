@@ -14,7 +14,7 @@ import { RfqService, CreateRfqDto, CreateQuoteDto } from '../rfq/rfq.service';
 import { EscrowService, DisputeDto } from '../escrow/escrow.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AntiLeakageService } from '../common/anti-leakage.service';
-import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
+import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
 
 // ── Auth Guards (simplified) ───────────────────────────────────────
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -657,6 +657,58 @@ export class JobPostingController {
       throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
     }
     return this.jobs.adminReview(id, !!body.approve);
+  }
+}
+
+// ── SME Project Controller ───────────────────────────────────────
+@ApiTags('sme-projects')
+@Controller('sme-projects')
+export class SmeProjectController {
+  constructor(private sme: SmeProjectService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'مشروعات الشباب المعتمدة (عامة)' })
+  listPublic() {
+    return this.sme.listPublic();
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'إرسال مشروع للحاضنة (بدون تسجيل دخول)' })
+  submit(@Body() dto: any) {
+    return this.sme.submit(dto);
+  }
+
+  @Get('admin/all')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'كل مشروعات الشباب (أدمن)' })
+  adminList(@Query('status') status: string, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.sme.adminList(status);
+  }
+
+  @Post('admin/:id/review')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'الموافقة على مشروع أو رفضه (أدمن)' })
+  adminReview(@Param('id') id: string, @Body() body: { approve: boolean }, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.sme.adminReview(id, !!body.approve);
+  }
+
+  @Post('admin/:id/toggle-visibility')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'إظهار/إخفاء مشروع معتمد (أدمن)' })
+  toggleVisibility(@Param('id') id: string, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.sme.toggleVisibility(id);
   }
 }
 
