@@ -246,6 +246,79 @@ export class FinanceService {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// INSPECTION SERVICE — طلبات الفحص المعملي وتفتيش المصانع
+// ══════════════════════════════════════════════════════════════════
+
+@Injectable()
+export class InspectionService {
+  private readonly logger = new Logger('InspectionService');
+
+  constructor(private prisma: PrismaService) {}
+
+  async submitTesting(companyId: string, dto: {
+    requestType: string; product: string; quantity?: string; preferredDate?: string;
+  }) {
+    if (!dto.product?.trim()) throw new BadRequestException('اسم المنتج / الخامة مطلوب');
+    return this.prisma.inspectionRequest.create({
+      data: {
+        companyId,
+        kind: 'TESTING',
+        requestType: dto.requestType,
+        productOrFacility: dto.product,
+        quantity: dto.quantity,
+        preferredDate: dto.preferredDate ? new Date(dto.preferredDate) : null,
+        status: 'PENDING',
+      },
+    });
+  }
+
+  async submitAudit(companyId: string, dto: {
+    requestType: string; facility: string; preferredDate?: string;
+  }) {
+    if (!dto.facility?.trim()) throw new BadRequestException('اسم المنشأة مطلوب');
+    return this.prisma.inspectionRequest.create({
+      data: {
+        companyId,
+        kind: 'AUDIT',
+        requestType: dto.requestType,
+        productOrFacility: dto.facility,
+        preferredDate: dto.preferredDate ? new Date(dto.preferredDate) : null,
+        status: 'PENDING',
+      },
+    });
+  }
+
+  async listMine(companyId: string) {
+    return this.prisma.inspectionRequest.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // ── ADMIN: review queue ───────────────────────────────────────
+  async adminList(kind?: string, status?: string) {
+    const where: any = {};
+    if (kind) where.kind = kind;
+    if (status) where.status = status;
+    return this.prisma.inspectionRequest.findMany({
+      where,
+      include: { company: { select: { nameAr: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async adminReview(id: string, approve: boolean, notes?: string) {
+    const request = await this.prisma.inspectionRequest.findUnique({ where: { id } });
+    if (!request) throw new NotFoundException('الطلب غير موجود');
+    if (request.status !== 'PENDING') throw new BadRequestException('تمت مراجعة هذا الطلب بالفعل');
+    return this.prisma.inspectionRequest.update({
+      where: { id },
+      data: { status: approve ? 'APPROVED' : 'REJECTED', reviewNotes: notes },
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // INCUBATOR SERVICE
 // ══════════════════════════════════════════════════════════════════
 // ─── incubator/incubator.service.ts ───────────────────────────────

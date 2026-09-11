@@ -18,7 +18,7 @@ import { EscrowService }          from '../escrow/escrow.service';
 import { NotificationsService }   from '../notifications/notifications.service';
 import { AntiLeakageService }     from '../common/anti-leakage.service';
 import {
-  GeoService, FinanceService, IncubatorService, OrdersService, MessagesService,
+  GeoService, FinanceService, InspectionService, IncubatorService, OrdersService, MessagesService,
 } from '../common/remaining-services';
 
 // ── Infrastructure Services ────────────────────────────────────────
@@ -59,7 +59,7 @@ import {
 import {
   HealthController, AuthController, SuppliersController,
   RfqController, OrdersController, EscrowController,
-  MessagesController, GeoController, FinanceController,
+  MessagesController, GeoController, FinanceController, InspectionController,
   IncubatorController, NotificationsController, AntiLeakageController,
 } from './controllers';
 import {
@@ -97,7 +97,7 @@ import { PaymobWebhookController, FawryWebhookController } from '../escrow/paymo
     // Core
     HealthController, AuthController, SuppliersController,
     RfqController, OrdersController, EscrowController,
-    MessagesController, GeoController, FinanceController,
+    MessagesController, GeoController, FinanceController, InspectionController,
     IncubatorController, NotificationsController, AntiLeakageController,
     // Auth extras
     PasswordResetController,
@@ -118,7 +118,7 @@ import { PaymobWebhookController, FawryWebhookController } from '../escrow/paymo
     // Core
     PrismaService, AuthService, SuppliersService, RfqService,
     EscrowService, NotificationsService, AntiLeakageService,
-    GeoService, FinanceService, IncubatorService, OrdersService, MessagesService,
+    GeoService, FinanceService, InspectionService, IncubatorService, OrdersService, MessagesService,
     // Infrastructure
     EncryptionService, UploadService, CronService,
     InMisrWebSocketGateway, QueueService, SearchService,

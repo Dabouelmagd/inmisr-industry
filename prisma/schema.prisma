@@ -272,6 +272,7 @@ model Company {
   categories         CompanyCategory[]
   financeApps        FinanceApplication[]
   adCampaigns        AdCampaign[]
+  inspectionRequests InspectionRequest[]
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -651,6 +652,30 @@ model FinanceApplication {
 
   @@index([companyId, status])
   @@map("finance_applications")
+}
+
+enum InspectionRequestKind {
+  TESTING
+  AUDIT
+}
+
+model InspectionRequest {
+  id                String   @id @default(uuid())
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id])
+  kind              InspectionRequestKind
+  requestType       String
+  productOrFacility String
+  quantity          String?
+  preferredDate     DateTime?
+  status            String   @default("PENDING")
+  reviewNotes       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([companyId, status])
+  @@index([kind, status])
+  @@map("inspection_requests")
 }
 
 model FeasibilityStudy {

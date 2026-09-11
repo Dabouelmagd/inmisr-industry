@@ -4274,6 +4274,7 @@ document.addEventListener("DOMContentLoaded",function(){
     }
     if (name === "services") {
       loadRealFinancingAdmin();
+      loadRealInspectionAdmin();
       renderAdminServiceTables();
     }
     if (name === "team") {
@@ -4988,6 +4989,7 @@ function scrollToDashSection(key, btn) {
   });
   if (key === "team" && typeof renderBizTeamTable === "function") renderBizTeamTable();
   if (key === "myservices" && typeof renderFinancingMiniList === "function") renderFinancingMiniList();
+  if (key === "myservices" && typeof loadMyInspectionRequests === "function") loadMyInspectionRequests();
 
   document.querySelectorAll("#dash-sidebar .asb").forEach(function(b){ b.classList.remove("on"); });
   if (btn) btn.classList.add("on");
@@ -6661,12 +6663,8 @@ function nextServiceId(prefix) {
 
 var FINANCING_REQUESTS = [];
 
-var INSPECTION_REQUESTS = [
-  {id:"INS-2025-114", product:"حديد تسليح 16مم", type:"تحليل كيميائي ومعملي", qty:"", date:"", status:"قيد الفحص", cls:"pa", pending:true},
-  {id:"INS-2025-109", product:"ألواح ألومنيوم", type:"فحص ما قبل الشحن", qty:"", date:"", status:"مكتمل ✓", cls:"pg", pending:false},
-  {id:"INS-2025-102", product:"بوليمر PP", type:"شهادة ISO 9001", qty:"", date:"", status:"مكتمل ✓", cls:"pg", pending:false},
-  {id:"INS-2025-098", product:"أكياس HDPE", type:"اختبار سقوط ورطوبة", qty:"", date:"", status:"يحتاج إعادة فحص", cls:"pr", pending:true}
-];
+// Real requests loaded via loadRealInspectionAdmin() (admin) / loadMyInspectionRequests() (applicant).
+var INSPECTION_REQUESTS = [];
 
 var TRAINING_ENROLLMENTS = [];
 var REVERSE_REQUESTS = [];
@@ -6757,7 +6755,7 @@ async function renderFinancingMiniList() {
 window.renderFinancingMiniList = renderFinancingMiniList;
 
 // ── INSPECTION ───────────────────────────────────────────────────
-function submitInspectionRequest() {
+async function submitInspectionRequest() {
   if (!requireLoginForService(submitInspectionRequest)) return;
   var typeEl = document.getElementById("ins-req-type");
   var productEl = document.getElementById("ins-req-product");
@@ -6765,29 +6763,55 @@ function submitInspectionRequest() {
   var dateEl = document.getElementById("ins-req-date");
   var product = productEl ? productEl.value.trim() : "";
   if (!product) { toast("الرجاء إدخال اسم المنتج أو الخامة"); return; }
-  var item = {
-    id: nextServiceId("INS"), product:product,
-    type: typeEl ? typeEl.value : "", qty: qtyEl ? qtyEl.value : "",
-    date: dateEl ? dateEl.value : "", status:"قيد الفحص", cls:"pa", pending:true
-  };
-  INSPECTION_REQUESTS.unshift(item);
-  if (productEl) productEl.value = "";
-  if (qtyEl) qtyEl.value = "";
-  toast("تم حجز طلب الفحص — سيتواصل معك المعمل المعتمد لتأكيد الموعد");
-  renderInspectionList();
-  renderAdminServiceTables();
-  updateServicesBadge();
+  try {
+    await apiFetch("/inspection/testing", {
+      method: "POST",
+      body: JSON.stringify({
+        requestType: typeEl ? typeEl.value : "",
+        product: product,
+        quantity: qtyEl ? qtyEl.value : undefined,
+        preferredDate: dateEl ? dateEl.value : undefined
+      })
+    });
+    if (productEl) productEl.value = "";
+    if (qtyEl) qtyEl.value = "";
+    toast("تم حجز طلب الفحص — سيتواصل معك المعمل المعتمد لتأكيد الموعد");
+    loadMyInspectionRequests();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر حجز طلب الفحص"));
+  }
 }
+window.submitInspectionRequest = submitInspectionRequest;
 
-function renderInspectionList() {
-  var box = document.getElementById("inspection-requests-list");
-  if (!box) return;
-  box.innerHTML = INSPECTION_REQUESTS.map(function(r) {
-    return '<div class="row"><div><div style="font-weight:700;font-size:13px">#' + r.id + '</div>' +
-      '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + r.product + ' — ' + r.type + '</div></div>' +
-      '<span class="pill ' + r.cls + '">' + r.status + '</span></div>';
-  }).join("");
+async function loadMyInspectionRequests() {
+  if (!window.isLoggedIn) return;
+  try {
+    var list = await apiFetch("/inspection/my");
+    var statusLabel = { PENDING: "قيد الفحص", APPROVED: "مكتمل ✓", REJECTED: "مرفوض" };
+    var statusCls = { PENDING: "pa", APPROVED: "pg", REJECTED: "pr" };
+    var testingItems = list.filter(function(r){ return r.kind === "TESTING"; });
+    var auditItems = list.filter(function(r){ return r.kind === "AUDIT"; });
+
+    var testBox = document.getElementById("inspection-requests-list");
+    if (testBox) {
+      testBox.innerHTML = testingItems.length ? testingItems.map(function(r) {
+        return '<div class="row"><div><div style="font-weight:700;font-size:13px">#' + r.id.slice(-8) + '</div>' +
+          '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + r.productOrFacility + ' — ' + r.requestType + '</div></div>' +
+          '<span class="pill ' + (statusCls[r.status] || "pa") + '">' + (statusLabel[r.status] || r.status) + '</span></div>';
+      }).join("") : '<div style="font-size:13px;color:var(--ts)">لا توجد طلبات فحص حتى الآن</div>';
+    }
+
+    var auditBox = document.getElementById("audit-requests-list");
+    if (auditBox) {
+      auditBox.innerHTML = auditItems.length ? auditItems.map(function(r) {
+        return '<div class="row"><div><div style="font-weight:700;font-size:13px">#' + r.id.slice(-8) + '</div>' +
+          '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + r.productOrFacility + ' — ' + r.requestType + '</div></div>' +
+          '<span class="pill ' + (statusCls[r.status] || "pa") + '">' + (statusLabel[r.status] || r.status) + '</span></div>';
+      }).join("") : '<div style="font-size:13px;color:var(--ts)">لا توجد طلبات تفتيش حتى الآن</div>';
+    }
+  } catch (err) { /* silent — page still usable without the list */ }
 }
+window.loadMyInspectionRequests = loadMyInspectionRequests;
 
 // ── TRAINING ─────────────────────────────────────────────────────
 function enrollTraining(courseName) {
@@ -7106,43 +7130,40 @@ function switchInspTab(btn, which) {
 }
 window.switchInspTab = switchInspTab;
 
-// ── التفتيش (Audits) ─────────────────────────────────────────
-var AUDIT_REQUESTS = [
-  {id:"AUD-2025-031", facility:"مصانع الدلتا للنسيج — المحلة", type:"تفتيش المصنع الشامل", date:"2025-07-10", status:"قيد الجدولة", cls:"pa", pending:true},
-  {id:"AUD-2025-028", facility:"حديد مصر للتجارة — العاشر من رمضان", type:"تفتيش الامتثال والسلامة المهنية", date:"2025-06-18", status:"مكتمل ✓", cls:"pg", pending:false}
-];
-
-function submitAuditRequest() {
+// ── التفتيش (Audits) — real backend: same /inspection API as testing ──
+var AUDIT_REQUESTS = [];
+async function submitAuditRequest() {
   if (!requireLoginForService(submitAuditRequest)) return;
   var typeEl = document.getElementById("aud-req-type");
   var facilityEl = document.getElementById("aud-req-facility");
   var dateEl = document.getElementById("aud-req-date");
   var facility = facilityEl.value.trim();
   if (!facility) { toast("الرجاء إدخال اسم المنشأة المطلوب تفتيشها"); return; }
-  var item = {
-    id: nextServiceId("AUD"), facility:facility,
-    type: typeEl.value, date: dateEl.value,
-    status:"قيد الجدولة", cls:"pa", pending:true
-  };
-  AUDIT_REQUESTS.unshift(item);
-  facilityEl.value = "";
-  toast("تم حجز طلب التفتيش — سيتواصل معك المفتش المعتمد لتأكيد الموعد");
-  renderAuditRequestsList();
-  renderAdminServiceTables();
-  updateServicesBadge();
+  try {
+    await apiFetch("/inspection/audit", {
+      method: "POST",
+      body: JSON.stringify({
+        requestType: typeEl.value,
+        facility: facility,
+        preferredDate: dateEl.value || undefined
+      })
+    });
+    facilityEl.value = "";
+    toast("تم حجز طلب التفتيش — سيتواصل معك المفتش المعتمد لتأكيد الموعد");
+    loadMyInspectionRequests();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر حجز طلب التفتيش"));
+  }
 }
 window.submitAuditRequest = submitAuditRequest;
 
-function renderAuditRequestsList() {
-  var box = document.getElementById("audit-requests-list");
-  if (!box) return;
-  box.innerHTML = AUDIT_REQUESTS.length ? AUDIT_REQUESTS.map(function(r) {
-    return '<div class="row"><div><div style="font-weight:700;font-size:13px">#' + r.id + '</div>' +
-      '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + r.facility + ' — ' + r.type + '</div></div>' +
-      '<span class="pill ' + r.cls + '">' + r.status + '</span></div>';
-  }).join("") : '<div style="font-size:13px;color:var(--ts);padding:14px 0">لا توجد طلبات تفتيش حتى الآن</div>';
-}
+// Kept as a thin alias — other code still calls renderAuditRequestsList()
+// by name (see setServiceStatus's dispatcher for the still-mock groups);
+// both testing and audit lists are now refreshed together for real.
+function renderAuditRequestsList() { loadMyInspectionRequests(); }
 window.renderAuditRequestsList = renderAuditRequestsList;
+function renderInspectionList() { loadMyInspectionRequests(); }
+window.renderInspectionList = renderInspectionList;
 
 // ── الجودة (Quality certificates + non-conformance log) ──────
 var QUALITY_CERT_SEQ = 100;
@@ -7261,14 +7282,52 @@ window.openVerifPreview = openVerifPreview;
 
 function approveServiceItem(group, id) {
   if (group === "financing") { reviewFinancingAdmin(id, true); return; }
+  if (group === "inspection" || group === "audit") { reviewInspectionAdmin(id, true); return; }
   setServiceStatus(group, id, "تمت الموافقة ✓", "pg", false);
 }
 function rejectServiceItem(group, id) {
   if (group === "financing") { reviewFinancingAdmin(id, false); return; }
+  if (group === "inspection" || group === "audit") { reviewInspectionAdmin(id, false); return; }
   setServiceStatus(group, id, "مرفوض", "pr", false);
 }
 window.approveServiceItem = approveServiceItem;
 window.rejectServiceItem = rejectServiceItem;
+
+// ── INSPECTION / AUDIT (admin side, real backend) ──────────────────
+async function loadRealInspectionAdmin() {
+  try {
+    var list = await apiFetch("/inspection/admin/requests");
+    var statusLabel = { PENDING: "قيد المراجعة", APPROVED: "تمت الموافقة ✓", REJECTED: "مرفوض" };
+    var statusCls = { PENDING: "pa", APPROVED: "pg", REJECTED: "pr" };
+    var toItem = function(r) {
+      return {
+        id: r.id,
+        product: r.productOrFacility, type: r.requestType,
+        facility: r.productOrFacility,
+        status: statusLabel[r.status] || r.status,
+        cls: statusCls[r.status] || "pa",
+        pending: r.status === "PENDING"
+      };
+    };
+    INSPECTION_REQUESTS = list.filter(function(r){ return r.kind === "TESTING"; }).map(toItem);
+    AUDIT_REQUESTS = list.filter(function(r){ return r.kind === "AUDIT"; }).map(toItem);
+    renderAdminServiceTables();
+  } catch (err) {
+    toast("⚠️ تعذر تحميل طلبات الفحص/التفتيش: " + (err.message || ""));
+  }
+}
+window.loadRealInspectionAdmin = loadRealInspectionAdmin;
+
+async function reviewInspectionAdmin(id, approve) {
+  try {
+    await apiFetch("/inspection/admin/" + id + "/review", { method: "POST", body: JSON.stringify({ approve: approve }) });
+    toast(approve ? "✅ تمت الموافقة على الطلب" : "تم رفض الطلب");
+    loadRealInspectionAdmin();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإجراء"));
+  }
+}
+window.reviewInspectionAdmin = reviewInspectionAdmin;
 
 // ── FINANCING (admin side, real backend) ──────────────────────────
 async function loadRealFinancingAdmin() {

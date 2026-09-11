@@ -415,6 +415,59 @@ export class FinanceController {
   }
 }
 
+// ── Inspection Controller ────────────────────────────────────────
+@ApiTags('inspection')
+@Controller('inspection')
+export class InspectionController {
+  constructor(private inspection: InspectionService) {}
+
+  @Post('testing')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'حجز طلب فحص معملي' })
+  submitTesting(@Body() dto: any, @Request() req: any) {
+    return this.inspection.submitTesting(req.user.companyId, dto);
+  }
+
+  @Post('audit')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'حجز طلب تفتيش ميداني' })
+  submitAudit(@Body() dto: any, @Request() req: any) {
+    return this.inspection.submitAudit(req.user.companyId, dto);
+  }
+
+  @Get('my')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'طلبات الفحص والتفتيش الخاصة بي' })
+  listMine(@Request() req: any) {
+    return this.inspection.listMine(req.user.companyId);
+  }
+
+  @Get('admin/requests')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'كل طلبات الفحص والتفتيش (أدمن)' })
+  adminList(@Query('kind') kind: string, @Query('status') status: string, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.inspection.adminList(kind, status);
+  }
+
+  @Post('admin/:id/review')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'الموافقة على طلب فحص/تفتيش أو رفضه (أدمن)' })
+  adminReview(@Param('id') id: string, @Body() body: { approve: boolean; notes?: string }, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.inspection.adminReview(id, !!body.approve, body.notes);
+  }
+}
+
 // ── Incubator Controller ───────────────────────────────────────────
 @ApiTags('incubator')
 @Controller('incubator')
