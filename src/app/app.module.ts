@@ -50,6 +50,7 @@ import {
   SubscriptionsService, SubscriptionsController,
 } from '../products/products.service';
 import { AdsService, AdsController } from '../ads/ads.service';
+import { AdsV2Service, AdsV2Controller } from '../ads-v2/ads-v2.service';
 import { PriceForecastService, PriceForecastController } from '../ai/price-forecast.service';
 import {
   SupplierDashboardService, BuyerDashboardService, DashboardController,
@@ -104,7 +105,7 @@ import { PaymobWebhookController, FawryWebhookController } from '../escrow/paymo
     // Products / Reviews / Categories / Subscriptions
     ProductsController, ReviewsController, CategoriesController, SubscriptionsController,
     // Ads / AI / Dashboard / Search / Maps / Payment
-    AdsController, PriceForecastController, DashboardController,
+    AdsController, AdsV2Controller, PriceForecastController, DashboardController,
     SearchController, MapsController, PaymentController,
     // Upload
     UploadController,
@@ -128,7 +129,7 @@ import { PaymobWebhookController, FawryWebhookController } from '../escrow/paymo
     InvoiceService, PaymentService, LoyaltyService,
     AdminService, ReportsService, OcrService, MapsService,
     ProductsService, ReviewsService, CategoriesService, SubscriptionsService,
-    AdsService, PriceForecastService,
+    AdsService, AdsV2Service, PriceForecastService,
     SupplierDashboardService, BuyerDashboardService,
   ],
 })

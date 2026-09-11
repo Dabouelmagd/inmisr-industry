@@ -277,6 +277,7 @@ model Company {
   factoryNeeds        FactoryNeed[]
   reverseLogisticsRequests ReverseLogisticsRequest[]
   jobPostings              JobPosting[]
+  adBookings               AdBooking[]
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -786,6 +787,72 @@ model TradeApplication {
   updatedAt   DateTime @updatedAt
 
   @@map("trade_applications")
+}
+
+// ─── NATIVE AD SERVING & BOOKING ENGINE (ads-v2) ──────────────────
+// Distinct from AdCampaign (the earlier self-serve search/category ad
+// system) — this covers FIXED placements booked via a date-range
+// calendar with tiered time-based pricing, per the product spec.
+
+enum AdSlotLocation {
+  TOP_TICKER
+  HERO_SPOTLIGHT
+  SPONSORED_SUPPLIER_CARD
+  SECTION_DIVIDER
+  EXIT_INTENT_MODAL
+}
+
+model AdSlot {
+  id               String     @id @default(uuid())
+  name             String
+  locationKey      AdSlotLocation @unique
+  dimensions       String
+  basePriceWeekly  Float
+  maxConcurrentAds Int        @default(1)
+  isActive         Boolean    @default(true)
+  campaigns        AdBooking[]
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  @@map("ad_slots")
+}
+
+model AdBooking {
+  id              String    @id @default(uuid())
+  advertiserId    String
+  advertiser      Company   @relation(fields: [advertiserId], references: [id])
+  slotId          String
+  slot            AdSlot    @relation(fields: [slotId], references: [id])
+  targetSector    String?
+  bannerUrl       String
+  destinationUrl  String
+  startDate       DateTime
+  endDate         DateTime
+  billingPeriod   String    // WEEKLY / MONTHLY / QUARTERLY
+  totalPrice      Float
+  paymentStatus   String    @default("UNPAID")   // UNPAID / PAID / REFUNDED
+  reviewStatus    String    @default("PENDING_REVIEW") // PENDING_REVIEW / APPROVED / REJECTED / CANCELLED
+  rejectionReason String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  metrics AdMetric[]
+
+  @@index([slotId, startDate, endDate])
+  @@index([reviewStatus])
+  @@map("ad_bookings")
+}
+
+model AdMetric {
+  id          String    @id @default(uuid())
+  campaignId  String
+  campaign    AdBooking @relation(fields: [campaignId], references: [id])
+  date        DateTime  @default(now()) @db.Date
+  impressions Int       @default(0)
+  clicks      Int       @default(0)
+
+  @@unique([campaignId, date])
+  @@map("ad_metrics")
 }
 
 model FeasibilityStudy {
