@@ -2564,6 +2564,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
     <button class="tab" onclick="switchAdsSubtab(this,&#39;bookings&#39;)">الحجوزات والمساحات</button>
     <button class="tab" onclick="switchAdsSubtab(this,&#39;supplier&#39;)">إعلانات الموردين <span class="pill pa" id="ads-supplier-tab-badge" style="margin-right:4px">0</span></button>
     <button class="tab" onclick="switchAdsSubtab(this,&#39;owner&#39;)">إعلانات الأونر المباشرة</button>
+    <button class="tab" onclick="switchAdsSubtab(this,&#39;realbooking&#39;)">🆕 نظام الحجز الحقيقي</button>
   </div>
 
   <div id="ads-sub-types">
@@ -2574,6 +2575,23 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   <div id="ads-sub-bookings" style="display:none">
     <div style="font-size:13px;color:var(--ts);margin-bottom:14px">حالة كل مساحة إعلانية — متاحة / محجوزة مسبقاً / نشطة حالياً، مع معاينة شكل الإعلان الحالي</div>
     <div id="ad-bookings-table"></div>
+  </div>
+
+  <div id="ads-sub-realbooking" style="display:none">
+    <div style="font-size:12px;color:var(--ts);margin-bottom:14px;background:var(--bg3);border-radius:8px;padding:9px 12px">🆕 نظام حجز حقيقي متصل بقاعدة البيانات — المساحات الخمسة من مواصفات النظام الإعلاني، بتقويم توافر حقيقي يمنع الحجز المزدوج، وتسعير متدرج حقيقي (أسبوعي / شهري -15% / ربع سنوي -30%)</div>
+
+    <div class="g4" style="margin-bottom:20px">
+      <div class="kc"><div class="kl">إجمالي الإيرادات المحصّلة</div><div class="kv" id="adsv2-kpi-revenue">—</div></div>
+      <div class="kc"><div class="kl">إعلانات نشطة الآن</div><div class="kv" id="adsv2-kpi-active">—</div></div>
+      <div class="kc"><div class="kl">طلبات معلّقة</div><div class="kv" id="adsv2-kpi-pending">—</div></div>
+      <div class="kc"><div class="kl">متوسط CTR</div><div class="kv" id="adsv2-kpi-ctr">—</div></div>
+    </div>
+
+    <div style="font-size:14px;font-weight:700;margin-bottom:10px">كتالوج المساحات والأسعار</div>
+    <div id="adsv2-slots-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px"></div>
+
+    <div style="font-size:14px;font-weight:700;margin-bottom:10px">جدول الحصر — كل الحجوزات</div>
+    <div id="adsv2-inventory-table"><div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">جارٍ التحميل...</div></div>
   </div>
 
   <div id="ads-sub-supplier" style="display:none">
@@ -4779,12 +4797,15 @@ window.refreshAllAdsViews = refreshAllAdsViews;
 window.switchAdsSubtab = function(btn, which) {
   document.querySelectorAll("#atab-ads .tab").forEach(function(t){ t.classList.remove("on"); });
   btn.classList.add("on");
-  ["types","bookings","supplier","owner"].forEach(function(s) {
+  ["types","bookings","supplier","owner","realbooking"].forEach(function(s) {
     var el = document.getElementById("ads-sub-" + s);
     if (el) el.style.display = (s === which) ? "block" : "none";
   });
   if (which === "supplier" && typeof loadPendingAdCampaigns === "function") {
     loadPendingAdCampaigns();
+  }
+  if (which === "realbooking" && typeof loadAdsV2Admin === "function") {
+    loadAdsV2Admin();
   }
 };
 
@@ -7592,6 +7613,130 @@ async function reviewJobPostingAdmin(id, approve) {
   }
 }
 window.reviewJobPostingAdmin = reviewJobPostingAdmin;
+
+// ── ADS-V2: Native Ad Serving & Booking Engine (owner dashboard) ──
+var ADSV2_SLOT_LABELS = {
+  TOP_TICKER: "شريط الإعلانات الترويجي العلوي",
+  HERO_SPOTLIGHT: "البانر الرئيسي في واجهة الهيرو",
+  SPONSORED_SUPPLIER_CARD: "البطاقة المميّزة ضمن قائمة الموردين",
+  SECTION_DIVIDER: "بانر الفواصل بين الأقسام",
+  EXIT_INTENT_MODAL: "إعلان النوافذ المنبثقة الحصري"
+};
+
+async function loadAdsV2Admin() {
+  try {
+    var stats = await apiFetch("/ads-v2/admin/dashboard");
+    document.getElementById("adsv2-kpi-revenue").textContent = formatEgp(stats.totalRevenue);
+    document.getElementById("adsv2-kpi-active").textContent = stats.activeAds;
+    document.getElementById("adsv2-kpi-pending").textContent = stats.pendingApprovals;
+    document.getElementById("adsv2-kpi-ctr").textContent = stats.avgCtr + "%";
+  } catch (err) {
+    toast("⚠️ تعذر تحميل مؤشرات الإعلانات: " + (err.message || ""));
+  }
+
+  try {
+    var slots = await apiFetch("/ads-v2/slots");
+    var grid = document.getElementById("adsv2-slots-grid");
+    if (grid) {
+      grid.innerHTML = slots.map(function(s) {
+        var monthly = Math.round(s.basePriceWeekly * 4 * 0.85);
+        var quarterly = Math.round(s.basePriceWeekly * 12 * 0.70);
+        return '<div class="card"><div class="cb">' +
+          '<div style="font-size:13px;font-weight:700;margin-bottom:6px">' + s.name + '</div>' +
+          '<div style="font-size:11px;color:var(--ts);margin-bottom:10px">' + s.dimensions + ' · حد أقصى ' + s.maxConcurrentAds + ' إعلان متزامن</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:11px;text-align:center">' +
+          '<div style="background:var(--bg3);border-radius:6px;padding:6px"><div style="color:var(--tt)">أسبوعي</div><div style="font-weight:700;color:var(--gold)">' + formatEgp(s.basePriceWeekly) + '</div></div>' +
+          '<div style="background:var(--bg3);border-radius:6px;padding:6px"><div style="color:var(--tt)">شهري (-15%)</div><div style="font-weight:700;color:var(--gold)">' + formatEgp(monthly) + '</div></div>' +
+          '<div style="background:var(--bg3);border-radius:6px;padding:6px"><div style="color:var(--tt)">ربع سنوي (-30%)</div><div style="font-weight:700;color:var(--gold)">' + formatEgp(quarterly) + '</div></div>' +
+          '</div></div></div>';
+      }).join("");
+    }
+  } catch (err) { /* silent */ }
+
+  loadAdsV2Inventory();
+}
+window.loadAdsV2Admin = loadAdsV2Admin;
+
+async function loadAdsV2Inventory() {
+  var box = document.getElementById("adsv2-inventory-table");
+  if (!box) return;
+  try {
+    var list = await apiFetch("/ads-v2/admin/inventory");
+    if (!list.length) {
+      box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">لا توجد حجوزات إعلانية حتى الآن</div>';
+      return;
+    }
+    var reviewLabel = { PENDING_REVIEW: "قيد المراجعة", APPROVED: "مقبول", REJECTED: "مرفوض", CANCELLED: "ملغي" };
+    var reviewCls = { PENDING_REVIEW: "pa", APPROVED: "pg", REJECTED: "pr", CANCELLED: "pr" };
+    var payLabel = { UNPAID: "غير مدفوع", PAID: "مدفوع ✓", REFUNDED: "مسترد" };
+    box.innerHTML = '<div class="tw"><table class="tbl"><thead><tr><th>المعلن</th><th>المساحة</th><th>المدة</th><th>ظهور/نقرات</th><th>CTR</th><th>القيمة</th><th>الدفع</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>' +
+      list.map(function(b) {
+        var start = new Date(b.startDate).toLocaleDateString("ar-EG");
+        var end = new Date(b.endDate).toLocaleDateString("ar-EG");
+        var actions = "";
+        if (b.reviewStatus === "PENDING_REVIEW") {
+          actions += '<button class="bc" style="font-size:11px;padding:3px 8px;border-radius:5px" onclick="adsV2Review(\'' + b.id + '\',true)">قبول</button> ' +
+            '<button class="bl" style="font-size:11px;padding:3px 8px;border-radius:5px" onclick="adsV2Review(\'' + b.id + '\',false)">رفض</button> ';
+        }
+        if (b.paymentStatus === "UNPAID" && b.reviewStatus !== "REJECTED" && b.reviewStatus !== "CANCELLED") {
+          actions += '<button class="bl" style="font-size:11px;padding:3px 8px;border-radius:5px" onclick="adsV2MarkPaid(\'' + b.id + '\')">تسجيل كمدفوع</button> ';
+        }
+        if (b.reviewStatus === "APPROVED") {
+          actions += '<button style="background:rgba(206,17,38,.08);color:#CE1126;border:1px solid rgba(206,17,38,.2);border-radius:5px;padding:3px 8px;cursor:pointer;font-family:inherit;font-size:11px" onclick="adsV2Cancel(\'' + b.id + '\')">إلغاء</button>';
+        }
+        return '<tr>' +
+          '<td><strong>' + (b.advertiserName || "—") + '</strong></td>' +
+          '<td>' + (ADSV2_SLOT_LABELS[b.slotName] || b.slotName) + '</td>' +
+          '<td style="color:var(--ts);white-space:nowrap">' + start + ' → ' + end + '</td>' +
+          '<td>' + b.impressions + ' / ' + b.clicks + '</td>' +
+          '<td>' + b.ctr + '%</td>' +
+          '<td style="color:var(--gold);font-weight:600">' + formatEgp(b.totalPrice) + '</td>' +
+          '<td><span class="pill ' + (b.paymentStatus === "PAID" ? "pg" : "pa") + '">' + (payLabel[b.paymentStatus] || b.paymentStatus) + '</span></td>' +
+          '<td><span class="pill ' + (reviewCls[b.reviewStatus] || "pa") + '">' + (reviewLabel[b.reviewStatus] || b.reviewStatus) + '</span></td>' +
+          '<td style="white-space:nowrap">' + actions + '</td>' +
+          '</tr>';
+      }).join("") + '</tbody></table></div>';
+  } catch (err) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">⚠️ تعذر تحميل جدول الحجوزات: ' + (err.message || "") + '</div>';
+  }
+}
+window.loadAdsV2Inventory = loadAdsV2Inventory;
+
+async function adsV2Review(id, approve) {
+  var reason = approve ? undefined : prompt("سبب الرفض (اختياري):") || undefined;
+  try {
+    await apiFetch("/ads-v2/admin/" + id + "/review", { method: "POST", body: JSON.stringify({ approve: approve, reason: reason }) });
+    toast(approve ? "✅ تم قبول الحجز" : "تم رفض الحجز");
+    loadAdsV2Admin();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإجراء"));
+  }
+}
+window.adsV2Review = adsV2Review;
+
+async function adsV2MarkPaid(id) {
+  if (!confirm("تأكيد استلام الدفع (تحويل بنكي/مطابقة يدوية)؟")) return;
+  try {
+    await apiFetch("/ads-v2/admin/" + id + "/mark-paid", { method: "POST" });
+    toast("✅ تم تسجيل الحجز كمدفوع");
+    loadAdsV2Admin();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإجراء"));
+  }
+}
+window.adsV2MarkPaid = adsV2MarkPaid;
+
+async function adsV2Cancel(id) {
+  if (!confirm("تأكيد إلغاء هذا الحجز الإعلاني نهائيًا؟")) return;
+  try {
+    await apiFetch("/ads-v2/admin/" + id + "/cancel", { method: "POST" });
+    toast("تم إلغاء الحجز");
+    loadAdsV2Admin();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإجراء"));
+  }
+}
+window.adsV2Cancel = adsV2Cancel;
 
 // ── FINANCING (admin side, real backend) ──────────────────────────
 async function loadRealFinancingAdmin() {
