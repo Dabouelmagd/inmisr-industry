@@ -2541,7 +2541,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         </div>
         <div id="admin-orders-table"></div>
       </div>
-      <div id="atab-disputes" style="display:none"><div style="font-size:20px;font-weight:700;margin-bottom:18px">إدارة النزاعات</div><div class="card"><div class="cb"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:11px"><div><span style="color:var(--red);font-weight:700;font-size:13px">#DIS-001</span><div style="font-size:13px;font-weight:600;margin-top:5px">ستار للبلاستيك ضد مصر للكيماويات</div><div style="font-size:13px;color:var(--ts);margin-top:3px">خامات غير مطابقة للمواصفات</div></div><div style="text-align:left"><div style="font-size:18px;font-weight:700;color:#C09300">54,000 ج.م</div><span class="pill pr" style="display:inline-block;margin-top:5px">نزاع مفتوح</span></div></div><div style="display:flex;gap:8px"><button class="bc" style="flex:1;padding:8px;font-size:13px;border-radius:8px" data-msg="buyer">لصالح المشتري</button><button class="bl" style="flex:1;padding:8px;font-size:13px;border-radius:8px" data-msg="supplier">لصالح المورد</button><button style="background:rgba(245,158,11,.1);color:#D97706;border:1px solid rgba(245,158,11,.25);border-radius:8px;flex:1;padding:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600" data-msg="split">تقسيم 50/50</button></div></div></div></div>
+      <div id="atab-disputes" style="display:none"><div style="font-size:20px;font-weight:700;margin-bottom:18px">إدارة النزاعات</div><div id="admin-disputes-list"><div style="font-size:13px;color:var(--ts);padding:20px 0;text-align:center">جارٍ التحميل...</div></div></div>
       <div id="atab-revenue" style="display:none"><div style="font-size:20px;font-weight:700;margin-bottom:18px">الإيرادات</div><div class="tw"><table class="tbl"><thead><tr><th>المصدر</th><th>هذا الشهر</th><th>الشهر الماضي</th><th>النمو</th></tr></thead><tbody><tr><td>عمولات صفقات</td><td style="color:#C09300;font-weight:600">42,000 ج.م</td><td>35,300 ج.م</td><td style="color:#22C55E;font-weight:600">↑ 19%</td></tr><tr><td>اشتراكات Growth</td><td style="color:#C09300;font-weight:600">21,000 ج.م</td><td>18,000 ج.م</td><td style="color:#22C55E;font-weight:600">↑ 17%</td></tr><tr><td>إعلانات</td><td style="color:#C09300;font-weight:600">11,400 ج.م</td><td>8,200 ج.م</td><td style="color:#22C55E;font-weight:600">↑ 38%</td></tr></tbody></table></div></div>
       <div id="atab-escrow" style="display:none"><div style="font-size:20px;font-weight:700;margin-bottom:18px">Escrow</div><div class="g3"><div class="kc"><div class="kl">إجمالي محتجز</div><div class="kv" id="admin-escrow-held">—</div><div class="kch" id="admin-escrow-held-count"></div></div><div class="kc"><div class="kl">إفراج الشهر</div><div class="kv" id="admin-escrow-released">—</div><div class="kch" id="admin-escrow-released-count"></div></div><div class="kc"><div class="kl">نزاعات</div><div class="kv" id="admin-escrow-disputed">—</div><div class="kch" style="color:#EF4444">قيد المراجعة</div></div></div></div>
       <div id="atab-ads" style="display:none">
@@ -4284,6 +4284,9 @@ document.addEventListener("DOMContentLoaded",function(){
     }
     if (name === "escrow") {
       loadAdminEscrow();
+    }
+    if (name === "disputes") {
+      loadAdminDisputes();
     }
     if (name === "promocodes") {
       if (typeof renderPromoCodesTable === "function") renderPromoCodesTable();
@@ -7974,6 +7977,81 @@ async function loadAdminEscrow() {
   }
 }
 window.loadAdminEscrow = loadAdminEscrow;
+
+// ── Owner dashboard: Disputes (GET/POST /admin/disputes) ──────────
+var DISPUTE_STATUS_LABEL = {
+  OPEN: "نزاع مفتوح", UNDER_REVIEW: "قيد المراجعة",
+  RESOLVED_BUYER: "لصالح المشتري", RESOLVED_SUPPLIER: "لصالح المورد",
+  ESCALATED: "تم التصعيد"
+};
+var DISPUTE_STATUS_CLASS = {
+  OPEN: "pr", UNDER_REVIEW: "pa",
+  RESOLVED_BUYER: "pg", RESOLVED_SUPPLIER: "pg", ESCALATED: "pr"
+};
+
+async function loadAdminDisputes() {
+  var box = document.getElementById("admin-disputes-list");
+  try {
+    var result = await apiFetch("/admin/disputes?status=OPEN");
+    renderAdminDisputes(result.data || []);
+  } catch (err) {
+    if (box) box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:20px 0;text-align:center">⚠️ تعذر تحميل النزاعات: ' + (err.message || "") + '</div>';
+  }
+}
+window.loadAdminDisputes = loadAdminDisputes;
+
+function renderAdminDisputes(list) {
+  var box = document.getElementById("admin-disputes-list");
+  if (!box) return;
+  if (!list.length) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:20px 0;text-align:center">لا توجد نزاعات مفتوحة حالياً ✅</div>';
+    return;
+  }
+  box.innerHTML = list.map(function(d) {
+    var buyerName = (d.order && d.order.buyer && d.order.buyer.nameAr) || "مشتري غير معروف";
+    var supplierName = (d.order && d.order.supplier && d.order.supplier.nameAr) || "مورد غير معروف";
+    var amount = (d.order && d.order.escrow && d.order.escrow.amount) || 0;
+    var statusLabel = DISPUTE_STATUS_LABEL[d.status] || d.status;
+    var statusCls = DISPUTE_STATUS_CLASS[d.status] || "pa";
+    var resolved = d.status === "RESOLVED_BUYER" || d.status === "RESOLVED_SUPPLIER";
+    return '<div class="card" style="margin-bottom:12px"><div class="cb">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:11px">' +
+      '<div><span style="color:var(--red);font-weight:700;font-size:13px">#' + d.id.slice(-8) + '</span>' +
+      '<div style="font-size:13px;font-weight:600;margin-top:5px">' + buyerName + ' ضد ' + supplierName + '</div>' +
+      '<div style="font-size:13px;color:var(--ts);margin-top:3px">' + (d.reason || "") + '</div></div>' +
+      '<div style="text-align:left"><div style="font-size:18px;font-weight:700;color:#C09300">' + formatEgp(amount) + '</div>' +
+      '<span class="pill ' + statusCls + '" style="display:inline-block;margin-top:5px">' + statusLabel + '</span></div></div>' +
+      (resolved ? '' :
+        '<div style="display:flex;gap:8px">' +
+        '<button class="bc" style="flex:1;padding:8px;font-size:13px;border-radius:8px" onclick="resolveAdminDispute(\'' + d.id + '\',\'BUYER\')">لصالح المشتري</button>' +
+        '<button class="bl" style="flex:1;padding:8px;font-size:13px;border-radius:8px" onclick="resolveAdminDispute(\'' + d.id + '\',\'SUPPLIER\')">لصالح المورد</button>' +
+        '<button style="background:rgba(245,158,11,.1);color:#D97706;border:1px solid rgba(245,158,11,.25);border-radius:8px;flex:1;padding:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600" onclick="resolveAdminDispute(\'' + d.id + '\',\'SPLIT\')">تقسيم 50/50</button>' +
+        '</div>') +
+      '</div></div>';
+  }).join("");
+}
+window.renderAdminDisputes = renderAdminDisputes;
+
+async function resolveAdminDispute(id, winner) {
+  var winnerLabel = winner === "BUYER" ? "المشتري" : winner === "SUPPLIER" ? "المورد" : "تقسيم 50/50";
+  if (!confirm("تأكيد حل النزاع لصالح " + winnerLabel + "؟ سيتم الإفراج عن مبلغ Escrow فورًا ولا يمكن التراجع.")) return;
+  try {
+    await apiFetch("/admin/disputes/" + id + "/resolve", {
+      method: "POST",
+      body: JSON.stringify({
+        resolution: "تم الحل من لوحة تحكم الأونر — لصالح " + winnerLabel,
+        winner: winner,
+        splitPct: winner === "SPLIT" ? 50 : undefined
+      })
+    });
+    toast("✅ تم حل النزاع لصالح " + winnerLabel);
+    loadAdminDisputes();
+    loadAdminOverview();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر حل النزاع"));
+  }
+}
+window.resolveAdminDispute = resolveAdminDispute;
 
 // ══════════════════════════════════════════════════════════════════
 // BUSINESS TEAM & PERMISSIONS — for supplier/company dashboards
