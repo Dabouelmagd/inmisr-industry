@@ -278,6 +278,7 @@ model Company {
   reverseLogisticsRequests ReverseLogisticsRequest[]
   jobPostings              JobPosting[]
   adBookings               AdBooking[]
+  specialOffers            SpecialOffer[]
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -898,6 +899,26 @@ model AdMetric {
 
   @@unique([campaignId, date])
   @@map("ad_metrics")
+}
+
+model SpecialOffer {
+  id            String    @id @default(uuid())
+  companyId     String
+  company       Company   @relation(fields: [companyId], references: [id])
+  sectorLabel   String
+  name          String
+  originalPrice Float
+  discountPrice Float
+  qty           String?
+  minQty        String?
+  expiryDate    DateTime?
+  description   String?
+  status        String    @default("PENDING")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([companyId, status])
+  @@map("special_offers")
 }
 
 model FeasibilityStudy {

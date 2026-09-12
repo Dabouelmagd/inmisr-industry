@@ -1091,7 +1091,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
       <div style="font-size:15px;font-weight:700;margin-bottom:16px;color:var(--red)">🏷️ إضافة عرض خاص جديد</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
         <div><span class="lbl">اسم المنتج</span><input class="inp" id="off-name" placeholder="مثال: حديد تسليح 16مم"></div>
-        <div><span class="lbl">القطاع</span><select class="sel" id="off-sector"><option value="">كل القطاعات</option><option value="">كل القطاعات</option>
+        <div><span class="lbl">القطاع</span><select class="sel" id="off-sector"><option value="">كل القطاعات</option>
 <option value="الملابس الجاهزة">الملابس الجاهزة</option>
 <option value="المنسوجات">المنسوجات</option>
 <option value="الصناعات الغذائية">الصناعات الغذائية</option>
@@ -2695,12 +2695,9 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
 <div id="atab-offers-admin" style="display:none">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
     <div><div style="font-size:20px;font-weight:700">إدارة العروض الخاصة</div><div style="font-size:13px;color:var(--ts);margin-top:4px">مراجعة وموافقة عروض الموردين</div></div>
-    <span class="pill pa">3 عروض معلقة</span>
+    <span class="pill pa" id="offers-admin-pending-badge">— عروض معلقة</span>
   </div>
-  <div class="tw"><table class="tbl"><thead><tr><th>المورد</th><th>المنتج</th><th>الخصم</th><th>الكمية</th><th>ينتهي</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>
-    <tr><td><strong>حديد مصر للتجارة</strong></td><td>حديد تسليح 16مم</td><td style="color:#22C55E;font-weight:600">12.5%</td><td>200 طن</td><td style="color:var(--ts)">30 يونيو</td><td><span class="pill pa">معلق</span></td><td style="white-space:nowrap"><button class="bc" style="font-size:12px;padding:3px 10px;border-radius:6px" onclick="approveAd(this)">نشر</button> <button class="bl" style="font-size:12px;padding:3px 10px;border-radius:6px" onclick="rejectAd(this)">رفض</button></td></tr>
-    <tr><td><strong>البتروكيماويات الحديثة</strong></td><td>PP Homopolymer</td><td style="color:#22C55E;font-weight:600">8%</td><td>50 طن</td><td style="color:var(--ts)">15 يوليو</td><td><span class="pill pg">نشط</span></td><td><button class="bl" style="font-size:12px;padding:3px 10px;border-radius:6px" data-msg="ad_stop">إيقاف</button></td></tr>
-  </tbody></table></div>
+  <div id="offers-admin-table"><div style="font-size:13px;color:var(--ts);padding:20px 0;text-align:center">جارٍ التحميل...</div></div>
 </div>
       <div id="atab-incubator" style="display:none">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
@@ -4167,14 +4164,27 @@ document.addEventListener("DOMContentLoaded",function(){
   };
 
   // ── OFFERS ─────────────────────────────────────────────────────
-  var OFFERS_DATA = [
-    {sup:"حديد مصر للتجارة",sector:"الحديد",name:"حديد تسليح 16مم Grade 60",orig:4800,disc:4200,qty:"200 طن",min:"10 طن",exp:"30 يونيو 2025",desc:"مواصفات ASTM A615 · شهادة مطابقة SGS · تسليم العاشر من رمضان"},
-    {sup:"البتروكيماويات الحديثة",sector:"البتروكيماويات",name:"PP Homopolymer Grade H030",orig:18500,disc:17020,qty:"50 طن",min:"5 طن",exp:"15 يوليو 2025",desc:"درجة صناعية · حبيبات · شهادة تحليل COA مرفقة"},
-    {sup:"طاقة مصر الشمسية",sector:"الطاقة الشمسية",name:"ألواح شمسية 400W Monocrystalline",orig:1200,disc:1020,qty:"100 وحدة",min:"10 ألواح",exp:"20 يونيو 2025",desc:"كفاءة 21.3% · ضمان 25 سنة · شهادة IEC 61215"},
-    {sup:"مصانع الدلتا للنسيج",sector:"النسيج",name:"قماش بوليستر 200 GSM",orig:85,disc:72,qty:"5,000 متر",min:"500 متر",exp:"10 يوليو 2025",desc:"عرض 150cm · ثبات ألوان عالي · مناسب للزي الموحد"},
-    {sup:"مصنع الوادي للأغذية",sector:"الأغذية",name:"زيت ذرة خام Grade A",orig:42,disc:38,qty:"200 طن",min:"10 طن",exp:"25 يونيو 2025",desc:"صلاحية 18 شهر · شهادة HACCP · تعبئة براميل 180كجم"},
-    {sup:"الشركة المصرية للألومنيوم",sector:"الألومنيوم",name:"ألواح ألومنيوم 3mm سبيكة 1050",orig:75000,disc:68000,qty:"20 طن",min:"2 طن",exp:"5 يوليو 2025",desc:"مقاس 1250×2500mm · معالجة H14 · شهادة مطابقة"}
-  ];
+  // Real offers loaded via loadOffersPublic() below (was a 6-item hardcoded mock).
+  var OFFERS_DATA = [];
+
+  async function loadOffersPublic(sector) {
+    try {
+      var list = await apiFetch("/special-offers" + (sector ? "?sector=" + encodeURIComponent(sector) : ""));
+      OFFERS_DATA = list.map(function(o) {
+        return {
+          sup: (o.company && o.company.nameAr) || "—", sector: o.sectorLabel, name: o.name,
+          orig: o.originalPrice, disc: o.discountPrice, qty: o.qty || "—", min: o.minQty || "—",
+          exp: o.expiryDate ? new Date(o.expiryDate).toLocaleDateString("ar-EG") : "بلا تاريخ انتهاء",
+          desc: o.description || ""
+        };
+      });
+      renderOffers("");
+    } catch (err) {
+      var grid = document.getElementById("offers-grid");
+      if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--ts)">⚠️ تعذر تحميل العروض</div>';
+    }
+  }
+  window.loadOffersPublic = loadOffersPublic;
 
   function renderOffers(filterStr){
     var grid = document.getElementById("offers-grid"); if(!grid)return;
@@ -4203,7 +4213,7 @@ document.addEventListener("DOMContentLoaded",function(){
     });
     grid.innerHTML = h || '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--ts)">لا توجد عروض في هذا القطاع حالياً</div>';
   }
-  if (document.getElementById("offers-grid")) renderOffers("");
+  if (document.getElementById("offers-grid")) loadOffersPublic("");
 
   window.filterOffers = function(btn, str){
   document.querySelectorAll(".offer-filter-btn").forEach(function(b){ b.className = "bl offer-filter-btn"; });
@@ -4216,11 +4226,30 @@ document.addEventListener("DOMContentLoaded",function(){
     if(f) f.style.display = f.style.display==="none" ? "block" : "none";
   };
 
-  window.submitOffer = function(){
+  window.submitOffer = async function(){
+    if (!requireLoginForService(window.submitOffer)) return;
     var name = (document.getElementById("off-name")||{}).value||"";
+    var orig = Number((document.getElementById("off-orig")||{}).value);
+    var disc = Number((document.getElementById("off-disc")||{}).value);
     if(!name.trim()){ toast("الرجاء إدخال اسم المنتج"); return; }
-    toast("تم إرسال العرض للمراجعة — سيُنشر خلال 4 ساعات عمل بعد موافقة الإدارة");
-    var f = document.getElementById("offer-form"); if(f) f.style.display="none";
+    if(!orig || !disc || disc >= orig){ toast("سعر العرض يجب أن يكون أقل من السعر الأصلي"); return; }
+    try {
+      await apiFetch("/special-offers", {
+        method: "POST",
+        body: JSON.stringify({
+          name: name,
+          sectorLabel: (document.getElementById("off-sector")||{}).value || "غير محدد",
+          originalPrice: orig, discountPrice: disc,
+          qty: (document.getElementById("off-qty")||{}).value || undefined,
+          expiryDate: (document.getElementById("off-exp")||{}).value || undefined,
+          description: (document.getElementById("off-desc")||{}).value || undefined
+        })
+      });
+      toast("تم إرسال العرض للمراجعة — سيُنشر خلال 4 ساعات عمل بعد موافقة الإدارة");
+      var f = document.getElementById("offer-form"); if(f) f.style.display="none";
+    } catch (err) {
+      toast("⚠️ " + (err.message || "تعذر إرسال العرض"));
+    }
   };
 
   // Ad type selector (ad request page - public) — renders live from AD_TYPES
@@ -4389,6 +4418,9 @@ document.addEventListener("DOMContentLoaded",function(){
     }
     if (name === "team") {
       loadTeamMembers();
+    }
+    if (name === "offers-admin") {
+      loadOffersAdmin();
     }
     if (name === "overview") {
       loadAdminOverview();
@@ -8880,6 +8912,53 @@ async function loadTeamMembers() {
   renderTeamMembersTable();
 }
 window.loadTeamMembers = loadTeamMembers;
+
+// ── SPECIAL OFFERS (admin review) ──────────────────────────────────
+async function loadOffersAdmin() {
+  var box = document.getElementById("offers-admin-table");
+  var badge = document.getElementById("offers-admin-pending-badge");
+  try {
+    var list = await apiFetch("/special-offers/admin/all");
+    var pendingCount = list.filter(function(o){ return o.status === "PENDING"; }).length;
+    if (badge) badge.textContent = pendingCount + " عروض معلقة";
+
+    if (!list.length) {
+      box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:20px 0;text-align:center">لا توجد عروض حتى الآن</div>';
+      return;
+    }
+    var statusLabel = { PENDING: "معلق", APPROVED: "نشط", REJECTED: "مرفوض" };
+    var statusCls = { PENDING: "pa", APPROVED: "pg", REJECTED: "pr" };
+    box.innerHTML = '<div class="tw"><table class="tbl"><thead><tr><th>المورد</th><th>المنتج</th><th>الخصم</th><th>الكمية</th><th>ينتهي</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>' +
+      list.map(function(o) {
+        var pct = Math.round((1 - o.discountPrice / o.originalPrice) * 100);
+        var expLabel = o.expiryDate ? new Date(o.expiryDate).toLocaleDateString("ar-EG") : "—";
+        var actions = o.status === "PENDING"
+          ? '<button class="bc" style="font-size:12px;padding:3px 10px;border-radius:6px" onclick="reviewOfferAdmin(\'' + o.id + '\',true)">نشر</button> <button class="bl" style="font-size:12px;padding:3px 10px;border-radius:6px" onclick="reviewOfferAdmin(\'' + o.id + '\',false)">رفض</button>'
+          : "—";
+        return '<tr><td><strong>' + ((o.company && o.company.nameAr) || "—") + '</strong></td>' +
+          '<td>' + o.name + '</td>' +
+          '<td style="color:#22C55E;font-weight:600">' + pct + '%</td>' +
+          '<td>' + (o.qty || "—") + '</td>' +
+          '<td style="color:var(--ts)">' + expLabel + '</td>' +
+          '<td><span class="pill ' + (statusCls[o.status] || "pa") + '">' + (statusLabel[o.status] || o.status) + '</span></td>' +
+          '<td style="white-space:nowrap">' + actions + '</td></tr>';
+      }).join("") + '</tbody></table></div>';
+  } catch (err) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:20px 0;text-align:center">⚠️ تعذر تحميل العروض: ' + (err.message || "") + '</div>';
+  }
+}
+window.loadOffersAdmin = loadOffersAdmin;
+
+async function reviewOfferAdmin(id, approve) {
+  try {
+    await apiFetch("/special-offers/admin/" + id + "/review", { method: "POST", body: JSON.stringify({ approve: approve }) });
+    toast(approve ? "✅ تم نشر العرض على المنصة" : "تم رفض العرض");
+    loadOffersAdmin();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإجراء"));
+  }
+}
+window.reviewOfferAdmin = reviewOfferAdmin;
 
 // ── Owner dashboard: real data (GET /admin/dashboard, GET /admin/escrow) ──
 function formatEgp(n) {

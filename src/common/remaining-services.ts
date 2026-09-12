@@ -647,6 +647,72 @@ export class TradeApplicationService {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// SPECIAL OFFER SERVICE — عروض خاصة يقدّمها الموردون على منتجاتهم
+// ══════════════════════════════════════════════════════════════════
+
+@Injectable()
+export class SpecialOfferService {
+  constructor(private prisma: PrismaService) {}
+
+  async submit(companyId: string, dto: {
+    sectorLabel: string; name: string; originalPrice: number; discountPrice: number;
+    qty?: string; minQty?: string; expiryDate?: string; description?: string;
+  }) {
+    if (!dto.name?.trim()) throw new BadRequestException('اسم المنتج مطلوب');
+    if (!dto.originalPrice || !dto.discountPrice || dto.discountPrice >= dto.originalPrice) {
+      throw new BadRequestException('سعر العرض يجب أن يكون أقل من السعر الأصلي');
+    }
+    return this.prisma.specialOffer.create({
+      data: {
+        companyId, sectorLabel: dto.sectorLabel, name: dto.name,
+        originalPrice: dto.originalPrice, discountPrice: dto.discountPrice,
+        qty: dto.qty, minQty: dto.minQty,
+        expiryDate: dto.expiryDate ? new Date(dto.expiryDate) : null,
+        description: dto.description, status: 'PENDING',
+      },
+    });
+  }
+
+  // Public feed: approved only, hides anything past its expiry date.
+  async listPublic(sector?: string) {
+    const now = new Date();
+    return this.prisma.specialOffer.findMany({
+      where: {
+        status: 'APPROVED',
+        OR: [{ expiryDate: null }, { expiryDate: { gte: now } }],
+        sectorLabel: sector || undefined,
+      },
+      include: { company: { select: { nameAr: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async listMine(companyId: string) {
+    return this.prisma.specialOffer.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async adminList(status?: string) {
+    return this.prisma.specialOffer.findMany({
+      where: status ? { status } : undefined,
+      include: { company: { select: { nameAr: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async adminReview(id: string, approve: boolean) {
+    const offer = await this.prisma.specialOffer.findUnique({ where: { id } });
+    if (!offer) throw new NotFoundException('العرض غير موجود');
+    if (offer.status !== 'PENDING') throw new BadRequestException('تمت مراجعة هذا العرض بالفعل');
+    return this.prisma.specialOffer.update({
+      where: { id }, data: { status: approve ? 'APPROVED' : 'REJECTED' },
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // INCUBATOR SERVICE
 // ══════════════════════════════════════════════════════════════════
 // ─── incubator/incubator.service.ts ───────────────────────────────
