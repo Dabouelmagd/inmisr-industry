@@ -242,7 +242,7 @@ export class AdminService {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const COMPLETED_STATUSES = ['COMPLETED', 'CONFIRMED', 'DELIVERED'];
+    const COMPLETED_STATUSES = ['COMPLETED', 'CONFIRMED', 'DELIVERED'] as any[];
 
     const [commissionThis, commissionPrev, adsThis, adsPrev, growthCount, eliteCount] = await Promise.all([
       this.prisma.order.aggregate({
