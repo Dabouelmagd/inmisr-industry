@@ -428,6 +428,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
     <button class="bc" data-page="reg">تسجيل</button>
   </div>
 </nav>
+<div id="ad-slot-top-ticker" style="display:none;padding:6px 20px;background:var(--bg2);border-bottom:1px solid var(--bd)"></div>
 <div id="search-bar-strip" style="background:var(--bg2);border-bottom:1px solid var(--bd);padding:8px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:64px;z-index:190">
   <div class="nc" style="flex:1;margin:0">
     <button class="nb on" data-page="home"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>الرئيسية</button>
@@ -571,6 +572,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
       <div class="hst" style="border-right:1px solid var(--bd)"><div class="hsn" id="s3">0</div><div class="hsl">خدمات صناعية متكاملة</div></div>
       <div class="hst" style="border-right:1px solid var(--bd)"><div class="hsn">100%</div><div class="hsl">حماية Escrow مع CIB</div></div>
     </div>
+    <div id="ad-slot-hero-spotlight" style="display:none;max-width:970px;margin:22px auto 0"></div>
   </div>
   <div style="padding:0 32px;max-width:1100px;margin:24px auto">
     <a href="https://inmisr.com" target="_blank" rel="noopener" style="text-decoration:none;display:block;background:linear-gradient(120deg,#0B3D2E,#136B43 55%,#1C8F5A);border-radius:18px;padding:26px 32px;color:#fff;box-shadow:0 14px 36px rgba(19,107,67,.35);transition:transform .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
@@ -667,7 +669,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
 <div class="chip" onclick="openSectorSuppliersPage('الكيماويات المتخصصة')" data-sector-quick="الكيماويات المتخصصة" style="cursor:pointer"><div class="chip-ic">⚗️</div><div class="chip-nm">الكيماويات المتخصصة</div></div>
 </div>
   </div></div>
-  <div style="padding:0 32px;max-width:1000px;margin:0 auto 8px"><div class="ad-banner ad-h" onclick="showMsg(&#39;ad_click&#39;)"><span style="font-size:18px">📢</span><span>مساحة إعلانية مميزة 728×90 — ads@inmisr.net</span><span style="font-size:11px;background:rgba(192,147,0,.15);padding:2px 8px;border-radius:8px;color:var(--gold)">إعلان</span></div></div>
+  <div style="padding:0 32px;max-width:1000px;margin:0 auto 8px"><div id="ad-slot-section-divider" style="display:none"></div></div>
   <div class="sec sa"><div class="mw">
     <div class="stitle">أفضل الموردين</div><div class="ssub" id="best-suppliers-sub">موثقون ومقيّمون من آلاف الصفقات الناجحة — اضغطي على قطاع لعرض موردينه</div>
     <div id="best-suppliers-sectors" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px"></div>
@@ -722,6 +724,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         <select class="sel" style="width:140px" id="sup-sort"><option value="trust">الأعلى ثقة</option><option value="rating">الأعلى تقييماً</option><option value="deals">الأكثر تعامل</option></select>
       </div>
     </div>
+    <div id="ad-slot-sponsored-supplier-card" style="display:none;margin-bottom:14px"></div>
     <div class="g3" id="sg"></div>
     <div style="margin-top:28px">
       <div style="font-size:18px;font-weight:700;margin-bottom:6px">مستكشف سلاسل التوريد</div>
@@ -1859,6 +1862,13 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         <button class="bc" style="padding:10px 22px;font-size:13px" data-page="dash">افتحي لوحة التحكم ←</button>
       </div></div>
     </div>
+  </div>
+</div>
+
+<div class="mov" id="ad-exit-intent-modal">
+  <div class="modal" style="max-width:520px;padding:0;overflow:hidden">
+    <button class="mc" onclick="closeM('ad-exit-intent-modal')" style="position:absolute;top:10px;left:10px;background:rgba(0,0,0,.5);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;z-index:2">✕</button>
+    <div id="ad-slot-exit-intent-modal"></div>
   </div>
 </div>
 
@@ -3573,6 +3583,7 @@ async function loadRealSuppliers() {
   if (supCountEl) supCountEl.textContent = SUPS.length + " مورد موثق";
   var adminSupCountEl = document.getElementById("admin-active-sup-count");
   if (adminSupCountEl) adminSupCountEl.textContent = SUPS.length + " مورد نشط";
+  if (document.getElementById("ad-slot-sponsored-supplier-card")) renderAdSlot("SPONSORED_SUPPLIER_CARD", "ad-slot-sponsored-supplier-card");
 }
 window.loadRealSuppliers = loadRealSuppliers;
 document.addEventListener("DOMContentLoaded", loadRealSuppliers);
@@ -7852,7 +7863,7 @@ window.adsV2Cancel = adsV2Cancel;
 async function renderAdSlot(locationKey, containerId, opts) {
   opts = opts || {};
   var container = document.getElementById(containerId);
-  if (!container) return;
+  if (!container) return false;
 
   var qs = [];
   if (opts.sector) qs.push("sector=" + encodeURIComponent(opts.sector));
@@ -7864,7 +7875,7 @@ async function renderAdSlot(locationKey, containerId, opts) {
   try {
     result = await apiFetch("/ads-v2/serve/" + locationKey + (qs.length ? "?" + qs.join("&") : ""));
   } catch (err) {
-    return; // never break the page layout over an ad-fetch failure
+    return false; // never break the page layout over an ad-fetch failure
   }
 
   // Frequency capping (client-side, per visitor per day — no server-side
@@ -7894,7 +7905,7 @@ async function renderAdSlot(locationKey, containerId, opts) {
       '<span style="position:absolute;top:4px;left:4px;background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:2px 7px;border-radius:5px">إعلان</span></a>';
     container.style.display = "";
     fetch(API_BASE + "/ads-v2/impression/" + ad.campaignId + variantQs, { method: "POST" }).catch(function(){});
-    return;
+    return true;
   }
 
   // No native ad matched this slot right now — waterfall to AdSense if enabled.
@@ -7910,10 +7921,12 @@ async function renderAdSlot(locationKey, containerId, opts) {
       document.head.appendChild(s);
     }
     try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) { /* AdSense not ready yet — safe to ignore */ }
+    return true;
   } else {
     // Nothing to show and no fallback configured — collapse the container
     // cleanly instead of leaving an empty box that breaks the layout.
     container.style.display = "none";
+    return false;
   }
 }
 window.renderAdSlot = renderAdSlot;
@@ -8026,6 +8039,23 @@ async function loadMyAdBookings() {
   } catch (err) { /* silent */ }
 }
 window.loadMyAdBookings = loadMyAdBookings;
+
+// ── LIVE AD PLACEMENT HOOKS (calls renderAdSlot for the 5 real spots) ──
+document.addEventListener("DOMContentLoaded", function() {
+  renderAdSlot("TOP_TICKER", "ad-slot-top-ticker");
+  renderAdSlot("HERO_SPOTLIGHT", "ad-slot-hero-spotlight");
+  renderAdSlot("SECTION_DIVIDER", "ad-slot-section-divider");
+
+  // Exit-intent: once per browser tab session, when the cursor leaves
+  // near the top of the viewport (heading for the tab bar/back button).
+  document.addEventListener("mouseout", function(e) {
+    if (e.clientY > 10 || sessionStorage.getItem("adExitIntentShown")) return;
+    sessionStorage.setItem("adExitIntentShown", "1");
+    renderAdSlot("EXIT_INTENT_MODAL", "ad-slot-exit-intent-modal").then(function(shown) {
+      if (shown && typeof openM === "function") openM("ad-exit-intent-modal");
+    });
+  });
+});
 
 // ── FINANCING (admin side, real backend) ──────────────────────────
 async function loadRealFinancingAdmin() {
