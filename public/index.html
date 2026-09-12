@@ -4404,7 +4404,7 @@ document.addEventListener("DOMContentLoaded",function(){
       renderAdminPaymentsTable();
     }
     if (name === "solar") {
-      refreshSolarAdminTable();
+      loadSolarLeadsAdmin();
     }
     if (name === "services") {
       loadRealFinancingAdmin();
@@ -6630,7 +6630,27 @@ window.submitAdRequest = function() {
 
 
 
-var SOLAR_REQUESTS = [{"id": "sr1", "company": "مصنع النور للبلاستيك", "sector": "البتروكيماويات", "region": "العاشر من رمضان", "contact": "كريم منصور", "phone": "01012345678", "email": "info@alnour-plastic.com", "monthly_bill": "45,000 ج.م", "roof_area": "800 م²", "status": "pending", "submitted": "منذ 3 ساعات", "notes": "نرغب بتغطية 70% من احتياجاتنا الكهربائية بالطاقة الشمسية"}, {"id": "sr2", "company": "مصانع الدلتا للنسيج", "sector": "الصناعات النسيجية", "region": "المحلة", "contact": "هالة عبدالرحمن", "phone": "01112233445", "email": "hala@delta-textile.eg", "monthly_bill": "120,000 ج.م", "roof_area": "2,500 م²", "status": "contacted", "submitted": "منذ يوم", "notes": "محتاجين دراسة جدوى كاملة قبل اتخاذ القرار"}, {"id": "sr3", "company": "شركة النيل للأغذية", "sector": "الصناعات الغذائية", "region": "6 أكتوبر", "contact": "عمرو فتحي", "phone": "01298765432", "email": "amr@nile-food.com", "monthly_bill": "68,000 ج.م", "roof_area": "1,200 م²", "status": "approved", "submitted": "منذ 4 أيام", "notes": "تم تركيب 40% من السعة وننتظر استكمال باقي المنظومة"}];
+// Real leads loaded via loadSolarLeadsAdmin() below.
+var SOLAR_REQUESTS = [];
+
+async function loadSolarLeadsAdmin() {
+  try {
+    var list = await apiFetch("/solar-leads/admin/all");
+    SOLAR_REQUESTS = list.map(function(r) {
+      return {
+        id: r.id, company: r.companyName, sector: r.sector || "—", region: r.region || "—",
+        contact: r.contactName, phone: r.phone, email: r.email || "—",
+        monthly_bill: r.monthlyBill || "—", roof_area: r.roofArea || "—",
+        status: r.status.toLowerCase(), submitted: new Date(r.createdAt).toLocaleDateString("ar-EG"),
+        notes: r.notes || ""
+      };
+    });
+    refreshSolarAdminTable();
+  } catch (err) {
+    toast("⚠️ تعذر تحميل طلبات الطاقة الشمسية: " + (err.message || ""));
+  }
+}
+window.loadSolarLeadsAdmin = loadSolarLeadsAdmin;
 
 // ══════════════════════════════════════════════════════════════════
 // SOLAR INITIATIVE — شمسك.. طاقتك
@@ -6647,7 +6667,7 @@ function populateSolarSectorDropdown() {
   });
 }
 
-window.submitSolarRequest = function() {
+window.submitSolarRequest = async function() {
   var company = (document.getElementById("sol-company")||{}).value || "";
   var contact = (document.getElementById("sol-contact")||{}).value || "";
   var phone = (document.getElementById("sol-phone")||{}).value || "";
@@ -6655,27 +6675,26 @@ window.submitSolarRequest = function() {
     toast("الرجاء إدخال اسم المنشأة واسم المسؤول ورقم الهاتف على الأقل");
     return;
   }
-  var newRequest = {
-    id: "sr" + (SOLAR_REQUESTS.length + 1),
-    company: company,
-    sector: (document.getElementById("sol-sector")||{}).value || "—",
-    region: (document.getElementById("sol-region")||{}).value || "—",
-    contact: contact,
-    phone: phone,
-    email: (document.getElementById("sol-email")||{}).value || "—",
-    monthly_bill: (document.getElementById("sol-bill")||{}).value || "—",
-    roof_area: (document.getElementById("sol-area")||{}).value || "—",
-    status: "pending",
-    submitted: "الآن",
-    notes: (document.getElementById("sol-notes")||{}).value || ""
-  };
-  SOLAR_REQUESTS.push(newRequest);
-  refreshSolarAdminTable();
-  toast("✅ تم استلام طلبك! سيتواصل معك فريق المبادرة خلال 24 ساعة عمل");
-  // Clear form
-  ["sol-company","sol-region","sol-contact","sol-phone","sol-email","sol-bill","sol-area","sol-notes"].forEach(function(id) {
-    var el = document.getElementById(id); if (el) el.value = "";
-  });
+  try {
+    await apiFetch("/solar-leads", {
+      method: "POST",
+      body: JSON.stringify({
+        companyName: company, contactName: contact, phone: phone,
+        sector: (document.getElementById("sol-sector")||{}).value || undefined,
+        region: (document.getElementById("sol-region")||{}).value || undefined,
+        email: (document.getElementById("sol-email")||{}).value || undefined,
+        monthlyBill: (document.getElementById("sol-bill")||{}).value || undefined,
+        roofArea: (document.getElementById("sol-area")||{}).value || undefined,
+        notes: (document.getElementById("sol-notes")||{}).value || undefined
+      })
+    });
+    toast("✅ تم استلام طلبك! سيتواصل معك فريق المبادرة خلال 24 ساعة عمل");
+    ["sol-company","sol-region","sol-contact","sol-phone","sol-email","sol-bill","sol-area","sol-notes"].forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.value = "";
+    });
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إرسال الطلب"));
+  }
 };
 
 function refreshSolarAdminTable() {
@@ -6715,12 +6734,17 @@ window.viewSolarRequest = function(id) {
   document.getElementById("solar-detail-modal").classList.add("open");
 };
 
-window.contactSolarRequest = function(id) {
+window.contactSolarRequest = async function(id) {
   var r = SOLAR_REQUESTS.find(function(x){ return x.id === id; });
   if (!r) return;
-  r.status = "contacted";
-  refreshSolarAdminTable();
-  toast("تم تحديث حالة " + r.company + " إلى: تم التواصل");
+  try {
+    await apiFetch("/solar-leads/admin/" + id + "/status", { method: "POST", body: JSON.stringify({ status: "CONTACTED" }) });
+    r.status = "contacted";
+    refreshSolarAdminTable();
+    toast("تم تحديث حالة " + r.company + " إلى: تم التواصل");
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإجراء"));
+  }
 };
 
 window.markSolarContacted = function(id) {
@@ -6729,13 +6753,18 @@ window.markSolarContacted = function(id) {
   document.getElementById("solar-detail-modal").classList.remove("open");
 };
 
-window.markSolarApproved = function(id) {
+window.markSolarApproved = async function(id) {
   var r = SOLAR_REQUESTS.find(function(x){ return x.id === id; });
   if (!r) return;
-  r.status = "approved";
-  refreshSolarAdminTable();
-  document.getElementById("solar-detail-modal").classList.remove("open");
-  toast("تمت الموافقة على " + r.company + " ✓ — سيتم ربطها بمورد طاقة شمسية معتمد");
+  try {
+    await apiFetch("/solar-leads/admin/" + id + "/status", { method: "POST", body: JSON.stringify({ status: "APPROVED" }) });
+    r.status = "approved";
+    refreshSolarAdminTable();
+    document.getElementById("solar-detail-modal").classList.remove("open");
+    toast("تمت الموافقة على " + r.company + " ✓ — سيتم ربطها بمورد طاقة شمسية معتمد");
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإجراء"));
+  }
 };
 
 document.addEventListener("click", function(e) {

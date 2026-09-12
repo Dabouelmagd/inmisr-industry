@@ -713,6 +713,45 @@ export class SpecialOfferService {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// SOLAR LEAD SERVICE — طلبات استشارة مبادرة "شمسك.. طاقتك" (بدون تسجيل دخول)
+// ══════════════════════════════════════════════════════════════════
+
+@Injectable()
+export class SolarLeadService {
+  constructor(private prisma: PrismaService) {}
+
+  async submit(dto: {
+    companyName: string; sector?: string; region?: string; contactName: string;
+    phone: string; email?: string; monthlyBill?: string; roofArea?: string; notes?: string;
+  }) {
+    if (!dto.companyName?.trim() || !dto.contactName?.trim() || !dto.phone?.trim()) {
+      throw new BadRequestException('اسم المنشأة واسم المسؤول ورقم الهاتف مطلوبون');
+    }
+    return this.prisma.solarLead.create({
+      data: {
+        companyName: dto.companyName, sector: dto.sector, region: dto.region,
+        contactName: dto.contactName, phone: dto.phone, email: dto.email,
+        monthlyBill: dto.monthlyBill, roofArea: dto.roofArea, notes: dto.notes,
+        status: 'PENDING',
+      },
+    });
+  }
+
+  async adminList() {
+    return this.prisma.solarLead.findMany({ orderBy: { createdAt: 'desc' } });
+  }
+
+  async adminUpdateStatus(id: string, status: string) {
+    if (!['PENDING', 'CONTACTED', 'APPROVED', 'REJECTED'].includes(status)) {
+      throw new BadRequestException('حالة غير معروفة');
+    }
+    const lead = await this.prisma.solarLead.findUnique({ where: { id } });
+    if (!lead) throw new NotFoundException('الطلب غير موجود');
+    return this.prisma.solarLead.update({ where: { id }, data: { status } });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // INCUBATOR SERVICE
 // ══════════════════════════════════════════════════════════════════
 // ─── incubator/incubator.service.ts ───────────────────────────────

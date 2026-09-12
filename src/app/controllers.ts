@@ -14,7 +14,7 @@ import { RfqService, CreateRfqDto, CreateQuoteDto } from '../rfq/rfq.service';
 import { EscrowService, DisputeDto } from '../escrow/escrow.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AntiLeakageService } from '../common/anti-leakage.service';
-import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
+import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
 
 // ── Auth Guards (simplified) ───────────────────────────────────────
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -657,6 +657,41 @@ export class JobPostingController {
       throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
     }
     return this.jobs.adminReview(id, !!body.approve);
+  }
+}
+
+// ── Solar Lead Controller (public "شمسك.. طاقتك" leads) ───────────
+@ApiTags('solar-leads')
+@Controller('solar-leads')
+export class SolarLeadController {
+  constructor(private solar: SolarLeadService) {}
+
+  @Post()
+  @ApiOperation({ summary: 'تقديم طلب استشارة طاقة شمسية (بدون تسجيل دخول)' })
+  submit(@Body() dto: any) {
+    return this.solar.submit(dto);
+  }
+
+  @Get('admin/all')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'كل طلبات الطاقة الشمسية (أدمن)' })
+  adminList(@Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.solar.adminList();
+  }
+
+  @Post('admin/:id/status')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تحديث حالة طلب طاقة شمسية (أدمن)' })
+  adminUpdateStatus(@Param('id') id: string, @Body() body: { status: string }, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.solar.adminUpdateStatus(id, body.status);
   }
 }
 

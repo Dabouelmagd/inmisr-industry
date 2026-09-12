@@ -921,6 +921,24 @@ model SpecialOffer {
   @@map("special_offers")
 }
 
+model SolarLead {
+  id          String   @id @default(uuid())
+  companyName String
+  sector      String?
+  region      String?
+  contactName String
+  phone       String
+  email       String?
+  monthlyBill String?
+  roofArea    String?
+  notes       String?
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("solar_leads")
+}
+
 model FeasibilityStudy {
   id             String   @id @default(uuid())
   title          String
