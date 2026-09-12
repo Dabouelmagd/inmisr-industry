@@ -25,6 +25,27 @@ export class AdminController {
     }
   }
 
+  @Get('revenue')
+  @ApiOperation({ summary: 'تفصيل الإيرادات حسب المصدر (أدمن)' })
+  getRevenue(@Request() req: any) {
+    this.requireAdmin(req);
+    return this.admin.getRevenueBreakdown();
+  }
+
+  @Get('orders')
+  @ApiOperation({ summary: 'كل الطلبات على المنصة (أدمن)' })
+  getOrders(@Query() q: any, @Request() req: any) {
+    this.requireAdmin(req);
+    return this.admin.adminListOrders({ status: q.status, page: q.page && +q.page, limit: q.limit && +q.limit });
+  }
+
+  @Get('orders/:id')
+  @ApiOperation({ summary: 'تفاصيل طلب معين (أدمن)' })
+  getOrder(@Param('id') id: string, @Request() req: any) {
+    this.requireAdmin(req);
+    return this.admin.adminGetOrder(id);
+  }
+
   @Get('dashboard')
   @ApiOperation({ summary: 'إحصائيات لوحة التحكم الرئيسية' })
   getDashboard(@Request() req: any) {

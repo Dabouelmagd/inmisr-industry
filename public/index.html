@@ -2625,7 +2625,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         <div id="admin-orders-table"></div>
       </div>
       <div id="atab-disputes" style="display:none"><div style="font-size:20px;font-weight:700;margin-bottom:18px">إدارة النزاعات</div><div id="admin-disputes-list"><div style="font-size:13px;color:var(--ts);padding:20px 0;text-align:center">جارٍ التحميل...</div></div></div>
-      <div id="atab-revenue" style="display:none"><div style="font-size:20px;font-weight:700;margin-bottom:18px">الإيرادات</div><div class="tw"><table class="tbl"><thead><tr><th>المصدر</th><th>هذا الشهر</th><th>الشهر الماضي</th><th>النمو</th></tr></thead><tbody><tr><td>عمولات صفقات</td><td style="color:#C09300;font-weight:600">42,000 ج.م</td><td>35,300 ج.م</td><td style="color:#22C55E;font-weight:600">↑ 19%</td></tr><tr><td>اشتراكات Growth</td><td style="color:#C09300;font-weight:600">21,000 ج.م</td><td>18,000 ج.م</td><td style="color:#22C55E;font-weight:600">↑ 17%</td></tr><tr><td>إعلانات</td><td style="color:#C09300;font-weight:600">11,400 ج.م</td><td>8,200 ج.م</td><td style="color:#22C55E;font-weight:600">↑ 38%</td></tr></tbody></table></div></div>
+      <div id="atab-revenue" style="display:none"><div style="font-size:20px;font-weight:700;margin-bottom:18px">الإيرادات</div><div id="admin-revenue-table"><div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">جارٍ التحميل...</div></div></div>
       <div id="atab-escrow" style="display:none"><div style="font-size:20px;font-weight:700;margin-bottom:18px">Escrow</div><div class="g3"><div class="kc"><div class="kl">إجمالي محتجز</div><div class="kv" id="admin-escrow-held">—</div><div class="kch" id="admin-escrow-held-count"></div></div><div class="kc"><div class="kl">إفراج الشهر</div><div class="kv" id="admin-escrow-released">—</div><div class="kch" id="admin-escrow-released-count"></div></div><div class="kc"><div class="kl">نزاعات</div><div class="kv" id="admin-escrow-disputed">—</div><div class="kch" style="color:#EF4444">قيد المراجعة</div></div></div></div>
       <div id="atab-ads" style="display:none">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px">
@@ -4425,6 +4425,12 @@ document.addEventListener("DOMContentLoaded",function(){
     if (name === "overview") {
       loadAdminOverview();
     }
+    if (name === "orders") {
+      loadAdminOrders();
+    }
+    if (name === "revenue") {
+      loadAdminRevenue();
+    }
     if (name === "escrow") {
       loadAdminEscrow();
     }
@@ -5194,22 +5200,69 @@ function toggleAdminSuppliersSort() {
 window.toggleAdminSuppliersSort = toggleAdminSuppliersSort;
 
 // ── Admin: Orders table (sortable by date) ──
-var ADMIN_ORDERS_LIST = [
-  {id:"#0892", date:"2025-06-30", buyer:"مصنع المستقبل", supplier:"حديد مصر", amount:"336,000 ج.م", status:"في الشحن", cls:"pa"},
-  {id:"#0875", date:"2025-06-21", buyer:"شركة النيل الصناعية", supplier:"طاقة مصر الشمسية", amount:"185,000 ج.م", status:"مكتمل", cls:"pg"},
-  {id:"#0861", date:"2025-06-10", buyer:"الدلتا للمقاولات", supplier:"الشركة المصرية للألومنيوم", amount:"120,000 ج.م", status:"مكتمل", cls:"pg"}
-];
+// Real orders loaded via loadAdminOrders() (see below) — was a 3-row hardcoded mock.
+var ADMIN_ORDERS_LIST = [];
 var ADMIN_ORDERS_SORT_DIR = "desc";
+
+var ORDER_STATUS_LABEL = {
+  PENDING: "قيد الانتظار", ESCROW_FUNDED: "تم تمويل الضمان", IN_PRODUCTION: "قيد التصنيع",
+  SHIPPED: "في الشحن", DELIVERED: "تم التسليم", CONFIRMED: "مؤكد", DISPUTED: "متنازع عليه",
+  CANCELLED: "ملغي", REFUNDED: "مسترد", COMPLETED: "مكتمل"
+};
+var ORDER_STATUS_CLASS = {
+  COMPLETED: "pg", CONFIRMED: "pg", DELIVERED: "pg", SHIPPED: "pa", IN_PRODUCTION: "pa",
+  ESCROW_FUNDED: "pa", PENDING: "pa", DISPUTED: "pr", CANCELLED: "pr", REFUNDED: "pr"
+};
+
+async function loadAdminOrders() {
+  var box = document.getElementById("admin-orders-table");
+  if (box) box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">جارٍ التحميل...</div>';
+  try {
+    var result = await apiFetch("/admin/orders?limit=50");
+    ADMIN_ORDERS_LIST = result.data;
+    renderAdminOrdersTable();
+  } catch (err) {
+    if (box) box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">⚠️ تعذر تحميل الطلبات: ' + (err.message || "") + '</div>';
+  }
+}
+window.loadAdminOrders = loadAdminOrders;
+
+async function loadAdminRevenue() {
+  var box = document.getElementById("admin-revenue-table");
+  if (!box) return;
+  try {
+    var data = await apiFetch("/admin/revenue");
+    box.innerHTML = '<div class="tw"><table class="tbl"><thead><tr><th>المصدر</th><th>هذا الشهر</th><th>الشهر الماضي</th><th>النمو</th></tr></thead><tbody>' +
+      data.sources.map(function(s) {
+        var growthCell = s.growthPct === null
+          ? '<span style="color:var(--ts);font-size:11px">' + (s.note || "—") + '</span>'
+          : '<span style="color:' + (s.growthPct >= 0 ? "#22C55E" : "#EF4444") + ';font-weight:600">' + (s.growthPct >= 0 ? "↑" : "↓") + " " + Math.abs(s.growthPct) + '%</span>';
+        var lastMonthCell = s.lastMonth === null ? "—" : formatEgp(s.lastMonth);
+        return '<tr><td>' + s.label + '</td><td style="color:#C09300;font-weight:600">' + formatEgp(s.thisMonth) + '</td><td>' + lastMonthCell + '</td><td>' + growthCell + '</td></tr>';
+      }).join("") + '</tbody></table></div>' +
+      '<div style="font-size:11px;color:var(--tt);margin-top:10px">💡 بند "اشتراكات" رقم تقديري بناءً على عدد الاشتراكات المدفوعة النشطة حاليًا × سعرها الثابت — مش سجل معاملات فعلي (النظام الحالي مايسجّلش مبلغ كل عملية اشتراك بشكل منفصل)</div>';
+  } catch (err) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">⚠️ تعذر تحميل الإيرادات: ' + (err.message || "") + '</div>';
+  }
+}
+window.loadAdminRevenue = loadAdminRevenue;
 
 function renderAdminOrdersTable() {
   var box = document.getElementById("admin-orders-table");
   if (!box) return;
+  if (!ADMIN_ORDERS_LIST.length) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">لا توجد طلبات على المنصة حتى الآن</div>';
+    return;
+  }
   var list = ADMIN_ORDERS_LIST.slice().sort(function(a,b){
-    return ADMIN_ORDERS_SORT_DIR === "desc" ? (a.date < b.date ? 1 : -1) : (a.date > b.date ? 1 : -1);
+    return ADMIN_ORDERS_SORT_DIR === "desc" ? (a.createdAt < b.createdAt ? 1 : -1) : (a.createdAt > b.createdAt ? 1 : -1);
   });
   var rows = list.map(function(o){
-    return '<tr><td><strong style="color:var(--red)">' + o.id + '</strong></td><td style="color:var(--ts)">' + o.date + '</td><td>' + o.buyer + '</td><td>' + o.supplier + '</td>' +
-      '<td style="color:#C09300;font-weight:600">' + o.amount + '</td><td><span class="pill ' + o.cls + '">' + o.status + '</span></td></tr>';
+    var d = new Date(o.createdAt).toLocaleDateString("ar-EG");
+    return '<tr><td><strong style="color:var(--red)">#' + o.id.slice(-6) + '</strong></td><td style="color:var(--ts)">' + d + '</td>' +
+      '<td>' + ((o.buyer && o.buyer.nameAr) || "—") + '</td><td>' + ((o.supplier && o.supplier.nameAr) || "—") + '</td>' +
+      '<td style="color:#C09300;font-weight:600">' + formatEgp(o.amount) + '</td>' +
+      '<td><span class="pill ' + (ORDER_STATUS_CLASS[o.status] || "pa") + '">' + (ORDER_STATUS_LABEL[o.status] || o.status) + '</span></td></tr>';
   }).join("");
   box.innerHTML = '<div class="tw"><table class="tbl"><thead><tr><th>رقم</th><th>التاريخ</th><th>المشتري</th><th>المورد</th><th>المبلغ</th><th>الحالة</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   var lbl = document.getElementById("admin-orders-sort-label");
@@ -5223,7 +5276,6 @@ window.toggleAdminOrdersSort = toggleAdminOrdersSort;
 
 document.addEventListener("DOMContentLoaded", function() {
   renderAdminSuppliersTable();
-  renderAdminOrdersTable();
 });
 
 document.addEventListener("DOMContentLoaded", function() {

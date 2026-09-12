@@ -196,6 +196,105 @@ export class AdminService {
     };
   }
 
+  // ── ORDERS: platform-wide list (owner dashboard "الطلبات") ────────
+  async adminListOrders(filter: { status?: string; page?: number; limit?: number }) {
+    const where: any = {};
+    if (filter.status) where.status = filter.status;
+
+    const page = filter.page || 1;
+    const limit = filter.limit || 20;
+
+    const [data, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        include: {
+          buyer: { select: { nameAr: true } },
+          supplier: { select: { nameAr: true } },
+          escrow: { select: { status: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return { data, total, page, totalPages: Math.ceil(total / limit) };
+  }
+
+  async adminGetOrder(id: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: {
+        buyer: { select: { nameAr: true, nameEn: true } },
+        supplier: { select: { nameAr: true, nameEn: true } },
+        escrow: true,
+        rfq: { select: { specsJson: true, quantity: true } },
+        messages: { orderBy: { createdAt: 'asc' } },
+      },
+    });
+    if (!order) throw new NotFoundException('الطلب غير موجود');
+    return order;
+  }
+
+  // ── REVENUE BREAKDOWN (owner dashboard "الإيرادات") ───────────────
+  async getRevenueBreakdown() {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const COMPLETED_STATUSES = ['COMPLETED', 'CONFIRMED', 'DELIVERED'];
+
+    const [commissionThis, commissionPrev, adsThis, adsPrev, growthCount, eliteCount] = await Promise.all([
+      this.prisma.order.aggregate({
+        where: { status: { in: COMPLETED_STATUSES }, createdAt: { gte: monthStart } },
+        _sum: { commission: true },
+      }),
+      this.prisma.order.aggregate({
+        where: { status: { in: COMPLETED_STATUSES }, createdAt: { gte: prevMonthStart, lt: monthStart } },
+        _sum: { commission: true },
+      }),
+      this.prisma.adBooking.aggregate({
+        where: { paymentStatus: 'PAID', createdAt: { gte: monthStart } },
+        _sum: { totalPrice: true },
+      }),
+      this.prisma.adBooking.aggregate({
+        where: { paymentStatus: 'PAID', createdAt: { gte: prevMonthStart, lt: monthStart } },
+        _sum: { totalPrice: true },
+      }),
+      this.prisma.subscription.count({ where: { plan: 'GROWTH', OR: [{ endDate: null }, { endDate: { gte: now } }] } }),
+      this.prisma.subscription.count({ where: { plan: 'ELITE', OR: [{ endDate: null }, { endDate: { gte: now } }] } }),
+    ]);
+
+    const pctGrowth = (curr: number, prev: number) => (prev > 0 ? +(((curr - prev) / prev) * 100).toFixed(1) : (curr > 0 ? 100 : 0));
+    // Subscription prices are fixed platform-wide (per the pricing PRD) but
+    // no per-payment amount is stored on Subscription -- this row is an
+    // estimate from currently-active paid subscriptions × their known
+    // price, not a literal transaction ledger like the other two rows.
+    const subscriptionsEstimate = growthCount * 1500 + eliteCount * 4500;
+
+    return {
+      sources: [
+        {
+          key: 'commissions', label: 'عمولات صفقات',
+          thisMonth: commissionThis._sum.commission || 0,
+          lastMonth: commissionPrev._sum.commission || 0,
+          growthPct: pctGrowth(commissionThis._sum.commission || 0, commissionPrev._sum.commission || 0),
+        },
+        {
+          key: 'ads', label: 'إعلانات',
+          thisMonth: adsThis._sum.totalPrice || 0,
+          lastMonth: adsPrev._sum.totalPrice || 0,
+          growthPct: pctGrowth(adsThis._sum.totalPrice || 0, adsPrev._sum.totalPrice || 0),
+        },
+        {
+          key: 'subscriptions', label: 'اشتراكات (تقديري)',
+          thisMonth: subscriptionsEstimate, lastMonth: null, growthPct: null,
+          note: `${growthCount} Growth + ${eliteCount} Elite نشطة حاليًا`,
+        },
+      ],
+    };
+  }
+
   async getDashboardStats() {
     const now         = new Date();
     const monthStart  = new Date(now.getFullYear(), now.getMonth(), 1);
