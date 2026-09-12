@@ -9657,14 +9657,20 @@ window.sendAIHelpMessage = sendAIHelpMessage;
 function generateSystemReport() {
   var now = new Date();
   var verifiedSuppliers = (typeof SUPS !== "undefined") ? SUPS.length : 0;
-  var sectorsCovered = (typeof SUPS_BY_SECTOR !== "undefined") ? Object.keys(SUPS_BY_SECTOR).length : 0;
+  // Real distinct sector labels among the already-loaded real suppliers
+  // (SUPS.s comes from each supplier's actual linked category) — the old
+  // SUPS_BY_SECTOR object this used to read was a disconnected legacy mock.
+  var sectorsCovered = (typeof SUPS !== "undefined") ? new Set(SUPS.map(function(s){ return s.s; }).filter(function(s){ return s && s !== "غير محدد"; })).size : 0;
   var activePayMethods = (typeof PAYMENT_METHODS !== "undefined") ? PAYMENT_METHODS.filter(function(m){return m.active;}).length : 0;
   var teamMembers = (typeof TEAM_MEMBERS !== "undefined") ? TEAM_MEMBERS.length : 0;
-  var promoCodesActive = (typeof PROMO_CODES !== "undefined") ? PROMO_CODES.filter(function(c){return c.status === "نشط";}).length : 0;
+  // Fixed: real promo codes use the English status enum (ACTIVE/REVOKED/
+  // EXPIRED) since being wired to the backend — this used to check the
+  // old Arabic mock value "نشط" and always silently returned 0.
+  var promoCodesActive = (typeof PROMO_CODES !== "undefined") ? PROMO_CODES.filter(function(c){return c.status === "ACTIVE";}).length : 0;
   var errorsThisSession = (typeof ERROR_LOG !== "undefined") ? ERROR_LOG.length : 0;
 
   var rows = [
-    {label:"موردون موثقون (نموذج العرض)", value:verifiedSuppliers},
+    {label:"موردون موثقون", value:verifiedSuppliers},
     {label:"قطاعات صناعية فيها موردون مسجّلون", value:sectorsCovered},
     {label:"طرق دفع فعّالة", value:activePayMethods},
     {label:"أعضاء فريق الإدارة", value:teamMembers},
