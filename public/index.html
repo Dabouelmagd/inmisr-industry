@@ -1862,6 +1862,48 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   </div>
 </div>
 
+<div class="mov" id="ad-booking-modal">
+  <div class="modal" style="max-width:560px;max-height:85vh;overflow-y:auto">
+    <button class="mc" onclick="closeM('ad-booking-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
+    <div style="font-size:16px;font-weight:700;margin-bottom:6px">حجز مساحة إعلانية</div>
+    <div style="font-size:12px;color:var(--ts);margin-bottom:16px">اختاري المساحة والمدة — السعر بيتحسب فورًا. الحجز بيدخل في مراجعة الإدارة قبل ما يظهر فعليًا.</div>
+
+    <div style="margin-bottom:12px"><span class="lbl">المساحة الإعلانية</span>
+      <select class="sel" id="adb-slot" onchange="adBookingUpdatePrice()"><option value="">جارٍ التحميل...</option></select>
+    </div>
+
+    <div class="g2" style="margin-bottom:12px">
+      <div><span class="lbl">تاريخ البدء</span><input class="inp" type="date" id="adb-start" onchange="adBookingUpdatePrice()"></div>
+      <div><span class="lbl">مدة الحجز</span>
+        <select class="sel" id="adb-period" onchange="adBookingUpdatePrice()">
+          <option value="WEEKLY">أسبوعي</option>
+          <option value="MONTHLY" selected>شهري (خصم 15%)</option>
+          <option value="QUARTERLY">ربع سنوي (خصم 30%)</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="background:var(--bg3);border-radius:9px;padding:12px;margin-bottom:14px;text-align:center">
+      <div class="f11 ta">السعر الإجمالي</div>
+      <div style="font-size:20px;font-weight:700;color:var(--gold)" id="adb-price">—</div>
+    </div>
+
+    <div class="g2" style="margin-bottom:12px">
+      <div><span class="lbl">القطاع المستهدف (اختياري)</span>
+        <select class="sel" id="adb-sector"><option value="">كل القطاعات</option></select>
+      </div>
+      <div><span class="lbl">نوع الجمهور</span>
+        <select class="sel" id="adb-usertype"><option value="">الكل</option><option value="SUPPLIER">الموردون فقط</option><option value="BUYER">المشترون فقط</option></select>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px"><span class="lbl">رابط صورة الإعلان (Banner URL)</span><input class="inp" id="adb-banner" placeholder="https://..." dir="ltr"></div>
+    <div style="margin-bottom:16px"><span class="lbl">رابط الهبوط عند الضغط</span><input class="inp" id="adb-destination" placeholder="https://..." dir="ltr"></div>
+
+    <button class="bc" style="width:100%;padding:11px;font-size:13px" id="adb-submit-btn" onclick="submitAdBooking()">تأكيد الحجز</button>
+  </div>
+</div>
+
 <div class="mov" id="add-cert-modal">
   <div class="modal" style="max-width:460px">
     <button class="mc" onclick="closeM('add-cert-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
@@ -2454,6 +2496,14 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         <button class="bl" style="font-size:11px;padding:4px 10px;border-radius:6px" data-page="training">إعلان جديد +</button>
       </div>
       <div id="job-postings-mylist"></div>
+    </div></div>
+
+    <div class="card" style="margin-bottom:14px"><div class="cb">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:700">📣 حجوزاتي الإعلانية على المنصة</div>
+        <button class="bl" style="font-size:11px;padding:4px 10px;border-radius:6px" onclick="openAdBookingModal()">+ حجز مساحة إعلانية</button>
+      </div>
+      <div id="ad-bookings-mylist"><div style="font-size:13px;color:var(--ts)">لا توجد حجوزات إعلانية حتى الآن</div></div>
     </div></div>
 
     <div class="card"><div class="cb">
@@ -5021,6 +5071,7 @@ function scrollToDashSection(key, btn) {
   if (key === "myservices" && typeof loadMyTrainingEnrollments === "function") loadMyTrainingEnrollments();
   if (key === "myservices" && typeof loadMyReverseRequests === "function") loadMyReverseRequests();
   if (key === "myservices" && typeof loadMyJobPostings === "function") loadMyJobPostings();
+  if (key === "myservices" && typeof loadMyAdBookings === "function") loadMyAdBookings();
 
   document.querySelectorAll("#dash-sidebar .asb").forEach(function(b){ b.classList.remove("on"); });
   if (btn) btn.classList.add("on");
@@ -7866,6 +7917,115 @@ async function renderAdSlot(locationKey, containerId, opts) {
   }
 }
 window.renderAdSlot = renderAdSlot;
+
+// ── ADVERTISER SELF-SERVE BOOKING ──────────────────────────────────
+var ADSV2_BILLING_DAYS = { WEEKLY: 7, MONTHLY: 28, QUARTERLY: 84 };
+var ADSV2_BILLING_MULT = { WEEKLY: 1, MONTHLY: 4 * 0.85, QUARTERLY: 12 * 0.70 };
+var ADSV2_SLOTS_CACHE = [];
+
+async function openAdBookingModal() {
+  if (!requireLoginForService(openAdBookingModal)) return;
+
+  var slotSel = document.getElementById("adb-slot");
+  slotSel.innerHTML = '<option value="">جارٍ التحميل...</option>';
+  try {
+    ADSV2_SLOTS_CACHE = await apiFetch("/ads-v2/slots");
+    slotSel.innerHTML = ADSV2_SLOTS_CACHE.map(function(s) {
+      return '<option value="' + s.id + '" data-price="' + s.basePriceWeekly + '">' + s.name + ' (' + formatEgp(s.basePriceWeekly) + '/أسبوع)</option>';
+    }).join("");
+  } catch (err) {
+    slotSel.innerHTML = '<option value="">تعذر تحميل المساحات</option>';
+  }
+
+  var sectorSel = document.getElementById("adb-sector");
+  if (sectorSel.options.length <= 1) {
+    var mainSectorSel = document.getElementById("sup-filter");
+    if (mainSectorSel) {
+      sectorSel.innerHTML = mainSectorSel.innerHTML;
+    }
+  }
+
+  var startEl = document.getElementById("adb-start");
+  var todayStr = new Date().toISOString().slice(0, 10);
+  startEl.min = todayStr;
+  startEl.value = todayStr;
+  document.getElementById("adb-banner").value = "";
+  document.getElementById("adb-destination").value = "";
+
+  adBookingUpdatePrice();
+  if (typeof openM === "function") openM("ad-booking-modal");
+}
+window.openAdBookingModal = openAdBookingModal;
+
+function adBookingUpdatePrice() {
+  var slotSel = document.getElementById("adb-slot");
+  var period = document.getElementById("adb-period").value;
+  var opt = slotSel.options[slotSel.selectedIndex];
+  var priceEl = document.getElementById("adb-price");
+  if (!opt || !opt.getAttribute("data-price")) { priceEl.textContent = "—"; return; }
+  var weekly = Number(opt.getAttribute("data-price"));
+  var total = Math.round(weekly * (ADSV2_BILLING_MULT[period] || 1));
+  var days = ADSV2_BILLING_DAYS[period] || 7;
+  priceEl.textContent = formatEgp(total) + " (" + days + " يوم)";
+}
+window.adBookingUpdatePrice = adBookingUpdatePrice;
+
+async function submitAdBooking() {
+  var slotId = document.getElementById("adb-slot").value;
+  var start = document.getElementById("adb-start").value;
+  var period = document.getElementById("adb-period").value;
+  var sector = document.getElementById("adb-sector").value;
+  var userType = document.getElementById("adb-usertype").value;
+  var banner = document.getElementById("adb-banner").value.trim();
+  var destination = document.getElementById("adb-destination").value.trim();
+
+  if (!slotId) { toast("الرجاء اختيار المساحة الإعلانية"); return; }
+  if (!start) { toast("الرجاء اختيار تاريخ البدء"); return; }
+  if (!banner || !destination) { toast("الرجاء إدخال رابط صورة الإعلان ورابط الهبوط"); return; }
+
+  var btn = document.getElementById("adb-submit-btn");
+  btn.disabled = true; btn.textContent = "جارٍ الحجز...";
+
+  try {
+    await apiFetch("/ads-v2/bookings", {
+      method: "POST",
+      body: JSON.stringify({
+        slotId: slotId, startDate: start, billingPeriod: period,
+        targetSector: sector || undefined, targetUserType: userType || undefined,
+        bannerUrl: banner, destinationUrl: destination
+      })
+    });
+    if (typeof closeM === "function") closeM("ad-booking-modal");
+    toast("تم إرسال طلب الحجز — سيتم مراجعته من فريق إن مصر قبل الظهور الفعلي");
+    loadMyAdBookings();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إتمام الحجز"));
+  } finally {
+    btn.disabled = false; btn.textContent = "تأكيد الحجز";
+  }
+}
+window.submitAdBooking = submitAdBooking;
+
+async function loadMyAdBookings() {
+  if (!window.isLoggedIn) return;
+  var box = document.getElementById("ad-bookings-mylist");
+  if (!box) return;
+  try {
+    var list = await apiFetch("/ads-v2/bookings/my");
+    if (!list.length) { box.innerHTML = '<div style="font-size:13px;color:var(--ts)">لا توجد حجوزات إعلانية حتى الآن</div>'; return; }
+    var reviewLabel = { PENDING_REVIEW: "قيد المراجعة", APPROVED: "مقبول", REJECTED: "مرفوض", CANCELLED: "ملغي" };
+    var reviewCls = { PENDING_REVIEW: "pa", APPROVED: "pg", REJECTED: "pr", CANCELLED: "pr" };
+    box.innerHTML = list.map(function(b) {
+      var start = new Date(b.startDate).toLocaleDateString("ar-EG");
+      var end = new Date(b.endDate).toLocaleDateString("ar-EG");
+      var payNote = b.paymentStatus === "PAID" ? "" : ' · <span style="color:#F59E0B">' + (b.paymentStatus === "UNPAID" ? "بانتظار الدفع" : b.paymentStatus) + '</span>';
+      return '<div class="row"><div><div style="font-weight:700;font-size:13px">' + ((b.slot && b.slot.name) || "—") + '</div>' +
+        '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + start + ' → ' + end + ' · ' + formatEgp(b.totalPrice) + payNote + '</div></div>' +
+        '<span class="pill ' + (reviewCls[b.reviewStatus] || "pa") + '">' + (reviewLabel[b.reviewStatus] || b.reviewStatus) + '</span></div>';
+    }).join("");
+  } catch (err) { /* silent */ }
+}
+window.loadMyAdBookings = loadMyAdBookings;
 
 // ── FINANCING (admin side, real backend) ──────────────────────────
 async function loadRealFinancingAdmin() {

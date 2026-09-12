@@ -23,6 +23,15 @@ const BILLING_MULTIPLIERS: Record<string, number> = {
   QUARTERLY: 12 * 0.70, // 30% off vs 12 straight weeks + top-of-sector pinning
 };
 
+// The number of days a booking actually occupies the slot for, per period —
+// must correspond exactly to what BILLING_MULTIPLIERS charges for, or a
+// WEEKLY-priced booking could occupy the slot far longer than one week.
+const BILLING_PERIOD_DAYS: Record<string, number> = {
+  WEEKLY: 7,
+  MONTHLY: 28,
+  QUARTERLY: 84,
+};
+
 // Anomaly-detection thresholds (per the spec: spike >8-10% CTR is
 // fraud-suspicious; <0.2% CTR after 2000+ impressions is underperforming).
 const SPIKE_CTR_THRESHOLD = 10;      // %
@@ -96,13 +105,21 @@ export class AdsV2Service {
     slotId: string; targetSector?: string; targetZone?: string; targetUserType?: string;
     dailyStartHour?: number; dailyEndHour?: number; frequencyCap?: number;
     bannerUrl: string; destinationUrl: string;
-    startDate: string; endDate: string; billingPeriod: string;
+    startDate: string; billingPeriod: string;
   }) {
     const start = new Date(dto.startDate);
-    const end = new Date(dto.endDate);
-    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) {
-      throw new BadRequestException('تواريخ الحجز غير صحيحة');
+    if (isNaN(start.getTime())) {
+      throw new BadRequestException('تاريخ البدء غير صحيح');
     }
+    const periodDays = BILLING_PERIOD_DAYS[dto.billingPeriod];
+    if (!periodDays) {
+      throw new BadRequestException('مدة الحجز غير معروفة');
+    }
+    // endDate is always derived from the period, never trusted from the
+    // client — otherwise a WEEKLY-priced booking could send an arbitrary
+    // endDate and occupy the slot far longer than the week it paid for.
+    const end = new Date(start.getTime() + periodDays * 86400000);
+
     if (!dto.bannerUrl || !dto.destinationUrl) {
       throw new BadRequestException('ملف الإعلان ورابط الهبوط مطلوبان');
     }
