@@ -18,14 +18,20 @@ export class GeoService {
   private readonly logger = new Logger('GeoService');
 
   private readonly INDUSTRIAL_ZONES = [
-    { id: '10th',      nameAr: 'العاشر من رمضان', lat: 30.294, lng: 31.743, suppliersCount: 312, sectors: ['iron', 'chemicals', 'food'] },
-    { id: '6oct',      nameAr: '٦ أكتوبر',         lat: 29.970, lng: 30.930, suppliersCount: 287, sectors: ['petrochemicals', 'textile', 'aluminum'] },
-    { id: 'obour',     nameAr: 'مدينة العبور',     lat: 30.249, lng: 31.818, suppliersCount: 198, sectors: ['food', 'pharma', 'packaging'] },
-    { id: 'sadat',     nameAr: 'مدينة السادات',    lat: 30.369, lng: 30.528, suppliersCount: 156, sectors: ['furniture', 'textile', 'ceramics'] },
-    { id: 'borg',      nameAr: 'برج العرب',         lat: 30.898, lng: 29.547, suppliersCount: 201, sectors: ['iron', 'chemicals', 'logistics'] },
-    { id: 'imbaba',    nameAr: 'إمبابة',            lat: 30.067, lng: 31.205, suppliersCount: 134, sectors: ['metals', 'mechanics', 'tools'] },
-    { id: 'badr',      nameAr: 'مدينة بدر',         lat: 30.121, lng: 31.745, suppliersCount: 89,  sectors: ['electronics', 'solar', 'cables'] },
-    { id: 'shorouk',   nameAr: 'مدينة الشروق',     lat: 30.157, lng: 31.614, suppliersCount: 76,  sectors: ['pharma', 'food', 'cosmetics'] },
+    { id: '10th',      nameAr: 'العاشر من رمضان', lat: 30.294, lng: 31.743, suppliersCount: 0, sectors: ['iron', 'chemicals', 'food'] },
+    { id: '6oct',      nameAr: '٦ أكتوبر',         lat: 29.970, lng: 30.930, suppliersCount: 0, sectors: ['petrochemicals', 'textile', 'aluminum'] },
+    { id: 'obour',     nameAr: 'مدينة العبور',     lat: 30.249, lng: 31.818, suppliersCount: 0, sectors: ['food', 'pharma', 'packaging'] },
+    { id: 'sadat',     nameAr: 'مدينة السادات',    lat: 30.369, lng: 30.528, suppliersCount: 0, sectors: ['furniture', 'textile', 'ceramics'] },
+    { id: 'borg',      nameAr: 'برج العرب',         lat: 30.898, lng: 29.547, suppliersCount: 0, sectors: ['iron', 'chemicals', 'logistics'] },
+    { id: 'borg_new',  nameAr: 'برج العرب الجديدة', lat: 30.8667, lng: 29.6167, suppliersCount: 0, sectors: ['textile', 'chemicals'] },
+    { id: 'imbaba',    nameAr: 'إمبابة',            lat: 30.067, lng: 31.205, suppliersCount: 0, sectors: ['metals', 'mechanics', 'tools'] },
+    { id: 'badr',      nameAr: 'مدينة بدر',         lat: 30.121, lng: 31.745, suppliersCount: 0, sectors: ['electronics', 'solar', 'cables'] },
+    { id: 'shorouk',   nameAr: 'مدينة الشروق',     lat: 30.157, lng: 31.614, suppliersCount: 0, sectors: ['pharma', 'food', 'cosmetics'] },
+    { id: 'mahalla',   nameAr: 'المحلة الكبرى',     lat: 30.973, lng: 31.167, suppliersCount: 0, sectors: ['textile'] },
+    { id: 'robeiky',   nameAr: 'الروبيكي',          lat: 29.900, lng: 31.350, suppliersCount: 0, sectors: ['leather'] },
+    { id: 'sokhna',    nameAr: 'العين السخنة',      lat: 29.600, lng: 32.317, suppliersCount: 0, sectors: ['petrochemicals', 'logistics'] },
+    { id: 'damietta',  nameAr: 'دمياط',             lat: 31.4165, lng: 31.8133, suppliersCount: 0, sectors: ['furniture'] },
+    { id: 'new_capital', nameAr: 'العاصمة الإدارية الجديدة', lat: 30.0200, lng: 31.7000, suppliersCount: 0, sectors: ['construction', 'logistics'] },
   ];
 
   // Shipping partners pricing (EGP per ton per km)
@@ -73,8 +79,17 @@ export class GeoService {
     return enriched;
   }
 
-  getIndustrialZones() {
-    return this.INDUSTRIAL_ZONES;
+  async getIndustrialZones() {
+    const counts = await this.prisma.geoLocation.groupBy({
+      by: ['industrialZone'],
+      where: { company: { type: 'SUPPLIER', verifiedLevel: { not: 'NONE' } } },
+      _count: { _all: true },
+    });
+    const countMap: Record<string, number> = {};
+    for (const c of counts) {
+      if (c.industrialZone) countMap[c.industrialZone] = c._count._all;
+    }
+    return this.INDUSTRIAL_ZONES.map(z => ({ ...z, suppliersCount: countMap[z.nameAr] || 0 }));
   }
 
   estimateShipping(q: { fromLat: number; fromLng: number; toLat: number; toLng: number; weightTons: number }) {

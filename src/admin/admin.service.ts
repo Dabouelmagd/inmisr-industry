@@ -406,6 +406,28 @@ export class AdminService {
     };
   }
 
+  // ── FACTORIES (BUYER-type companies) — full real registry ───────
+  async listFactories(query: { page?: number; limit?: number; city?: string; zone?: string }) {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 50;
+    const where: any = { type: 'BUYER' };
+    if (query.city) where.location = { city: { contains: query.city, mode: 'insensitive' } };
+    if (query.zone) where.location = { industrialZone: { contains: query.zone, mode: 'insensitive' } };
+
+    const [data, total] = await Promise.all([
+      this.prisma.company.findMany({
+        where,
+        include: { location: true, subscription: { select: { plan: true } }, _count: { select: { rfqRequests: true } } },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.company.count({ where }),
+    ]);
+
+    return { data, total, page, totalPages: Math.ceil(total / limit) };
+  }
+
   // ── COMPANY SEARCH (for admin pickers, e.g. attaching a directly-added product) ──
   async searchCompanies(q: string, type?: string) {
     if (!q || q.trim().length < 2) return [];

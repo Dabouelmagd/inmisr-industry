@@ -39,6 +39,13 @@ export class AdminController {
     return this.admin.searchCompanies(q, type);
   }
 
+  @Get('factories')
+  @ApiOperation({ summary: 'كل المصانع (الشركات المشترية) المسجّلة على المنصة' })
+  listFactories(@Query() query: any, @Request() req: any) {
+    this.requireAdmin(req);
+    return this.admin.listFactories(query);
+  }
+
   @Post('products/direct')
   @ApiOperation({ summary: 'نشر منتج مباشرة لشركة حقيقية مسجّلة (أدمن)' })
   adminCreateProduct(@Body() dto: any, @Request() req: any) {

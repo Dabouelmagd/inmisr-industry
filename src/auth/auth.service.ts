@@ -17,22 +17,31 @@ import { v4 as uuidv4 } from 'uuid';
 // (which is what a hardcoded 30.0444/31.2357 default used to do,
 // silently breaking geo-radius supplier search for every real user).
 const EGYPT_ZONE_COORDS: Record<string, { lat: number; lng: number }> = {
-  'العاشر من رمضان': { lat: 30.3060, lng: 31.7500 },
-  '6 أكتوبر': { lat: 29.9660, lng: 30.9232 },
-  'العبور': { lat: 30.1970, lng: 31.4710 },
-  'السادات': { lat: 30.3610, lng: 30.5180 },
-  'برج العرب': { lat: 30.8418, lng: 29.6208 },
-  'المحلة': { lat: 30.9730, lng: 31.1670 },
-  'المحلة الكبرى': { lat: 30.9730, lng: 31.1670 },
-  'الروبيكي': { lat: 29.9000, lng: 31.3500 },
-  'العين السخنة': { lat: 29.6000, lng: 32.3167 },
+  'العاشر من رمضان': { lat: 30.294, lng: 31.743 },
+  '6 أكتوبر': { lat: 29.970, lng: 30.930 },
+  'مدينة العبور': { lat: 30.249, lng: 31.818 },
+  'العبور': { lat: 30.249, lng: 31.818 },
+  'مدينة السادات': { lat: 30.369, lng: 30.528 },
+  'السادات': { lat: 30.369, lng: 30.528 },
+  'برج العرب': { lat: 30.898, lng: 29.547 },
+  'برج العرب الجديدة': { lat: 30.8667, lng: 29.6167 },
+  'إمبابة': { lat: 30.067, lng: 31.205 },
+  'مدينة بدر': { lat: 30.121, lng: 31.745 },
+  'بدر': { lat: 30.121, lng: 31.745 },
+  'مدينة الشروق': { lat: 30.157, lng: 31.614 },
+  'الشروق': { lat: 30.157, lng: 31.614 },
+  'المحلة الكبرى': { lat: 30.973, lng: 31.167 },
+  'المحلة': { lat: 30.973, lng: 31.167 },
+  'الروبيكي': { lat: 29.900, lng: 31.350 },
+  'العين السخنة': { lat: 29.600, lng: 32.317 },
   'دمياط': { lat: 31.4165, lng: 31.8133 },
-  'بدر': { lat: 30.1500, lng: 31.7167 },
-  'مدينة بدر': { lat: 30.1500, lng: 31.7167 },
+  'العاصمة الإدارية الجديدة': { lat: 30.0200, lng: 31.7000 },
   'القاهرة': { lat: 30.0444, lng: 31.2357 },
   'الجيزة': { lat: 30.0131, lng: 31.2089 },
   'الإسكندرية': { lat: 31.2001, lng: 29.9187 },
-  'الإسكندرية الجديدة': { lat: 31.1313, lng: 29.7913 },
+  'السويس': { lat: 29.9668, lng: 32.5498 },
+  'بورسعيد': { lat: 31.2565, lng: 32.2841 },
+  'الإسماعيلية': { lat: 30.6043, lng: 32.2723 },
 };
 
 function resolveZoneCoords(industrialZone?: string, city?: string, governorate?: string): { lat: number; lng: number } {
@@ -109,7 +118,9 @@ export class AuthService {
                 city: dto.city,
                 governorate: dto.governorate || dto.city,
                 industrialZone: dto.industrialZone,
-                ...resolveZoneCoords(dto.industrialZone, dto.city, dto.governorate),
+                ...(dto.lat != null && dto.lng != null
+                  ? { lat: Number(dto.lat), lng: Number(dto.lng) }
+                  : resolveZoneCoords(dto.industrialZone, dto.city, dto.governorate)),
               }
             } : undefined,
             subscription: { create: { plan: 'FREE' } },
@@ -452,6 +463,14 @@ export class RegisterDto {
   @ApiProperty({ example: 'اللحام الصناعي', required: false })
   @IsString() @IsOptional()
   interestedTrade?: string;
+
+  @ApiProperty({ required: false, description: 'إحداثيات حقيقية من متصفح المستخدم (بموافقته) — تُستخدم بدل تخمين الموقع من اسم المنطقة إن وُجدت' })
+  @IsOptional()
+  lat?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  lng?: number;
 }
 
 export class LoginDto {

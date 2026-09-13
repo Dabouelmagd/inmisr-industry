@@ -2593,6 +2593,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
       <button class="asb" data-admin="solar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>☀️ شمسك طاقتك <span style="background:rgba(245,158,11,.2);color:#D97706;padding:1px 6px;border-radius:8px;font-size:11px;margin-right:4px">جديد</span></button>
       <div class="asc">المنصة</div>
       <button class="asb" data-admin="suppliers"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>الموردون</button>
+      <button class="asb" data-admin="factories"><svg viewBox="0 0 24 24"><path d="M22 22H2M2 22V6l7 4V6l7 4V6l6 4v12"/></svg>المصانع (المشترون)</button>
       <button class="asb" data-admin="orders"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>الطلبات</button>
       <button class="asb" data-admin="disputes"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>النزاعات (2)</button>
       <div class="asc">المالية</div>
@@ -2638,6 +2639,16 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
           <button class="bl" style="font-size:12px;padding:5px 12px;border-radius:6px" onclick="toggleAdminSuppliersSort()">⇅ ترتيب حسب Trust Score: <span id="admin-suppliers-sort-label">الأعلى أولاً</span></button>
         </div>
         <div id="admin-suppliers-table"></div>
+      </div>
+      <div id="atab-factories" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:8px">
+          <div><div style="font-size:20px;font-weight:700">المصانع (المشترون)</div><div style="font-size:13px;color:var(--ts);margin-top:4px">كل الشركات/المصانع المسجّلة على المنصة كمشترين، مع مواقعها الحقيقية</div></div>
+          <div class="fl g8"><input class="inp" id="admin-factories-city-filter" placeholder="فلترة بالمدينة/المنطقة..." style="width:220px" oninput="loadAdminFactories()"></div>
+        </div>
+        <div class="g4" style="margin-bottom:18px">
+          <div class="kc"><div class="kl">إجمالي المصانع المسجّلة</div><div class="kv" id="admin-factories-total">—</div></div>
+        </div>
+        <div id="admin-factories-table"></div>
       </div>
       <div id="atab-orders" style="display:none">
         <div style="background:rgba(184,134,11,.06);border:1px solid rgba(184,134,11,.2);border-radius:10px;padding:14px;margin-bottom:18px">
@@ -2994,6 +3005,16 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         <div><span class="lbl">رقم السجل التجاري</span><input class="inp" placeholder="XXXXXXXXXX"></div>
         <div><span class="lbl">الرقم الضريبي</span><input class="inp" placeholder="XXX-XXX-XXXX"></div>
       </div>
+      <div style="background:var(--bg3);border:1px solid var(--bd2);border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">📍 موقع المنشأة</div>
+        <button type="button" class="bl" style="width:100%;padding:9px;font-size:12px;border-radius:8px;margin-bottom:10px" id="reg-sup-geoloc-btn" onclick="captureRegistrationLocation('reg-sup')">📍 استخدام موقعي الحالي (يتطلب موافقتك)</button>
+        <div id="reg-sup-geoloc-status" style="font-size:11px;color:var(--ts);margin-bottom:10px;display:none"></div>
+        <input type="hidden" id="reg-sup-lat"><input type="hidden" id="reg-sup-lng">
+        <div class="g2" style="gap:14px">
+          <div><span class="lbl">المحافظة / المدينة</span><input class="inp" id="reg-sup-city" placeholder="مثال: القاهرة"></div>
+          <div><span class="lbl">المنطقة الصناعية (إن وجدت)</span><select class="sel" id="reg-sup-zone"><option value="">— اختياري —</option></select></div>
+        </div>
+      </div>
       <div class="g2" style="gap:14px;margin-bottom:14px">
         <div><span class="lbl">شعار الشركة / المنشأة</span>
           <div style="display:flex;align-items:center;gap:10px">
@@ -3040,6 +3061,16 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         <div><span class="lbl">رقم الهاتف</span><input class="inp" id="reg-buy-phone" placeholder="01X XXXX XXXX" dir="ltr"></div>
         <div><span class="lbl">البريد الإلكتروني</span><input class="inp" id="reg-buy-email" placeholder="procurement@company.com" dir="ltr"></div>
         <div><span class="lbl">المحافظة</span><select class="sel" id="reg-buy-gov"><option>القاهرة</option><option>الإسكندرية</option><option>الجيزة</option><option>الشرقية</option><option>أخرى</option></select></div>
+      </div>
+      <div style="background:var(--bg3);border:1px solid var(--bd2);border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">📍 موقع المصنع/الشركة</div>
+        <button type="button" class="bl" style="width:100%;padding:9px;font-size:12px;border-radius:8px;margin-bottom:10px" id="reg-buy-geoloc-btn" onclick="captureRegistrationLocation('reg-buy')">📍 استخدام موقعي الحالي (يتطلب موافقتك)</button>
+        <div id="reg-buy-geoloc-status" style="font-size:11px;color:var(--ts);margin-bottom:10px;display:none"></div>
+        <input type="hidden" id="reg-buy-lat"><input type="hidden" id="reg-buy-lng">
+        <div class="g2" style="gap:14px">
+          <div><span class="lbl">المحافظة / المدينة</span><input class="inp" id="reg-buy-city" placeholder="مثال: القاهرة"></div>
+          <div><span class="lbl">المنطقة الصناعية (إن وجدت)</span><select class="sel" id="reg-buy-zone"><option value="">— اختياري —</option></select></div>
+        </div>
       </div>
       <div class="g2" style="gap:14px;margin-bottom:14px">
         <div><span class="lbl">شعار الشركة / المنشأة</span>
@@ -4431,11 +4462,14 @@ document.addEventListener("DOMContentLoaded",function(){
 
   // ADMIN
   function showAdmin(name,btn){
-    ["overview","suppliers","orders","disputes","revenue","escrow","verif","ads","offers-admin","incubator","products","sectors","payments","solar","services","team","promocodes","reports","translator"].forEach(function(t){
+    ["overview","suppliers","factories","orders","disputes","revenue","escrow","verif","ads","offers-admin","incubator","products","sectors","payments","solar","services","team","promocodes","reports","translator"].forEach(function(t){
       var e=document.getElementById("atab-"+t); if(e)e.style.display=t===name?"block":"none";
     });
     document.querySelectorAll(".asb").forEach(function(b){b.classList.remove("on");});
     if(btn)btn.classList.add("on");
+    if (name === "factories") {
+      loadAdminFactories();
+    }
     if (name === "ads") {
       loadAdsV2Admin();
       renderAdTypes();
@@ -5350,6 +5384,39 @@ async function adminConfirmEscrowPayout(orderId) {
   }
 }
 window.adminConfirmEscrowPayout = adminConfirmEscrowPayout;
+
+async function loadAdminFactories() {
+  var box = document.getElementById("admin-factories-table");
+  var totalEl = document.getElementById("admin-factories-total");
+  if (!box) return;
+  box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">جارٍ التحميل...</div>';
+  var cityFilter = (document.getElementById("admin-factories-city-filter") || {}).value || "";
+  try {
+    var result = await apiFetch("/admin/factories?limit=100" + (cityFilter ? "&city=" + encodeURIComponent(cityFilter) : ""));
+    var list = result.data || [];
+    if (totalEl) totalEl.textContent = result.total != null ? result.total : list.length;
+    if (!list.length) {
+      box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">لا توجد مصانع مسجّلة بعد</div>';
+      return;
+    }
+    box.innerHTML = '<div class="tw"><table class="tbl"><thead><tr><th>اسم الشركة/المصنع</th><th>المدينة</th><th>المنطقة الصناعية</th><th>الباقة</th><th>طلبات RFQ</th><th>تاريخ التسجيل</th></tr></thead><tbody>' +
+      list.map(function(c) {
+        var loc = c.location;
+        var plan = (c.subscription && c.subscription.plan) || "FREE";
+        var rfqCount = (c._count && c._count.rfqRequests) || 0;
+        var joined = new Date(c.createdAt).toLocaleDateString("ar-EG");
+        return '<tr><td><strong>' + (c.nameAr || "—") + '</strong></td>' +
+          '<td>' + ((loc && loc.city) || "—") + '</td>' +
+          '<td>' + ((loc && loc.industrialZone) || "—") + '</td>' +
+          '<td><span class="pill pb2">' + plan + '</span></td>' +
+          '<td>' + rfqCount + '</td>' +
+          '<td style="color:var(--ts)">' + joined + '</td></tr>';
+      }).join("") + '</tbody></table></div>';
+  } catch (err) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">⚠️ تعذر تحميل المصانع: ' + (err.message || "") + '</div>';
+  }
+}
+window.loadAdminFactories = loadAdminFactories;
 
 async function loadAdminOrders() {
   var box = document.getElementById("admin-orders-table");
@@ -8689,11 +8756,69 @@ window.loadMyCustomers = loadMyCustomers;
 var MAP_ZONE_POS = {
   "العاشر من رمضان": { top: 12, left: 52 },
   "6 أكتوبر": { top: 38, left: 14 },
+  "مدينة العبور": { top: 8, left: 67 },
   "العبور": { top: 8, left: 67 },
   "برج العرب": { top: 69, left: 9 },
+  "برج العرب الجديدة": { top: 66, left: 12 },
   "المحلة": { top: 5, left: 32 },
   "المحلة الكبرى": { top: 5, left: 32 },
+  "مدينة السادات": { top: 30, left: 22 },
+  "السادات": { top: 30, left: 22 },
+  "إمبابة": { top: 20, left: 44 },
+  "مدينة بدر": { top: 15, left: 60 },
+  "بدر": { top: 15, left: 60 },
+  "مدينة الشروق": { top: 10, left: 58 },
+  "الشروق": { top: 10, left: 58 },
+  "الروبيكي": { top: 74, left: 14 },
+  "العين السخنة": { top: 57, left: 29 },
+  "دمياط": { top: 3, left: 45 },
+  "العاصمة الإدارية الجديدة": { top: 18, left: 62 },
 };
+
+// ── Real Egyptian industrial zones — one canonical list, reused for
+// both registration (city/zone picker) and the map's zone filter, kept
+// in sync with the backend's EGYPT_ZONE_COORDS / GeoService list.
+var REAL_INDUSTRIAL_ZONES = [
+  "العاشر من رمضان", "6 أكتوبر", "مدينة العبور", "مدينة السادات", "برج العرب",
+  "برج العرب الجديدة", "إمبابة", "مدينة بدر", "مدينة الشروق", "المحلة الكبرى",
+  "الروبيكي", "العين السخنة", "دمياط", "العاصمة الإدارية الجديدة",
+];
+
+function populateRegZoneDropdowns() {
+  ["reg-sup-zone", "reg-buy-zone"].forEach(function(id) {
+    var sel = document.getElementById(id);
+    if (!sel || sel.children.length > 1) return; // already populated
+    REAL_INDUSTRIAL_ZONES.forEach(function(z) {
+      var opt = document.createElement("option");
+      opt.value = z; opt.textContent = z;
+      sel.appendChild(opt);
+    });
+  });
+}
+document.addEventListener("DOMContentLoaded", populateRegZoneDropdowns);
+
+// ── Real browser geolocation, captured only with the user's explicit
+// consent (the browser's own native permission prompt — we never read
+// location without it triggering that prompt).
+function captureRegistrationLocation(prefix) {
+  var statusEl = document.getElementById(prefix + "-geoloc-status");
+  var btn = document.getElementById(prefix + "-geoloc-btn");
+  if (!navigator.geolocation) {
+    if (statusEl) { statusEl.style.display = "block"; statusEl.textContent = "⚠️ متصفحك لا يدعم تحديد الموقع — يرجى إدخال المدينة يدويًا"; }
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = "📍 جارٍ طلب إذن الموقع..."; }
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    document.getElementById(prefix + "-lat").value = pos.coords.latitude;
+    document.getElementById(prefix + "-lng").value = pos.coords.longitude;
+    if (statusEl) { statusEl.style.display = "block"; statusEl.style.color = "#22C55E"; statusEl.textContent = "✅ تم تحديد موقعك الحالي بنجاح"; }
+    if (btn) { btn.disabled = false; btn.textContent = "📍 تم تحديد الموقع ✓"; }
+  }, function(err) {
+    if (statusEl) { statusEl.style.display = "block"; statusEl.textContent = "⚠️ لم تتم الموافقة على تحديد الموقع — يرجى إدخال المدينة والمنطقة يدويًا"; }
+    if (btn) { btn.disabled = false; btn.textContent = "📍 استخدام موقعي الحالي (يتطلب موافقتك)"; }
+  }, { timeout: 10000 });
+}
+window.captureRegistrationLocation = captureRegistrationLocation;
 var MAP_SECTOR_COLORS = ["#CE1126","#C09300","#3B82F6","#10B981","#F59E0B","#8B5CF6","#EC4899","#06B6D4","#9CA3AF"];
 function mapColorForSector(name) {
   var seed = (name || "").split("").reduce(function(s, c){ return s + c.charCodeAt(0); }, 0);
@@ -11060,11 +11185,19 @@ window.submitRegistration = async function(role) {
   } else {
     var companyEl = document.getElementById(cfg.prefix + "-company");
     var phoneEl2 = document.getElementById(cfg.prefix + "-phone");
+    var cityEl = document.getElementById(cfg.prefix + "-city");
+    var zoneEl = document.getElementById(cfg.prefix + "-zone");
+    var latEl = document.getElementById(cfg.prefix + "-lat");
+    var lngEl = document.getElementById(cfg.prefix + "-lng");
     var companyName = companyEl ? companyEl.value.trim() : "";
     var phone2 = phoneEl2 ? phoneEl2.value.trim() : "";
     if (!companyName) { toast("⚠️ الرجاء إدخال اسم الشركة / المصنع"); return; }
     body.companyNameAr = companyName;
     body.phone = phone2 || undefined;
+    body.city = (cityEl && cityEl.value.trim()) || (zoneEl && zoneEl.value) || undefined;
+    body.industrialZone = (zoneEl && zoneEl.value) || undefined;
+    if (latEl && latEl.value) body.lat = Number(latEl.value);
+    if (lngEl && lngEl.value) body.lng = Number(lngEl.value);
   }
 
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "جارٍ إنشاء الحساب..."; }
