@@ -5708,18 +5708,93 @@ function buildFullSummary() {
   if (mc) mc.textContent = Math.floor(Math.random()*30+10) * (Object.keys(bySector).length || 1);
 }
 
-window.submitFullRFQ = function() {
+// ── Real categories cache, used to resolve a sector display name to
+// the real Category.id the backend needs (RfqRequest.categoryId).
+var REAL_CATEGORIES_CACHE = null;
+async function getRealCategories() {
+  if (REAL_CATEGORIES_CACHE) return REAL_CATEGORIES_CACHE;
+  try {
+    var cats = await apiFetch("/categories");
+    REAL_CATEGORIES_CACHE = cats;
+    return cats;
+  } catch (err) {
+    return [];
+  }
+}
+function resolveCategoryId(sectorName, categories) {
+  var exact = categories.find(function(c){ return c.nameAr === sectorName; });
+  if (exact) return exact.id;
+  var partial = categories.find(function(c){
+    return c.nameAr && (c.nameAr.indexOf(sectorName) > -1 || sectorName.indexOf(c.nameAr) > -1);
+  });
+  return partial ? partial.id : null;
+}
+
+window.submitFullRFQ = async function() {
   if (!window.isLoggedIn) {
     toast("⚠️ الرجاء تسجيل الدخول لإرسال طلب عرض السعر");
     openLoginModal();
     return;
   }
-  toast("🚀 تم إرسال الطلب بـ " + RFQ_CART.length + " منتج! ستستلمين العروض خلال 24-48 ساعة");
-  setTimeout(function() {
+  if (!RFQ_CART.length) { toast("⚠️ السلة فارغة"); return; }
+
+  var submitBtn = document.getElementById("rfq-submit");
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "جارٍ الإرسال..."; }
+
+  var categories = await getRealCategories();
+  var bySector = {};
+  RFQ_CART.forEach(function(item) {
+    if (!bySector[item.sector]) bySector[item.sector] = [];
+    bySector[item.sector].push(item);
+  });
+
+  var ct = (document.getElementById("rc") || {}).value || "العاشر من رمضان";
+  if (ct === "أخرى") ct = (document.getElementById("rc-other") || {}).value || ct;
+  var deadlineRaw = (document.getElementById("rd") || {}).value;
+  var deadline = deadlineRaw ? new Date(deadlineRaw) : new Date(Date.now() + 14 * 86400000);
+  var payRaw = (document.getElementById("rp2") || {}).value || "Escrow";
+  var paymentMethod = payRaw.indexOf("Escrow") > -1 ? "ESCROW" : payRaw.indexOf("تقسيط") > -1 ? "INSTALLMENT" : "ADVANCE_PARTIAL";
+
+  var created = [];
+  var failedSectors = [];
+
+  for (var sector in bySector) {
+    var items = bySector[sector];
+    var categoryId = resolveCategoryId(sector, categories);
+    if (!categoryId) { failedSectors.push(sector); continue; }
+    var totalQty = items.reduce(function(sum, it){ return sum + (Number(it.qty) || 1); }, 0);
+    try {
+      var rfq = await apiFetch("/rfq", {
+        method: "POST",
+        body: JSON.stringify({
+          categoryId: categoryId,
+          quantity: totalQty,
+          unit: items[0].unit || "وحدة",
+          deadline: deadline.toISOString(),
+          deliveryCity: ct,
+          deliveryZone: ct,
+          deliveryAddress: ct,
+          paymentMethod: paymentMethod,
+          specsJson: { items: items.map(function(it){ return { name: it.name, qty: it.qty, unit: it.unit, grade: it.grade, notes: it.notes }; }) },
+          publish: true,
+        })
+      });
+      created.push(rfq);
+    } catch (err) {
+      failedSectors.push(sector + " (" + (err.message || "خطأ") + ")");
+    }
+  }
+
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "🚀 إرسال الطلب الآن"; }
+
+  if (created.length) {
     RFQ_CART = [];
     updateCartBadge();
-    goTo("orders");
-  }, 1500);
+    toast("🚀 تم إرسال " + created.length + " طلب عرض سعر بنجاح! ستستلمين العروض خلال 24-48 ساعة" + (failedSectors.length ? (" — تعذر إرسال: " + failedSectors.join("، ")) : ""));
+    setTimeout(function(){ goTo("dash"); }, 1800);
+  } else {
+    toast("⚠️ تعذر إرسال الطلب — لم يتم التعرف على القطاعات: " + failedSectors.join("، "));
+  }
 };
 
 // Hook quick-add from home page chips (data-sector-quick)
