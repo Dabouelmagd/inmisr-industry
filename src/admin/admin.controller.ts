@@ -39,6 +39,13 @@ export class AdminController {
     return this.admin.searchCompanies(q, type);
   }
 
+  @Get('suppliers')
+  @ApiOperation({ summary: 'كل الموردين المسجّلين — بيانات كاملة تشمل العنوان والتليفون (أدمن فقط)' })
+  listSuppliers(@Query() query: any, @Request() req: any) {
+    this.requireAdmin(req);
+    return this.admin.listSuppliers(query);
+  }
+
   @Get('factories')
   @ApiOperation({ summary: 'كل المصانع (الشركات المشترية) المسجّلة على المنصة' })
   listFactories(@Query() query: any, @Request() req: any) {

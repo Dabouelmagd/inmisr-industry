@@ -55,7 +55,7 @@ export class SuppliersService {
       this.prisma.company.findMany({
         where,
         include: {
-          location: true,
+          location: { select: { city: true, governorate: true, industrialZone: true, lat: true, lng: true } },
           categories: { include: { category: { select: { nameAr: true, sectorCode: true } } } },
           subscription: { select: { plan: true } },
           _count: { select: { products: true, reviewsReceived: true } },
@@ -67,15 +67,15 @@ export class SuppliersService {
       this.prisma.company.count({ where }),
     ]);
 
-    // Add distance if geo query
-    const enriched = geoIds && query.lat && query.lng
-      ? data.map(s => ({
-          ...s,
-          distanceKm: s.location
-            ? this.haversine(query.lat!, query.lng!, s.location.lat, s.location.lng)
-            : null,
-        }))
-      : data;
+    // Add distance if geo query, and strip admin-only contact fields
+    // (contactPhone is real business contact info -- public/other-company
+    // views never see it, only the admin factories/suppliers listings do).
+    const enriched = data.map(s => {
+      const { contactPhone, ...pub } = s as any;
+      return geoIds && query.lat && query.lng
+        ? { ...pub, distanceKm: pub.location ? this.haversine(query.lat!, query.lng!, pub.location.lat, pub.location.lng) : null }
+        : pub;
+    });
 
     return {
       data: enriched,
@@ -88,7 +88,7 @@ export class SuppliersService {
     const supplier = await this.prisma.company.findUnique({
       where: { id, type: 'SUPPLIER' },
       include: {
-        location: true,
+        location: { select: { city: true, governorate: true, industrialZone: true, lat: true, lng: true } },
         categories: { include: { category: true } },
         subscription: true,
         products: {
@@ -113,6 +113,11 @@ export class SuppliersService {
 
     if (!supplier) throw new NotFoundException('المورد غير موجود');
 
+    // contactPhone is a real business contact number, but this is a
+    // public/other-company-facing view -- keep it admin-only (see
+    // AdminService.listFactories / a future listSuppliersAdmin).
+    const { contactPhone, ...publicSupplier } = supplier as any;
+
     // Log view for analytics
     await this.prisma.auditLog.create({
       data: {
@@ -123,7 +128,7 @@ export class SuppliersService {
       },
     }).catch(() => {});
 
-    return supplier;
+    return publicSupplier;
   }
 
   // ── SUBMIT VERIFICATION DOCS ───────────────────────────────────

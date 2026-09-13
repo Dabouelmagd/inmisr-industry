@@ -406,6 +406,31 @@ export class AdminService {
     };
   }
 
+  // ── SUPPLIERS — full real registry, admin-only fields included ──
+  async listSuppliers(query: { page?: number; limit?: number; sortBy?: string }) {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 50;
+    const orderBy: any = query.sortBy === 'trust_asc' ? { trustScore: 'asc' } : { trustScore: 'desc' };
+
+    const [data, total] = await Promise.all([
+      this.prisma.company.findMany({
+        where: { type: 'SUPPLIER' },
+        include: {
+          location: true, // full location incl. address — admin-only view
+          subscription: { select: { plan: true } },
+          categories: { include: { category: { select: { nameAr: true } } } },
+          _count: { select: { products: true, ordersAsSupplier: true } },
+        },
+        orderBy,
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.company.count({ where: { type: 'SUPPLIER' } }),
+    ]);
+
+    return { data, total, page, totalPages: Math.ceil(total / limit) };
+  }
+
   // ── FACTORIES (BUYER-type companies) — full real registry ───────
   async listFactories(query: { page?: number; limit?: number; city?: string; zone?: string }) {
     const page = Number(query.page) || 1;

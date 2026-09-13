@@ -1534,9 +1534,11 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         <select class="sel" style="width:170px" id="map-zone-filter"><option value="">كل المناطق</option><option value="العاشر من رمضان">العاشر من رمضان</option><option value="6 أكتوبر">6 أكتوبر</option><option value="العبور">العبور</option><option value="السادات">السادات</option><option value="برج العرب">برج العرب</option><option value="المحلة">المحلة الكبرى</option><option value="الروبيكي">الروبيكي</option><option value="العين السخنة">العين السخنة</option><option value="دمياط">دمياط</option><option value="بدر">مدينة بدر</option></select>
       </div>
     </div>
+    <div id="map-nearest-widget" style="background:var(--surface);border:1px solid var(--bd2);border-radius:11px;padding:12px 14px;margin-bottom:14px;display:none"></div>
     <div class="mc2"><div class="mbg"></div>
       <svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none" viewBox="0 0 800 460"><path d="M390 5 Q385 80 378 150 Q372 220 365 290 Q360 360 355 460" fill="none" stroke="rgba(59,130,246,.25)" stroke-width="12"/></svg>
       <div class="mzone" style="top:12%;left:52%">العاشر من رمضان</div><div class="mzone" style="top:38%;left:14%">6 أكتوبر</div><div class="mzone" style="top:8%;left:67%">العبور</div><div class="mzone" style="top:69%;left:9%">برج العرب</div><div class="mzone" style="top:5%;left:32%">المحلة</div>
+      <div id="map-zone-boundaries"></div>
       <div id="map-dots-container"></div>
 
       <div style="position:absolute;top:71%;left:47%;transform:translate(-50%,-50%)"><div style="width:18px;height:18px;background:#fff;border:3px solid var(--red);border-radius:50%;position:relative;box-shadow:0 0 0 8px rgba(184,134,11,.12)"><div style="position:absolute;top:-22px;left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--red);color:#fff;font-size:9px;padding:3px 8px;border-radius:6px;font-weight:600">موقعك</div></div></div>
@@ -1865,6 +1867,10 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   <div class="modal" style="max-width:500px">
     <button class="mc" onclick="closeM('company-profile-edit-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
     <div style="font-size:16px;font-weight:700;margin-bottom:16px">تعديل بيانات الشركة</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <div id="cp-logo-preview" style="width:56px;height:56px;border-radius:12px;background:var(--bg3);border:1px dashed var(--bd2);display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;flex-shrink:0">🏷️</div>
+      <div style="flex:1"><span class="lbl">شعار الشركة</span><input class="inp" type="file" id="cp-logo-file" accept="image/png,image/jpeg,image/webp" style="padding:8px" onchange="uploadCompanyLogo(this)"></div>
+    </div>
     <div style="margin-bottom:12px"><span class="lbl">اسم الشركة (عربي)</span><input class="inp" id="cp-name-ar"></div>
     <div style="margin-bottom:12px"><span class="lbl">اسم الشركة (إنجليزي)</span><input class="inp" id="cp-name-en"></div>
     <div class="g2" style="gap:12px;margin-bottom:12px">
@@ -3012,7 +3018,8 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         <input type="hidden" id="reg-sup-lat"><input type="hidden" id="reg-sup-lng">
         <div class="g2" style="gap:14px">
           <div><span class="lbl">المحافظة / المدينة</span><input class="inp" id="reg-sup-city" placeholder="مثال: القاهرة"></div>
-          <div><span class="lbl">المنطقة الصناعية (إن وجدت)</span><select class="sel" id="reg-sup-zone"><option value="">— اختياري —</option></select></div>
+          <div><span class="lbl">المنطقة الصناعية (إن وجدت)</span><select class="sel" id="reg-sup-zone" onchange="toggleCustomZoneInput('reg-sup')"><option value="">— اختياري —</option><option value="__other__">أخرى (منطقة غير مدرجة)</option></select>
+            <input class="inp" id="reg-sup-zone-other" placeholder="اكتبي اسم منطقتك الصناعية" style="display:none;margin-top:8px"></div>
         </div>
       </div>
       <div class="g2" style="gap:14px;margin-bottom:14px">
@@ -3069,7 +3076,8 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         <input type="hidden" id="reg-buy-lat"><input type="hidden" id="reg-buy-lng">
         <div class="g2" style="gap:14px">
           <div><span class="lbl">المحافظة / المدينة</span><input class="inp" id="reg-buy-city" placeholder="مثال: القاهرة"></div>
-          <div><span class="lbl">المنطقة الصناعية (إن وجدت)</span><select class="sel" id="reg-buy-zone"><option value="">— اختياري —</option></select></div>
+          <div><span class="lbl">المنطقة الصناعية (إن وجدت)</span><select class="sel" id="reg-buy-zone" onchange="toggleCustomZoneInput('reg-buy')"><option value="">— اختياري —</option><option value="__other__">أخرى (منطقة غير مدرجة)</option></select>
+            <input class="inp" id="reg-buy-zone-other" placeholder="اكتبي اسم منطقتك الصناعية" style="display:none;margin-top:8px"></div>
         </div>
       </div>
       <div class="g2" style="gap:14px;margin-bottom:14px">
@@ -4467,6 +4475,9 @@ document.addEventListener("DOMContentLoaded",function(){
     });
     document.querySelectorAll(".asb").forEach(function(b){b.classList.remove("on");});
     if(btn)btn.classList.add("on");
+    if (name === "suppliers") {
+      loadAdminSuppliersTable();
+    }
     if (name === "factories") {
       loadAdminFactories();
     }
@@ -5283,34 +5294,51 @@ function updateDashSidebarRole() {
 }
 window.updateDashSidebarRole = updateDashSidebarRole;
 
-// ── Admin: Suppliers table (sortable by Trust Score) ──
-var ADMIN_SUPPLIERS_LIST = [
-  {name:"حديد مصر للتجارة", sector:"الحديد", tier:"نخبة", tierCls:"pg", trust:94, deals:345},
-  {name:"طاقة مصر الشمسية", sector:"طاقة شمسية", tier:"معتمد", tierCls:"pb2", trust:91, deals:178},
-  {name:"الشركة المصرية للألومنيوم", sector:"الألومنيوم", tier:"معتمد", tierCls:"pb2", trust:88, deals:267},
-  {name:"مصانع الدلتا للنسيج", sector:"النسيج", tier:"موثق", tierCls:"pa", trust:79, deals:134}
-];
+// ── Admin: Suppliers table (real data, admin-only contact fields) ──
+var ADMIN_SUPPLIERS_LIST = [];
 var ADMIN_SUPPLIERS_SORT_DIR = "desc";
+
+async function loadAdminSuppliersTable() {
+  var box = document.getElementById("admin-suppliers-table");
+  if (!box) return;
+  box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">جارٍ التحميل...</div>';
+  try {
+    var result = await apiFetch("/admin/suppliers?limit=100&sortBy=" + (ADMIN_SUPPLIERS_SORT_DIR === "desc" ? "trust_desc" : "trust_asc"));
+    ADMIN_SUPPLIERS_LIST = result.data || [];
+    renderAdminSuppliersTable();
+  } catch (err) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">⚠️ تعذر تحميل الموردين: ' + (err.message || "") + '</div>';
+  }
+}
+window.loadAdminSuppliersTable = loadAdminSuppliersTable;
 
 function renderAdminSuppliersTable() {
   var box = document.getElementById("admin-suppliers-table");
   if (!box) return;
-  var list = ADMIN_SUPPLIERS_LIST.slice().sort(function(a,b){
-    return ADMIN_SUPPLIERS_SORT_DIR === "desc" ? b.trust - a.trust : a.trust - b.trust;
-  });
-  var rows = list.map(function(s){
-    return '<tr><td><strong>' + s.name + '</strong></td><td>' + s.sector + '</td>' +
-      '<td><span class="pill ' + s.tierCls + '">' + s.tier + '</span></td>' +
-      '<td>' + s.trust + '/100</td><td>' + s.deals + '</td>' +
-      '<td><button class="bl" style="font-size:12px;padding:4px 11px;border-radius:6px" data-msg="view">عرض</button></td></tr>';
+  if (!ADMIN_SUPPLIERS_LIST.length) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">لا يوجد موردون مسجّلون بعد</div>';
+    return;
+  }
+  var tierLabel = { NONE: "غير موثق", BASIC: "موثق", VERIFIED: "معتمد", ELITE: "نخبة" };
+  var tierCls = { NONE: "pr", BASIC: "pa", VERIFIED: "pb2", ELITE: "pg" };
+  var rows = ADMIN_SUPPLIERS_LIST.map(function(s) {
+    var sector = (s.categories && s.categories[0] && s.categories[0].category && s.categories[0].category.nameAr) || "—";
+    var loc = s.location;
+    var addressLine = loc ? [loc.addressAr, loc.city, loc.industrialZone].filter(Boolean).join(" — ") : "—";
+    return '<tr><td><strong>' + (s.nameAr || "—") + '</strong></td><td>' + sector + '</td>' +
+      '<td><span class="pill ' + (tierCls[s.verifiedLevel] || "pa") + '">' + (tierLabel[s.verifiedLevel] || s.verifiedLevel) + '</span></td>' +
+      '<td>' + (s.trustScore || 0) + '/100</td><td>' + ((s._count && s._count.ordersAsSupplier) || 0) + '</td>' +
+      '<td style="font-size:11px;color:var(--ts)">' + addressLine + '</td>' +
+      '<td style="font-size:11px;color:var(--ts);direction:ltr;text-align:right">' + (s.contactPhone || "—") + '</td>' +
+      '<td><button class="bl" style="font-size:12px;padding:4px 11px;border-radius:6px" onclick="window.open(\'/#sup-\' + \'' + s.id + '\',\'_blank\')">عرض الملف</button></td></tr>';
   }).join("");
-  box.innerHTML = '<div class="tw"><table class="tbl"><thead><tr><th>المورد</th><th>القطاع</th><th>المستوى</th><th>Trust</th><th>صفقات</th><th>إجراء</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  box.innerHTML = '<div class="tw"><table class="tbl"><thead><tr><th>المورد</th><th>القطاع</th><th>المستوى</th><th>Trust</th><th>صفقات</th><th>العنوان</th><th>التليفون</th><th>إجراء</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   var lbl = document.getElementById("admin-suppliers-sort-label");
   if (lbl) lbl.textContent = ADMIN_SUPPLIERS_SORT_DIR === "desc" ? "الأعلى أولاً" : "الأقل أولاً";
 }
 function toggleAdminSuppliersSort() {
   ADMIN_SUPPLIERS_SORT_DIR = (ADMIN_SUPPLIERS_SORT_DIR === "desc") ? "asc" : "desc";
-  renderAdminSuppliersTable();
+  loadAdminSuppliersTable();
 }
 window.toggleAdminSuppliersSort = toggleAdminSuppliersSort;
 
@@ -8753,6 +8781,25 @@ window.loadMyCustomers = loadMyCustomers;
 // ── INDUSTRIAL MAP — real suppliers from GET /geo/suppliers, positioned
 // by their real industrial zone (the zone anchor points below match the
 // zone labels already drawn on the decorative map background).
+var MAP_ZONE_COLORS = {
+  "العاشر من رمضان": "#CE1126", "6 أكتوبر": "#3B82F6", "مدينة العبور": "#10B981", "العبور": "#10B981",
+  "برج العرب": "#F59E0B", "برج العرب الجديدة": "#D97706", "المحلة الكبرى": "#8B5CF6", "المحلة": "#8B5CF6",
+  "مدينة السادات": "#EC4899", "السادات": "#EC4899", "إمبابة": "#06B6D4", "مدينة بدر": "#84CC16", "بدر": "#84CC16",
+  "مدينة الشروق": "#F97316", "الشروق": "#F97316", "الروبيكي": "#A855F7", "العين السخنة": "#14B8A6",
+  "دمياط": "#EF4444", "العاصمة الإدارية الجديدة": "#6366F1",
+};
+
+function renderZoneBoundaries() {
+  var container = document.getElementById("map-zone-boundaries");
+  if (!container) return;
+  container.innerHTML = Object.keys(MAP_ZONE_POS).map(function(zoneName) {
+    var pos = MAP_ZONE_POS[zoneName];
+    var color = MAP_ZONE_COLORS[zoneName] || "#9CA3AF";
+    return '<div style="position:absolute;top:' + pos.top + '%;left:' + pos.left + '%;transform:translate(-50%,-50%);width:90px;height:90px;border-radius:50%;background:' + color + '22;border:2px dashed ' + color + '55;pointer-events:none"></div>';
+  }).join("");
+}
+window.renderZoneBoundaries = renderZoneBoundaries;
+
 var MAP_ZONE_POS = {
   "العاشر من رمضان": { top: 12, left: 52 },
   "6 أكتوبر": { top: 38, left: 14 },
@@ -8787,15 +8834,24 @@ var REAL_INDUSTRIAL_ZONES = [
 function populateRegZoneDropdowns() {
   ["reg-sup-zone", "reg-buy-zone"].forEach(function(id) {
     var sel = document.getElementById(id);
-    if (!sel || sel.children.length > 1) return; // already populated
+    if (!sel || sel.children.length > 2) return; // already populated
+    var otherOpt = sel.querySelector('option[value="__other__"]');
     REAL_INDUSTRIAL_ZONES.forEach(function(z) {
       var opt = document.createElement("option");
       opt.value = z; opt.textContent = z;
-      sel.appendChild(opt);
+      sel.insertBefore(opt, otherOpt);
     });
   });
 }
 document.addEventListener("DOMContentLoaded", populateRegZoneDropdowns);
+
+function toggleCustomZoneInput(prefix) {
+  var sel = document.getElementById(prefix + "-zone");
+  var otherInput = document.getElementById(prefix + "-zone-other");
+  if (!sel || !otherInput) return;
+  otherInput.style.display = (sel.value === "__other__") ? "block" : "none";
+}
+window.toggleCustomZoneInput = toggleCustomZoneInput;
 
 // ── Real browser geolocation, captured only with the user's explicit
 // consent (the browser's own native permission prompt — we never read
@@ -8830,9 +8886,11 @@ var MAP_SUPPLIERS_CACHE = [];
 async function loadIndustrialMap() {
   var box = document.getElementById("map-dots-container");
   if (!box) return;
+  renderZoneBoundaries();
   try {
-    MAP_SUPPLIERS_CACHE = await apiFetch("/geo/suppliers");
+    MAP_SUPPLIERS_CACHE = await apiFetch("/geo/suppliers?type=ALL");
     renderIndustrialMap();
+    loadNearestSuppliersWidget();
   } catch (err) {
     box.innerHTML = '';
     var countEl = document.getElementById("map-count");
@@ -8869,17 +8927,37 @@ function renderIndustrialMap() {
     var idx = zoneCounts[zoneKey];
     var jitterTop = pos.top + ((idx * 13) % 20) - 8;
     var jitterLeft = pos.left + ((idx * 17) % 20) - 8;
-    var color = mapColorForSector(sectorName);
+    var color = MAP_ZONE_COLORS[zoneKey] || mapColorForSector(sectorName);
+    var isFactory = c.type === "BUYER";
+    var shapeStyle = isFactory ? "border-radius:3px;transform:rotate(45deg)" : "border-radius:50%";
     var distLabel = loc.distanceKm != null ? Math.round(loc.distanceKm) + " كم · " : "";
     return '<div class="mdot" style="top:' + jitterTop + '%;left:' + jitterLeft + '%">' +
-      '<div class="mdi" style="background:' + color + '"></div>' +
-      '<div class="mtt"><div style="font-weight:700;font-size:13px;color:var(--tp);margin-bottom:3px">' + (c.nameAr || "—") + '</div>' +
-      '<div style="color:' + color + ';font-size:11px;font-weight:600;margin-bottom:2px">' + sectorName + '</div>' +
+      '<div class="mdi" style="background:' + color + ';' + shapeStyle + '"></div>' +
+      '<div class="mtt"><div style="font-weight:700;font-size:13px;color:var(--tp);margin-bottom:3px">' + (isFactory ? "🏭 " : "🔧 ") + (c.nameAr || "—") + '</div>' +
+      '<div style="color:' + color + ';font-size:11px;font-weight:600;margin-bottom:2px">' + (isFactory ? "مصنع (مشترٍ) · " : "") + sectorName + '</div>' +
       '<div style="color:var(--ts);font-size:11px">' + distLabel + '★ ' + (c.avgRating != null ? c.avgRating.toFixed(1) : "0.0") + '</div></div></div>';
   }).join("");
 }
 window.renderIndustrialMap = renderIndustrialMap;
 
+// ── Nearest suppliers to my own registered location (real distance) ──
+async function loadNearestSuppliersWidget() {
+  var box = document.getElementById("map-nearest-widget");
+  if (!box || !window.isLoggedIn || window.loggedInRole !== "company") { if (box) box.style.display = "none"; return; }
+  box.style.display = "block";
+  box.innerHTML = '<div style="font-size:12px;color:var(--ts);padding:8px 0">جارٍ حساب أقرب الموردين لمصنعك...</div>';
+  try {
+    var list = await apiFetch("/geo/nearest-suppliers?limit=5");
+    if (!list.length) { box.innerHTML = '<div style="font-size:12px;color:var(--ts);padding:8px 0">لا يوجد موردون بموقع مسجّل حاليًا</div>'; return; }
+    box.innerHTML = '<div style="font-size:12px;font-weight:700;margin-bottom:8px">📍 أقرب 5 موردين لمصنعك</div>' +
+      list.map(function(s, i) {
+        return '<div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid var(--bd)"><span>' + (i+1) + '. ' + s.company.nameAr + '</span><span style="color:var(--gold);font-weight:700">' + Math.round(s.distanceKm) + ' كم</span></div>';
+      }).join("");
+  } catch (err) {
+    box.innerHTML = '<div style="font-size:11px;color:var(--ts);padding:8px 0">⚠️ ' + (err.message || "تعذر الحساب — تأكدي من تسجيل موقع مصنعك") + '</div>';
+  }
+}
+window.loadNearestSuppliersWidget = loadNearestSuppliersWidget;
 document.addEventListener("DOMContentLoaded", function() {
   loadIndustrialMap();
   var sf = document.getElementById("map-sector-filter");
@@ -8925,6 +9003,8 @@ function openCompanyProfileEdit() {
   document.getElementById("cp-employees").value = c.employeeCount || "";
   document.getElementById("cp-website").value = c.websiteUrl || "";
   document.getElementById("cp-desc").value = c.descriptionAr || "";
+  var logoPreview = document.getElementById("cp-logo-preview");
+  if (logoPreview) logoPreview.innerHTML = c.logoUrl ? '<img src="' + c.logoUrl + '" style="width:100%;height:100%;object-fit:cover">' : "🏷️";
   if (typeof openM === "function") openM("company-profile-edit-modal");
 }
 window.openCompanyProfileEdit = openCompanyProfileEdit;
@@ -11142,7 +11222,32 @@ async function apiFetch(path, options) {
   }
   return (body && "data" in body) ? body.data : body;
 }
-window.apiFetch = apiFetch;
+window.uploadCompanyLogo = async function(inputEl) {
+  var file = inputEl.files && inputEl.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { toast("⚠️ حجم الصورة يجب ألا يتجاوز 2 ميجابايت"); return; }
+  var preview = document.getElementById("cp-logo-preview");
+  if (preview) preview.innerHTML = '<div style="font-size:11px;color:var(--ts)">جارٍ الرفع...</div>';
+  try {
+    var formData = new FormData();
+    formData.append("logo", file);
+    var token = window.localStorage.getItem("inmisr_access_token");
+    var res = await fetch(API_BASE + "/companies/me/logo", {
+      method: "POST",
+      headers: token ? { "Authorization": "Bearer " + token } : {},
+      body: formData
+    });
+    var body = await res.json().catch(function(){ return null; });
+    if (!res.ok) throw new Error((body && body.message) || "تعذر رفع الشعار");
+    var logoUrl = body.data.logoUrl;
+    if (preview) preview.innerHTML = '<img src="' + logoUrl + '" style="width:100%;height:100%;object-fit:cover">';
+    if (COMPANY_PROFILE_CACHE) COMPANY_PROFILE_CACHE.logoUrl = logoUrl;
+    toast("✅ تم رفع الشعار بنجاح");
+  } catch (err) {
+    if (preview) preview.innerHTML = "🏷️";
+    toast("⚠️ " + (err.message || "تعذر رفع الشعار"));
+  }
+};
 
 window.submitRegistration = async function(role) {
   var cfg = {
@@ -11187,6 +11292,7 @@ window.submitRegistration = async function(role) {
     var phoneEl2 = document.getElementById(cfg.prefix + "-phone");
     var cityEl = document.getElementById(cfg.prefix + "-city");
     var zoneEl = document.getElementById(cfg.prefix + "-zone");
+    var zoneOtherEl = document.getElementById(cfg.prefix + "-zone-other");
     var latEl = document.getElementById(cfg.prefix + "-lat");
     var lngEl = document.getElementById(cfg.prefix + "-lng");
     var companyName = companyEl ? companyEl.value.trim() : "";
@@ -11194,8 +11300,9 @@ window.submitRegistration = async function(role) {
     if (!companyName) { toast("⚠️ الرجاء إدخال اسم الشركة / المصنع"); return; }
     body.companyNameAr = companyName;
     body.phone = phone2 || undefined;
-    body.city = (cityEl && cityEl.value.trim()) || (zoneEl && zoneEl.value) || undefined;
-    body.industrialZone = (zoneEl && zoneEl.value) || undefined;
+    var zoneValue = (zoneEl && zoneEl.value === "__other__") ? (zoneOtherEl && zoneOtherEl.value.trim()) : (zoneEl && zoneEl.value);
+    body.city = (cityEl && cityEl.value.trim()) || zoneValue || undefined;
+    body.industrialZone = zoneValue || undefined;
     if (latEl && latEl.value) body.lat = Number(latEl.value);
     if (lngEl && lngEl.value) body.lng = Number(lngEl.value);
   }

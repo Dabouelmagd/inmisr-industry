@@ -5,7 +5,11 @@
 import {
   Controller, Get, Post, Put, Delete, Body, Param, Query,
   UseGuards, Request, HttpCode, HttpStatus, Patch, Res, Headers, ForbiddenException,
+  BadRequestException, UseInterceptors, UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { join, extname } from 'path';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService, RegisterDto, LoginDto, VerifyOtpDto } from '../auth/auth.service';
@@ -387,12 +391,21 @@ export class GeoController {
   constructor(private geo: GeoService) {}
 
   @Get('suppliers')
-  @ApiOperation({ summary: 'الموردون على الخريطة' })
+  @ApiOperation({ summary: 'الموردون (أو المصانع) على الخريطة' })
   getMapSuppliers(@Query() query: {
     lat?: number; lng?: number;
-    radiusKm?: number; sector?: string;
+    radiusKm?: number; sector?: string; type?: string;
   }) {
     return this.geo.getMapData(query);
+  }
+
+  @Get('nearest-suppliers')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'أقرب الموردين لموقعي المسجّل (حساب مسافة حقيقي)' })
+  getNearestSuppliers(@Query() query: { sector?: string; limit?: number }, @Request() req: any) {
+    if (!req.user.companyId) throw new ForbiddenException('يجب تسجيل حساب شركة أولاً');
+    return this.geo.getNearestSuppliers(req.user.companyId, query);
   }
 
   @Get('zones')
@@ -728,6 +741,33 @@ export class CompanyProfileController {
   updateMine(@Body() dto: any, @Request() req: any) {
     if (!req.user.companyId) throw new ForbiddenException('لا يوجد حساب شركة مرتبط بحسابك');
     return this.profile.updateMine(req.user.companyId, dto);
+  }
+
+  @Post('logo')
+  @UseInterceptors(FileInterceptor('logo', {
+    storage: diskStorage({
+      destination: join(process.cwd(), 'uploads', 'logos'),
+      filename: (req: any, file, cb) => {
+        const companyId = req.user?.companyId || 'unknown';
+        const ext = extname(file.originalname) || '.png';
+        cb(null, `${companyId}-${Date.now()}${ext}`);
+      },
+    }),
+    fileFilter: (req, file, cb) => {
+      if (!/^image\/(png|jpe?g|webp)$/.test(file.mimetype)) {
+        return cb(new BadRequestException('الملف لازم يكون صورة PNG أو JPG أو WEBP'), false);
+      }
+      cb(null, true);
+    },
+    limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+  }))
+  @ApiOperation({ summary: 'رفع شعار الشركة' })
+  async uploadLogo(@UploadedFile() file: any, @Request() req: any) {
+    if (!req.user.companyId) throw new ForbiddenException('لا يوجد حساب شركة مرتبط بحسابك');
+    if (!file) throw new BadRequestException('لم يتم إرفاق أي ملف');
+    const logoUrl = `/uploads/logos/${file.filename}`;
+    await this.profile.updateMine(req.user.companyId, { logoUrl } as any);
+    return { message: 'تم رفع الشعار بنجاح', logoUrl };
   }
 }
 

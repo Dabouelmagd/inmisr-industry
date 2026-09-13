@@ -258,6 +258,7 @@ model Company {
   descriptionAr      String?
   descriptionEn      String?
   websiteUrl         String?
+  contactPhone       String?
   founded            Int?
   employeeCount      String?
   deletedAt          DateTime?

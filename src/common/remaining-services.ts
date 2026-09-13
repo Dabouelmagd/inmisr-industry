@@ -39,8 +39,9 @@ export class GeoService {
 
   constructor(private prisma: PrismaService) {}
 
-  async getMapData(query: { lat?: number; lng?: number; radiusKm?: number; sector?: string }) {
-    const where: any = { company: { type: 'SUPPLIER', verifiedLevel: { not: 'NONE' } } };
+  async getMapData(query: { lat?: number; lng?: number; radiusKm?: number; sector?: string; type?: string }) {
+    const companyType = query.type === 'BUYER' ? 'BUYER' : query.type === 'ALL' ? undefined : 'SUPPLIER';
+    const where: any = { company: { ...(companyType ? { type: companyType } : {}), verifiedLevel: companyType === 'BUYER' ? undefined : { not: 'NONE' } } };
 
     if (query.sector) {
       where.company = {
@@ -51,10 +52,16 @@ export class GeoService {
 
     const locations = await this.prisma.geoLocation.findMany({
       where,
-      include: {
+      select: {
+        // City/zone/coordinates are needed for the map and distance
+        // calculations and stay visible -- addressAr/addressEn/postalCode
+        // are the precise street address and are admin-only (see
+        // AdminService.listFactories), never returned from this public
+        // endpoint.
+        city: true, governorate: true, industrialZone: true, lat: true, lng: true,
         company: {
           select: {
-            id: true, nameAr: true, nameEn: true,
+            id: true, nameAr: true, nameEn: true, type: true,
             verifiedLevel: true, trustScore: true, avgRating: true,
             totalDeals: true, avgResponseHours: true,
             subscription: { select: { plan: true } },
@@ -77,6 +84,38 @@ export class GeoService {
     }
 
     return enriched;
+  }
+
+  // ── NEAREST SUPPLIERS TO A GIVEN BUYER — real distance, real ranking ──
+  async getNearestSuppliers(buyerCompanyId: string, opts: { sector?: string; limit?: number }) {
+    const buyerLoc = await this.prisma.geoLocation.findUnique({ where: { companyId: buyerCompanyId } });
+    if (!buyerLoc) {
+      throw new BadRequestException('لا يوجد موقع مسجّل لحسابك — أضيفي موقعك من صفحة بيانات الشركة أولاً');
+    }
+
+    const where: any = { company: { type: 'SUPPLIER', verifiedLevel: { not: 'NONE' } } };
+    if (opts.sector) {
+      where.company.categories = { some: { category: { sectorCode: opts.sector } } };
+    }
+
+    const locations = await this.prisma.geoLocation.findMany({
+      where,
+      select: {
+        city: true, governorate: true, industrialZone: true, lat: true, lng: true,
+        company: {
+          select: {
+            id: true, nameAr: true, avgRating: true, trustScore: true, totalDeals: true,
+            categories: { include: { category: { select: { nameAr: true } } } },
+          },
+        },
+      },
+      take: 300,
+    });
+
+    return locations
+      .map(loc => ({ ...loc, distanceKm: this.haversine(buyerLoc.lat, buyerLoc.lng, loc.lat, loc.lng) }))
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+      .slice(0, opts.limit || 10);
   }
 
   async getIndustrialZones() {
@@ -823,16 +862,31 @@ export class CompanyProfileService {
   async updateMine(companyId: string, dto: {
     nameAr?: string; nameEn?: string; commercialRegNo?: string; taxId?: string;
     descriptionAr?: string; websiteUrl?: string; founded?: number; employeeCount?: number;
+    contactPhone?: string; addressAr?: string; city?: string; governorate?: string; industrialZone?: string;
+    logoUrl?: string;
   }) {
-    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    const company = await this.prisma.company.findUnique({ where: { id: companyId }, include: { location: true } });
     if (!company) throw new NotFoundException('لا يوجد ملف شركة مرتبط بحسابك');
     return this.prisma.company.update({
       where: { id: companyId },
       data: {
         nameAr: dto.nameAr, nameEn: dto.nameEn, commercialRegNo: dto.commercialRegNo, taxId: dto.taxId,
-        descriptionAr: dto.descriptionAr, websiteUrl: dto.websiteUrl,
+        descriptionAr: dto.descriptionAr, websiteUrl: dto.websiteUrl, contactPhone: dto.contactPhone,
+        logoUrl: dto.logoUrl,
         founded: dto.founded ? Number(dto.founded) : undefined,
         employeeCount: dto.employeeCount != null ? String(dto.employeeCount) : undefined,
+        location: dto.addressAr || dto.city ? {
+          upsert: {
+            create: {
+              addressAr: dto.addressAr, city: dto.city || 'غير محدد', governorate: dto.governorate || dto.city || 'غير محدد',
+              industrialZone: dto.industrialZone, lat: 30.0444, lng: 31.2357,
+            },
+            update: {
+              addressAr: dto.addressAr ?? undefined, city: dto.city ?? undefined,
+              governorate: dto.governorate ?? undefined, industrialZone: dto.industrialZone ?? undefined,
+            },
+          },
+        } : undefined,
       },
     });
   }

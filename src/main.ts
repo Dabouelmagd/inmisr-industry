@@ -1,17 +1,19 @@
 // ─── main.ts (Complete production-ready) ─────────────────────────
 import { NestFactory, Reflector } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
+import { join } from 'path';
 import { GlobalExceptionFilter } from './common/exception.filter';
 import { ResponseInterceptor, LoggingInterceptor, TimeoutInterceptor, CacheControlInterceptor } from './common/interceptors';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true, // Required for Paymob HMAC verification
     logger: process.env.NODE_ENV === 'production'
       ? ['error', 'warn', 'log']
@@ -21,6 +23,9 @@ async function bootstrap() {
   const config  = app.get(ConfigService);
   const port    = config.get<number>('PORT', 3001);
   const isProd  = config.get('NODE_ENV') === 'production';
+
+  // Serve uploaded company logos as static files (e.g. /uploads/logos/xyz.png)
+  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
 
   // ── Security Middleware ────────────────────────────────────────
   app.use(helmet({
