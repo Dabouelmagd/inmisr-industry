@@ -2315,6 +2315,9 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         <div class="card" id="dash-rfq-supplier"><div class="cb"><div style="font-size:15px;font-weight:700;margin-bottom:14px">طلبات عروض الأسعار الواردة (RFQ)</div>
           <div id="supplier-rfq-list"><div style="font-size:13px;color:var(--ts);padding:14px 0;text-align:center">جارٍ التحميل...</div></div>
         </div></div>
+        <div class="card" style="margin-top:16px"><div class="cb"><div style="font-size:15px;font-weight:700;margin-bottom:14px">👥 عملائي — تعامل حقيقي مجمّع من طلباتي</div>
+          <div id="my-customers-list"><div style="font-size:13px;color:var(--ts);padding:14px 0;text-align:center">جارٍ التحميل...</div></div>
+        </div></div>
         <div style="display:flex;flex-direction:column;gap:12px">
           <div class="card" id="dash-sub-supplier"><div class="cb"><div style="font-size:13px;font-weight:700;margin-bottom:10px">باقة الاشتراك</div>
             <div style="text-align:center;padding:10px 0">
@@ -3949,6 +3952,7 @@ function goTo(pg, fromBack){
       if (workerPanel) workerPanel.style.display = (role === "worker") ? "block" : "none";
       if (role === "worker" && typeof loadMyTradeApplications === "function") loadMyTradeApplications();
       if (role === "supplier" && typeof loadSupplierRfqs === "function") loadSupplierRfqs();
+      if (role === "supplier" && typeof loadMyCustomers === "function") loadMyCustomers();
       var myServicesSection = document.getElementById("dash-myservices");
       var myServicesNavBtn = document.getElementById("dash-nav-myservices");
       var mfgOpsSection = document.getElementById("dash-mfg-ops");
@@ -8370,6 +8374,28 @@ async function submitSupplierQuote(rfqId) {
   }
 }
 window.submitSupplierQuote = submitSupplierQuote;
+
+// ── MY CUSTOMERS — real aggregation from order history ──────────────
+async function loadMyCustomers() {
+  var box = document.getElementById("my-customers-list");
+  if (!box || !window.isLoggedIn) return;
+  try {
+    var list = await apiFetch("/orders/customers/list");
+    if (!list.length) {
+      box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:14px 0;text-align:center">لسه معندكيش صفقات حقيقية — هيظهر عملاؤك هنا تلقائيًا بعد أول صفقة</div>';
+      return;
+    }
+    box.innerHTML = list.map(function(c) {
+      var lastDate = new Date(c.lastOrderAt).toLocaleDateString("ar-EG");
+      return '<div class="row"><div><div style="font-size:13px;font-weight:700">' + (c.nameAr || "—") + '</div>' +
+        '<div style="font-size:11px;color:var(--tt);margin-top:2px">' + (c.city ? c.city + " · " : "") + c.totalDeals + ' صفقة (' + c.completedDeals + ' مكتملة) · آخر تعامل ' + lastDate + '</div></div>' +
+        '<div style="text-align:left"><div style="font-weight:700;color:var(--gold)">' + formatEgp(c.totalValue) + '</div></div></div>';
+    }).join("");
+  } catch (err) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:14px 0;text-align:center">⚠️ تعذر تحميل العملاء</div>';
+  }
+}
+window.loadMyCustomers = loadMyCustomers;
 
 function renderMyOrdersTabs() {
   var active = MY_ORDERS_CACHE.filter(function(o){ return ACTIVE_ORDER_STATUSES.indexOf(o.status) !== -1; });

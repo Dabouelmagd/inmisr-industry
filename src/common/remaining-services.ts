@@ -1122,6 +1122,47 @@ export class OrdersService {
     return { data, total, page: query.page || 1, totalPages: Math.ceil(total / 20) };
   }
 
+  // Real customer relationship view: aggregates this company's own Order
+  // history by counterpart (the other side of every deal), rather than
+  // inventing any CRM data — every number here is derived straight from
+  // the Order table.
+  async listCustomers(companyId: string, role: string) {
+    const where: any = role === 'SUPPLIER' ? { supplierCompanyId: companyId } : { buyerCompanyId: companyId };
+    const orders = await this.prisma.order.findMany({
+      where,
+      select: {
+        amount: true, status: true, createdAt: true,
+        buyerCompanyId: true, supplierCompanyId: true,
+        buyer: { select: { nameAr: true, location: { select: { city: true } } } },
+        supplier: { select: { nameAr: true, location: { select: { city: true } } } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const byCounterpart = new Map<string, any>();
+    for (const o of orders) {
+      const isSupplierSide = role === 'SUPPLIER';
+      const counterpartId = isSupplierSide ? o.buyerCompanyId : o.supplierCompanyId;
+      const counterpart = isSupplierSide ? o.buyer : o.supplier;
+      if (!byCounterpart.has(counterpartId)) {
+        byCounterpart.set(counterpartId, {
+          companyId: counterpartId,
+          nameAr: counterpart?.nameAr,
+          city: counterpart?.location?.city,
+          totalDeals: 0, completedDeals: 0, totalValue: 0,
+          lastOrderAt: o.createdAt,
+        });
+      }
+      const c = byCounterpart.get(counterpartId);
+      c.totalDeals += 1;
+      c.totalValue += o.amount;
+      if (o.status === 'COMPLETED') c.completedDeals += 1;
+      if (o.createdAt > c.lastOrderAt) c.lastOrderAt = o.createdAt;
+    }
+
+    return Array.from(byCounterpart.values()).sort((a, b) => b.totalValue - a.totalValue);
+  }
+
   async findOne(id: string, companyId: string) {
     const order = await this.prisma.order.findUnique({
       where: { id },

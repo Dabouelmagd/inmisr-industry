@@ -247,6 +247,13 @@ export class OrdersController {
     return this.orders.findAll(req.user.companyId, req.user.role, query);
   }
 
+  @Get('customers/list')
+  @ApiOperation({ summary: 'عملائي — تعامل حقيقي مجمّع من طلباتي' })
+  listCustomers(@Request() req: any) {
+    if (!req.user.companyId) throw new ForbiddenException('يجب تسجيل حساب شركة أولاً');
+    return this.orders.listCustomers(req.user.companyId, req.user.role);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'تفاصيل طلب محدد' })
   findOne(@Param('id') id: string, @Request() req: any) {
