@@ -2268,10 +2268,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
       </div>
       <div class="g2">
         <div class="card" id="dash-rfq-supplier"><div class="cb"><div style="font-size:15px;font-weight:700;margin-bottom:14px">طلبات عروض الأسعار الواردة (RFQ)</div>
-          <div class="row"><div><div style="font-size:13px;font-weight:600">حديد تسليح 16مم — 80 طن</div><div style="font-size:11px;color:var(--tt);margin-top:2px">مصنع الأمل للمقاولات · منذ ساعة</div></div><button class="bc" style="font-size:12px;padding:5px 12px;border-radius:6px" data-page="rfq">تقديم عرض</button></div>
-          <div class="row"><div><div style="font-size:13px;font-weight:600">صاج مجلفن 2mm — 30 طن</div><div style="font-size:11px;color:var(--tt);margin-top:2px">شركة النيل الصناعية · منذ 3 ساعات</div></div><button class="bc" style="font-size:12px;padding:5px 12px;border-radius:6px" data-page="rfq">تقديم عرض</button></div>
-          <div class="row"><div><div style="font-size:13px;font-weight:600">حديد تسليح 25مم — 120 طن</div><div style="font-size:11px;color:var(--tt);margin-top:2px">مصنع المستقبل للبناء · منذ يوم</div></div><span class="pill pg">تم التقديم ✓</span></div>
-          <div class="row"><div><div style="font-size:13px;font-weight:600">أسلاك حديد مجدول — 15 طن</div><div style="font-size:11px;color:var(--tt);margin-top:2px">الدلتا للمقاولات · منذ يومين</div></div><span class="pill pg">تم التقديم ✓</span></div>
+          <div id="supplier-rfq-list"><div style="font-size:13px;color:var(--ts);padding:14px 0;text-align:center">جارٍ التحميل...</div></div>
         </div></div>
         <div style="display:flex;flex-direction:column;gap:12px">
           <div class="card" id="dash-sub-supplier"><div class="cb"><div style="font-size:13px;font-weight:700;margin-bottom:10px">باقة الاشتراك</div>
@@ -3904,6 +3901,7 @@ function goTo(pg, fromBack){
       supplierPanel.style.display = (role === "supplier") ? "block" : "none";
       companyPanel.style.display = (role === "company") ? "block" : "none";
       if (workerPanel) workerPanel.style.display = (role === "worker") ? "block" : "none";
+      if (role === "supplier" && typeof loadSupplierRfqs === "function") loadSupplierRfqs();
       var myServicesSection = document.getElementById("dash-myservices");
       var myServicesNavBtn = document.getElementById("dash-nav-myservices");
       var mfgOpsSection = document.getElementById("dash-mfg-ops");
@@ -8073,6 +8071,57 @@ async function loadMyOrders() {
   }
 }
 window.loadMyOrders = loadMyOrders;
+
+// ── SUPPLIER: incoming RFQs (GET /rfq, POST /rfq/:id/quote) ────────
+async function loadSupplierRfqs() {
+  var box = document.getElementById("supplier-rfq-list");
+  if (!box || !window.isLoggedIn) return;
+  try {
+    var result = await apiFetch("/rfq?limit=10");
+    var list = result.data || [];
+    if (!list.length) {
+      box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:14px 0;text-align:center">لا توجد طلبات عروض أسعار منشورة حاليًا</div>';
+      return;
+    }
+    var myCompanyId = window.currentUser && window.currentUser.companyId;
+    box.innerHTML = list.map(function(r) {
+      var already = (r.quotes || []).some(function(q){ return q.supplierCompanyId === myCompanyId; });
+      var productLabel = (r.category && r.category.nameAr) || "طلب";
+      var timeAgo = new Date(r.publishedAt || r.createdAt).toLocaleDateString("ar-EG");
+      return '<div class="row"><div><div style="font-size:13px;font-weight:600">' + productLabel + ' — ' + r.quantity + ' ' + r.unit + '</div>' +
+        '<div style="font-size:11px;color:var(--tt);margin-top:2px">' + ((r.buyer && r.buyer.nameAr) || "—") + ' · ' + timeAgo + '</div></div>' +
+        (already
+          ? '<span class="pill pg">تم التقديم ✓</span>'
+          : '<button class="bc" style="font-size:12px;padding:5px 12px;border-radius:6px" onclick="submitSupplierQuote(\'' + r.id + '\')">تقديم عرض</button>') +
+        '</div>';
+    }).join("");
+  } catch (err) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:14px 0;text-align:center">⚠️ تعذر تحميل الطلبات: ' + (err.message || "") + '</div>';
+  }
+}
+window.loadSupplierRfqs = loadSupplierRfqs;
+
+async function submitSupplierQuote(rfqId) {
+  var price = prompt("سعر الوحدة (ج.م):");
+  if (!price || isNaN(Number(price))) { if (price !== null) toast("الرجاء إدخال رقم صحيح"); return; }
+  var days = prompt("مدة التوريد (بالأيام):");
+  if (!days || isNaN(Number(days))) { if (days !== null) toast("الرجاء إدخال رقم صحيح"); return; }
+  var terms = prompt("شروط الدفع (مثال: Escrow، دفعة مقدمة 30%):") || "حسب الاتفاق";
+
+  try {
+    await apiFetch("/rfq/" + rfqId + "/quote", {
+      method: "POST",
+      body: JSON.stringify({
+        pricePerUnit: Number(price), deliveryDays: Number(days), paymentTerms: terms
+      })
+    });
+    toast("✅ تم تقديم عرض السعر — سيصل إشعار للمشتري فورًا");
+    loadSupplierRfqs();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تقديم العرض"));
+  }
+}
+window.submitSupplierQuote = submitSupplierQuote;
 
 function renderMyOrdersTabs() {
   var active = MY_ORDERS_CACHE.filter(function(o){ return ACTIVE_ORDER_STATUSES.indexOf(o.status) !== -1; });
