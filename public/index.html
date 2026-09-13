@@ -3941,6 +3941,9 @@ function goTo(pg, fromBack){
   if (pg === "orders" && typeof loadMyOrders === "function") {
     loadMyOrders();
   }
+  if (pg === "loyalty" && typeof renderLoyaltyPage === "function") {
+    renderLoyaltyPage();
+  }
   if (pg === "dash") {
     var companyPanel = document.getElementById("dash-header-company");
     var supplierPanel = document.getElementById("dash-header-supplier");
@@ -5821,48 +5824,27 @@ var SUPPLIER_REVIEWS = {"حديد مصر للتجارة": [{"name": "مصنع ا
 // ══════════════════════════════════════════════════════════════════
 // LOYALTY PROGRAM
 // ══════════════════════════════════════════════════════════════════
-var LOYALTY_STATE = {
-  points: 6840,
-  tier: "gold",
-  history: [
-    {action:"صفقة #ORD-2025-0892 مكتملة عبر Escrow", pts:3360, date:"اليوم"},
-    {action:"تقييم مورد حديد مصر للتجارة", pts:20, date:"أمس"},
-    {action:"طلب RFQ مكتمل", pts:30, date:"3 يونيو"},
-    {action:"إكمال بيانات الملف الشخصي", pts:50, date:"1 يونيو"}
-  ]
-};
+var LOYALTY_SUMMARY = null;
 
-function loyaltyTierFor(points) {
-  var sorted = LOYALTY_TIERS.slice().sort(function(a,b){ return b.min_points - a.min_points; });
-  for (var i=0; i<sorted.length; i++) {
-    if (points >= sorted[i].min_points) return sorted[i];
-  }
-  return sorted[sorted.length-1];
-}
-
-function nextTierFor(points) {
-  var sorted = LOYALTY_TIERS.slice().sort(function(a,b){ return a.min_points - b.min_points; });
-  for (var i=0; i<sorted.length; i++) {
-    if (sorted[i].min_points > points) return sorted[i];
-  }
-  return null;
-}
-
-function renderLoyaltyPage() {
+async function renderLoyaltyPage() {
   var balanceEl = document.getElementById("loy-balance");
   if (!balanceEl) return; // not on loyalty page
+  if (!window.isLoggedIn) return;
 
-  var current = loyaltyTierFor(LOYALTY_STATE.points);
-  var next = nextTierFor(LOYALTY_STATE.points);
+  try {
+    LOYALTY_SUMMARY = await apiFetch("/loyalty/summary");
+  } catch (err) {
+    return;
+  }
+  var s = LOYALTY_SUMMARY;
+  var tierInfo = s.tierInfo || { label: "برونزي", badge: "🥉" };
 
-  balanceEl.textContent = LOYALTY_STATE.points.toLocaleString("ar-EG");
-  document.getElementById("loy-tier-badge").textContent = current.name + " " + current.icon;
+  balanceEl.textContent = (s.points || 0).toLocaleString("ar-EG");
+  document.getElementById("loy-tier-badge").textContent = tierInfo.label + " " + tierInfo.badge;
 
-  if (next) {
-    var range = next.min_points - current.min_points;
-    var progress = Math.min(100, Math.round(((LOYALTY_STATE.points - current.min_points) / range) * 100));
-    document.getElementById("loy-progress-bar").style.width = progress + "%";
-    document.getElementById("loy-next-tier").textContent = (next.min_points - LOYALTY_STATE.points).toLocaleString("ar-EG") + " نقطة لـ" + next.name;
+  if (s.nextTier) {
+    document.getElementById("loy-progress-bar").style.width = Math.min(100, s.progress || 0) + "%";
+    document.getElementById("loy-next-tier").textContent = (s.pointsToNext || 0).toLocaleString("ar-EG") + " نقطة لـ" + s.nextTier.label;
   } else {
     document.getElementById("loy-progress-bar").style.width = "100%";
     document.getElementById("loy-next-tier").textContent = "أعلى مستوى — أنتِ بلاتينية!";
@@ -5870,9 +5852,12 @@ function renderLoyaltyPage() {
 
   var histEl = document.getElementById("loy-history");
   if (histEl) {
-    histEl.innerHTML = LOYALTY_STATE.history.map(function(h) {
-      return '<div class="row"><div><div style="font-size:13px">' + h.action + '</div><div style="font-size:11px;color:var(--tt);margin-top:2px">' + h.date + '</div></div><span style="color:#22C55E;font-weight:700;font-size:13px">+' + h.pts + '</span></div>';
-    }).join("");
+    var txs = s.transactions || [];
+    histEl.innerHTML = txs.length ? txs.map(function(h) {
+      var date = h.at ? new Date(h.at).toLocaleDateString("ar-EG") : "";
+      var positive = (h.points || 0) >= 0;
+      return '<div class="row"><div><div style="font-size:13px">' + (h.description || h.reason || "") + '</div><div style="font-size:11px;color:var(--tt);margin-top:2px">' + date + '</div></div><span style="color:' + (positive ? "#22C55E" : "var(--red)") + ';font-weight:700;font-size:13px">' + (positive ? "+" : "") + h.points + '</span></div>';
+    }).join("") : '<div style="font-size:13px;color:var(--ts);padding:14px 0;text-align:center">لا يوجد سجل نقاط حتى الآن</div>';
   }
 
   // Update reward buttons based on affordability
@@ -5880,7 +5865,7 @@ function renderLoyaltyPage() {
     var cost = parseInt(card.getAttribute("data-reward-cost"));
     var btn = card.querySelector(".redeem-btn");
     if (!btn) return;
-    if (LOYALTY_STATE.points < cost) {
+    if ((s.points || 0) < cost) {
       btn.disabled = true;
       btn.style.opacity = "0.5";
       btn.style.cursor = "not-allowed";
@@ -5893,17 +5878,21 @@ function renderLoyaltyPage() {
     }
   });
 }
+window.renderLoyaltyPage = renderLoyaltyPage;
 
-window.redeemReward = function(rewardId) {
+window.redeemReward = async function(rewardId) {
   var card = document.querySelector('.reward-card[data-reward-id="' + rewardId + '"]');
   if (!card) return;
   var cost = parseInt(card.getAttribute("data-reward-cost"));
   var name = card.getAttribute("data-reward-name");
-  if (LOYALTY_STATE.points < cost) { toast("نقاطك غير كافية لاستبدال هذه المميزة"); return; }
-  LOYALTY_STATE.points -= cost;
-  LOYALTY_STATE.history.unshift({action:"استبدال: " + name, pts:-cost, date:"الآن"});
-  renderLoyaltyPage();
-  toast("تم استبدال: " + name + " ✓ — تم تفعيلها على حسابك");
+  if (!LOYALTY_SUMMARY || LOYALTY_SUMMARY.points < cost) { toast("نقاطك غير كافية لاستبدال هذه المميزة"); return; }
+  try {
+    await apiFetch("/loyalty/redeem", { method: "POST", body: JSON.stringify({ points: cost, orderId: "reward:" + rewardId }) });
+    renderLoyaltyPage();
+    toast("تم استبدال: " + name + " ✓ — تم تفعيلها على حسابك");
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الاستبدال"));
+  }
 };
 
 // Delegated click for redeem buttons
