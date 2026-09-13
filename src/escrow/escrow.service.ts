@@ -1,12 +1,18 @@
 // ─── escrow/escrow.service.ts ─────────────────────────────────────
+// MANUAL PAYMENT FLOW: no payment gateway is connected yet (decided
+// 2026-09-13 — Paymob integration is not ready and money movement is
+// handled manually by the admin team via bank transfer until it is).
+// Every step here is honest about that: the buyer declares a transfer
+// they made outside the platform, an admin manually verifies it in
+// the real bank account before marking funds held, and the same
+// applies in reverse for paying the supplier. Nothing here claims to
+// move money automatically.
 import {
   Injectable, NotFoundException, BadRequestException,
   ForbiddenException, Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { ConfigService } from '@nestjs/config';
-import axios from 'axios';
 
 @Injectable()
 export class EscrowService {
@@ -15,125 +21,177 @@ export class EscrowService {
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService,
-    private config: ConfigService,
   ) {}
 
-  // ── FUND ESCROW (Buyer pays) ───────────────────────────────────
-  async fund(orderId: string, buyerCompanyId: string, gatewayToken: string) {
+  // ── STEP 1: BUYER DECLARES A BANK TRANSFER THEY MADE ───────────
+  async declarePayment(orderId: string, buyerCompanyId: string, dto: { reference: string; note?: string }) {
     const order = await this.getOrderOrFail(orderId);
     if (order.buyerCompanyId !== buyerCompanyId) throw new ForbiddenException();
     if (order.escrow?.status !== 'PENDING') {
       throw new BadRequestException(`حالة الـ Escrow الحالية: ${order.escrow?.status}`);
     }
+    if (!dto.reference?.trim()) throw new BadRequestException('رقم/مرجع التحويل البنكي مطلوب');
 
-    // Process payment via Paymob
-    const paymentResult = await this.processPaymobPayment({
-      amount: order.amount,
-      token: gatewayToken,
-      orderId,
-      currency: 'EGP',
+    const escrow = await this.prisma.escrow.update({
+      where: { orderId },
+      data: {
+        fundProofRef: dto.reference,
+        fundDeclaredAt: new Date(),
+        transactions: {
+          create: {
+            type: 'FUND_DECLARED',
+            amount: order.amount,
+            reference: dto.reference,
+            metadata: { note: dto.note },
+          },
+        },
+      },
     });
 
-    if (!paymentResult.success) {
-      throw new BadRequestException(`فشل الدفع: ${paymentResult.error}`);
+    await this.notifyAdmins(
+      'ESCROW_FUNDED',
+      'طلب تأكيد استلام تحويل بنكي',
+      `المشتري أعلن تحويل ${order.amount.toLocaleString()} ج.م للطلب #${orderId.slice(-8)} — مرجع: ${dto.reference}. يرجى التأكد من وصول المبلغ للحساب البنكي وتأكيده يدويًا.`,
+      { orderId, amount: order.amount },
+    );
+
+    this.logger.log(`Payment declared: Order ${orderId}, ref ${dto.reference} — awaiting manual admin confirmation`);
+    return escrow;
+  }
+
+  // ── STEP 2: ADMIN MANUALLY CONFIRMS THE MONEY ACTUALLY ARRIVED ──
+  async adminConfirmFunded(orderId: string, dto?: { note?: string }) {
+    const order = await this.getOrderOrFail(orderId);
+    if (order.escrow?.status !== 'PENDING') {
+      throw new BadRequestException(`حالة الـ Escrow الحالية: ${order.escrow?.status}`);
+    }
+    if (!order.escrow?.fundDeclaredAt) {
+      throw new BadRequestException('لم يُعلن المشتري عن تحويل بعد لهذا الطلب');
     }
 
-    // Update escrow & order
     const escrow = await this.prisma.escrow.update({
       where: { orderId },
       data: {
         status: 'HELD',
-        gatewayRef: paymentResult.transactionId,
-        gatewayType: 'PAYMOB',
         heldAt: new Date(),
-        // Auto-release after 72h if buyer doesn't confirm
-        autoReleaseAt: new Date(Date.now() + 72 * 60 * 60 * 1000),
         transactions: {
           create: {
-            type: 'FUND',
+            type: 'FUND_CONFIRMED',
             amount: order.amount,
-            reference: paymentResult.transactionId,
-            metadata: paymentResult,
-          }
-        }
+            reference: order.escrow.fundProofRef,
+            metadata: { note: dto?.note, confirmedManuallyByAdmin: true },
+          },
+        },
       },
     });
 
-    await this.prisma.order.update({
-      where: { id: orderId },
-      data: { status: 'ESCROW_FUNDED' },
-    });
+    await this.prisma.order.update({ where: { id: orderId }, data: { status: 'ESCROW_FUNDED' } });
 
-    // Notify supplier
-    const supplierUser = await this.prisma.user.findFirst({
-      where: { company: { id: order.supplierCompanyId } },
-    });
+    const supplierUser = await this.prisma.user.findFirst({ where: { company: { id: order.supplierCompanyId } } });
     if (supplierUser) {
       await this.notifications.send(
         supplierUser.id, 'ESCROW_FUNDED',
-        'تم تحميل الـ Escrow — ابدأ التجهيز',
-        `تم إيداع ${order.amount.toLocaleString()} ج.م في الحساب الضامن. ابدأ تجهيز الطلب فوراً.`,
+        'تم تأكيد استلام الدفعة — ابدأ التجهيز',
+        `تم تأكيد إيداع ${order.amount.toLocaleString()} ج.م في الحساب الضامن. ابدأ تجهيز الطلب فوراً.`,
         { orderId, amount: order.amount },
       );
     }
 
-    this.logger.log(`Escrow funded: Order ${orderId}, Amount: ${order.amount} EGP`);
+    this.logger.log(`Escrow manually confirmed funded: Order ${orderId}, Amount: ${order.amount} EGP`);
     return escrow;
   }
 
-  // ── RELEASE (Buyer confirms receipt) ──────────────────────────
-  async release(orderId: string, buyerCompanyId: string) {
+  // ── STEP 3: BUYER CONFIRMS THEY RECEIVED THE GOODS ─────────────
+  // This does NOT release money by itself — it flags the order as
+  // ready for payout so an admin can manually transfer the net
+  // amount to the supplier's bank account and confirm it below.
+  async buyerConfirmReceipt(orderId: string, buyerCompanyId: string) {
     const order = await this.getOrderOrFail(orderId);
     if (order.buyerCompanyId !== buyerCompanyId) throw new ForbiddenException();
     if (order.escrow?.status !== 'HELD') {
       throw new BadRequestException('الـ Escrow ليس في حالة محتجز');
     }
 
-    // Transfer to supplier via Paymob payout
-    const payout = await this.processPaymobPayout({
-      amount: order.escrow.netToSupplier,
-      supplierCompanyId: order.supplierCompanyId,
-      orderId,
+    const escrow = await this.prisma.escrow.update({
+      where: { orderId },
+      data: {
+        buyerConfirmedAt: new Date(),
+        transactions: {
+          create: { type: 'BUYER_CONFIRMED_RECEIPT', amount: order.amount },
+        },
+      },
     });
+
+    await this.notifyAdmins(
+      'ORDER_DELIVERED',
+      'المشتري أكد الاستلام — الطلب جاهز لتحويل المستحقات للمورد',
+      `أكد المشتري استلام الطلب #${orderId.slice(-8)}. المطلوب تحويل ${order.escrow.netToSupplier.toLocaleString()} ج.م للمورد بنكيًا ثم تأكيد التحويل يدويًا.`,
+      { orderId, amount: order.escrow.netToSupplier },
+    );
+
+    this.logger.log(`Buyer confirmed receipt: Order ${orderId} — awaiting manual admin payout`);
+    return escrow;
+  }
+
+  // ── STEP 4: ADMIN MANUALLY TRANSFERS TO SUPPLIER, THEN CONFIRMS ──
+  async adminConfirmPayout(orderId: string, dto: { transferRef: string; note?: string }) {
+    const order = await this.getOrderOrFail(orderId);
+    if (order.escrow?.status !== 'HELD') {
+      throw new BadRequestException('الـ Escrow ليس في حالة محتجز');
+    }
+    if (!order.escrow?.buyerConfirmedAt) {
+      throw new BadRequestException('المشتري لم يؤكد استلام الطلب بعد');
+    }
+    if (!dto.transferRef?.trim()) throw new BadRequestException('رقم/مرجع التحويل البنكي للمورد مطلوب');
 
     const escrow = await this.prisma.escrow.update({
       where: { orderId },
       data: {
         status: 'RELEASED',
         releasedAt: new Date(),
+        payoutProofRef: dto.transferRef,
         transactions: {
           create: {
             type: 'RELEASE',
             amount: order.escrow.netToSupplier,
-            reference: payout.transactionId,
-            metadata: { commission: order.escrow.commission, net: order.escrow.netToSupplier },
-          }
-        }
+            reference: dto.transferRef,
+            metadata: { commission: order.escrow.commission, net: order.escrow.netToSupplier, note: dto.note, confirmedManuallyByAdmin: true },
+          },
+        },
       },
     });
 
-    await Promise.all([
-      this.prisma.order.update({
-        where: { id: orderId },
-        data: { status: 'CONFIRMED', confirmedAt: new Date() },
-      }),
-    ]);
+    await this.prisma.order.update({ where: { id: orderId }, data: { status: 'CONFIRMED', confirmedAt: new Date() } });
 
-    // Notify supplier
-    const supplierUser = await this.prisma.user.findFirst({
-      where: { company: { id: order.supplierCompanyId } },
-    });
+    const supplierUser = await this.prisma.user.findFirst({ where: { company: { id: order.supplierCompanyId } } });
     if (supplierUser) {
       await this.notifications.send(
         supplierUser.id, 'ESCROW_RELEASED',
-        'تم الإفراج عن أموالك!',
-        `سيصلك ${order.escrow.netToSupplier.toLocaleString()} ج.م خلال ٢٤ ساعة عمل.`,
+        'تم تحويل مستحقاتك!',
+        `تم تحويل ${order.escrow.netToSupplier.toLocaleString()} ج.م لحسابك البنكي — مرجع التحويل: ${dto.transferRef}.`,
         { orderId, amount: order.escrow.netToSupplier },
       );
     }
 
-    this.logger.log(`Escrow released: Order ${orderId}, Net: ${order.escrow.netToSupplier} EGP`);
+    this.logger.log(`Escrow manually released: Order ${orderId}, Net: ${order.escrow.netToSupplier} EGP, ref ${dto.transferRef}`);
     return escrow;
+  }
+
+  // ── ADMIN: escrows needing action (declared-but-unconfirmed funds, or payout-due) ──
+  async listPendingActions() {
+    const [awaitingFundConfirm, awaitingPayout] = await Promise.all([
+      this.prisma.escrow.findMany({
+        where: { status: 'PENDING', fundDeclaredAt: { not: null } },
+        include: { order: { include: { buyer: { select: { nameAr: true } }, supplier: { select: { nameAr: true } } } } },
+        orderBy: { fundDeclaredAt: 'asc' },
+      }),
+      this.prisma.escrow.findMany({
+        where: { status: 'HELD', buyerConfirmedAt: { not: null } },
+        include: { order: { include: { buyer: { select: { nameAr: true } }, supplier: { select: { nameAr: true } } } } },
+        orderBy: { buyerConfirmedAt: 'asc' },
+      }),
+    ]);
+    return { awaitingFundConfirm, awaitingPayout };
   }
 
   // ── DISPUTE ───────────────────────────────────────────────────
@@ -163,60 +221,17 @@ export class EscrowService {
       }),
     ]);
 
-    // Notify both parties + admins
     await this.notifyDisputeParties(order, disputeRecord.id);
 
     return { escrow, dispute: disputeRecord };
   }
 
-  // ── AUTO-RELEASE (Cron job) ────────────────────────────────────
-  async processAutoReleases() {
-    const expired = await this.prisma.escrow.findMany({
-      where: {
-        status: 'HELD',
-        autoReleaseAt: { lte: new Date() },
-      },
-      include: { order: true },
-    });
-
-    this.logger.log(`Auto-releasing ${expired.length} escrows...`);
-    for (const escrow of expired) {
-      await this.release(escrow.orderId, escrow.order.buyerCompanyId);
-    }
-  }
-
   // ── HELPERS ───────────────────────────────────────────────────
-  private async processPaymobPayment(data: any) {
-    try {
-      const paymobKey = this.config.get('PAYMOB_API_KEY');
-      // 1. Auth request
-      const authRes = await axios.post('https://accept.paymob.com/api/auth/tokens', {
-        api_key: paymobKey,
-      });
-      const authToken = authRes.data.token;
-
-      // 2. Order registration
-      const orderRes = await axios.post('https://accept.paymob.com/api/ecommerce/orders', {
-        auth_token: authToken,
-        delivery_needed: false,
-        amount_cents: Math.round(data.amount * 100),
-        currency: data.currency,
-        merchant_order_id: data.orderId,
-        items: [],
-      });
-
-      // 3. Payment key (simplified — full impl needs more steps)
-      return { success: true, transactionId: `PAYMOB-${Date.now()}` };
-    } catch (err) {
-      this.logger.error('Paymob payment failed', err.message);
-      return { success: false, error: err.message };
+  private async notifyAdmins(type: string, title: string, body: string, data?: any) {
+    const admins = await this.prisma.user.findMany({ where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] } } });
+    for (const admin of admins) {
+      await this.notifications.send(admin.id, type, title, body, data);
     }
-  }
-
-  private async processPaymobPayout(data: any) {
-    // Real Paymob payout API call
-    this.logger.log(`Payout ${data.amount} EGP to supplier ${data.supplierCompanyId}`);
-    return { transactionId: `PAYOUT-${Date.now()}` };
   }
 
   private async notifyDisputeParties(order: any, disputeId: string) {

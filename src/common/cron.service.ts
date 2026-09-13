@@ -17,74 +17,35 @@ export class CronService {
     private scheduler:     SchedulerRegistry,
   ) {}
 
-  // ── EVERY 30 MINUTES: Auto-release expired escrows ────────────
-  @Cron('*/30 * * * *', { name: 'auto-release-escrow' })
-  async autoReleaseEscrows() {
-    const expired = await this.prisma.escrow.findMany({
+  // ── EVERY 30 MINUTES: remind admins of escrows overdue for manual payout ──
+  // NOTE: this used to auto-mark escrows RELEASED and tell suppliers money
+  // was on its way — but with no real payment gateway connected, that was
+  // a false promise (no money ever actually moved). Money movement is
+  // manual now (decided 2026-09-13), so this job only nudges the admin
+  // team instead of pretending a transfer happened.
+  @Cron('*/30 * * * *', { name: 'remind-overdue-escrow-payouts' })
+  async remindOverdueEscrowPayouts() {
+    const overdue = await this.prisma.escrow.findMany({
       where: {
-        status:       'HELD',
-        autoReleaseAt: { lte: new Date() },
+        status: 'HELD',
+        buyerConfirmedAt: { lte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
       },
-      include: { order: true },
+      include: { order: { include: { supplier: { select: { nameAr: true } } } } },
       take: 50,
     });
 
-    if (expired.length === 0) return;
-    this.logger.log(`Auto-releasing ${expired.length} escrows...`);
+    if (overdue.length === 0) return;
+    this.logger.log(`${overdue.length} escrow payout(s) overdue for manual admin action`);
 
-    for (const escrow of expired) {
-      try {
-        await this.prisma.$transaction([
-          this.prisma.escrow.update({
-            where: { id: escrow.id },
-            data: {
-              status:      'RELEASED',
-              releasedAt:  new Date(),
-              transactions: {
-                create: {
-                  type:      'AUTO_RELEASE',
-                  amount:    escrow.netToSupplier,
-                  reference: `AUTO-${Date.now()}`,
-                  metadata:  { reason: 'Buyer did not respond within 72 hours' },
-                },
-              },
-            },
-          }),
-          this.prisma.order.update({
-            where: { id: escrow.orderId },
-            data: {
-              status:      'CONFIRMED',
-              confirmedAt: new Date(),
-            },
-          }),
-        ]);
-
-        // Notify both parties
-        const [buyerUser, supplierUser] = await Promise.all([
-          this.prisma.user.findFirst({ where: { company: { id: escrow.order.buyerCompanyId } } }),
-          this.prisma.user.findFirst({ where: { company: { id: escrow.order.supplierCompanyId } } }),
-        ]);
-
-        if (supplierUser) {
-          await this.notifications.send(
-            supplierUser.id, 'ESCROW_RELEASED',
-            'تم الإفراج التلقائي عن أموالك',
-            `لم يؤكد المشتري أو يرفض خلال ٧٢ ساعة — تم الإفراج التلقائي عن ${escrow.netToSupplier.toLocaleString()} ج.م`,
-            { orderId: escrow.orderId },
-          );
-        }
-        if (buyerUser) {
-          await this.notifications.send(
-            buyerUser.id, 'SYSTEM',
-            'انتهت مهلة تأكيد الاستلام',
-            'تم الإفراج التلقائي عن المبلغ للمورد لعدم ردك خلال ٧٢ ساعة. للاعتراض يرجى تواصل مع الدعم.',
-            { orderId: escrow.orderId },
-          );
-        }
-
-        this.logger.log(`Auto-released escrow ${escrow.id} for order ${escrow.orderId}`);
-      } catch (err) {
-        this.logger.error(`Failed to auto-release escrow ${escrow.id}`, err.message);
+    const admins = await this.prisma.user.findMany({ where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] } } });
+    for (const escrow of overdue) {
+      for (const admin of admins) {
+        await this.notifications.send(
+          admin.id, 'ESCROW_RELEASED',
+          '⏰ تحويل متأخر لمورد',
+          `الطلب #${escrow.orderId.slice(-8)} — أكد المشتري الاستلام منذ أكثر من 24 ساعة ولم يُحوَّل مبلغ ${escrow.netToSupplier.toLocaleString()} ج.م لـ ${escrow.order.supplier.nameAr} بعد.`,
+          { orderId: escrow.orderId },
+        );
       }
     }
   }

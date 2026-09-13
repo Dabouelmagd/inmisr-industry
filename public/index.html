@@ -2668,6 +2668,10 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         <div id="admin-suppliers-table"></div>
       </div>
       <div id="atab-orders" style="display:none">
+        <div style="background:rgba(184,134,11,.06);border:1px solid rgba(184,134,11,.2);border-radius:10px;padding:14px;margin-bottom:18px">
+          <div style="font-size:14px;font-weight:700;margin-bottom:10px">🏦 تحويلات بنكية بانتظار إجراء يدوي</div>
+          <div id="admin-escrow-pending"><div style="font-size:13px;color:var(--ts);padding:10px 0">جارٍ التحميل...</div></div>
+        </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:8px">
           <div style="font-size:20px;font-weight:700">الطلبات</div>
           <button class="bl" style="font-size:12px;padding:5px 12px;border-radius:6px" onclick="toggleAdminOrdersSort()">⇅ ترتيب حسب التاريخ: <span id="admin-orders-sort-label">الأحدث أولاً</span></button>
@@ -4493,6 +4497,7 @@ document.addEventListener("DOMContentLoaded",function(){
     }
     if (name === "orders") {
       loadAdminOrders();
+      loadAdminEscrowPending();
     }
     if (name === "revenue") {
       loadAdminRevenue();
@@ -5314,6 +5319,62 @@ var ORDER_STATUS_CLASS = {
   COMPLETED: "pg", CONFIRMED: "pg", DELIVERED: "pg", SHIPPED: "pa", IN_PRODUCTION: "pa",
   ESCROW_FUNDED: "pa", PENDING: "pa", DISPUTED: "pr", CANCELLED: "pr", REFUNDED: "pr"
 };
+
+async function loadAdminEscrowPending() {
+  var box = document.getElementById("admin-escrow-pending");
+  if (!box) return;
+  try {
+    var result = await apiFetch("/escrow/admin/pending-actions");
+    var fundList = result.awaitingFundConfirm || [];
+    var payoutList = result.awaitingPayout || [];
+    if (!fundList.length && !payoutList.length) {
+      box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:6px 0">لا توجد إجراءات معلّقة حاليًا ✅</div>';
+      return;
+    }
+    var html = "";
+    fundList.forEach(function(e) {
+      html += '<div class="row"><div><div style="font-size:13px;font-weight:700">📥 تحويل وارد — ' + (e.order.buyer.nameAr || "—") + '</div>' +
+        '<div style="font-size:11px;color:var(--ts);margin-top:2px">مرجع: ' + (e.fundProofRef || "—") + ' · ' + formatEgp(e.amount) + ' · طلب #' + e.orderId.slice(-8) + '</div></div>' +
+        '<button class="bc" style="font-size:11px;padding:5px 12px;border-radius:6px" onclick="adminConfirmEscrowFunded(\'' + e.orderId + '\')">✅ تأكيد الاستلام البنكي</button></div>';
+    });
+    payoutList.forEach(function(e) {
+      html += '<div class="row"><div><div style="font-size:13px;font-weight:700">📤 تحويل مستحق — ' + (e.order.supplier.nameAr || "—") + '</div>' +
+        '<div style="font-size:11px;color:var(--ts);margin-top:2px">' + formatEgp(e.netToSupplier) + ' · طلب #' + e.orderId.slice(-8) + '</div></div>' +
+        '<button class="bc" style="font-size:11px;padding:5px 12px;border-radius:6px" onclick="adminConfirmEscrowPayout(\'' + e.orderId + '\')">✅ تأكيد التحويل للمورد</button></div>';
+    });
+    box.innerHTML = html;
+  } catch (err) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:6px 0">⚠️ تعذر تحميل: ' + (err.message || "") + '</div>';
+  }
+}
+window.loadAdminEscrowPending = loadAdminEscrowPending;
+
+async function adminConfirmEscrowFunded(orderId) {
+  if (!confirm("هل تأكدتِ فعليًا من وصول المبلغ للحساب البنكي؟")) return;
+  try {
+    await apiFetch("/escrow/" + orderId + "/admin/confirm-funded", { method: "POST", body: JSON.stringify({}) });
+    toast("✅ تم تأكيد استلام التحويل — تم إشعار المورد بالبدء");
+    loadAdminEscrowPending();
+    if (typeof loadAdminOrders === "function") loadAdminOrders();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر التأكيد"));
+  }
+}
+window.adminConfirmEscrowFunded = adminConfirmEscrowFunded;
+
+async function adminConfirmEscrowPayout(orderId) {
+  var ref = prompt("رقم/مرجع التحويل البنكي للمورد:");
+  if (!ref || !ref.trim()) return;
+  try {
+    await apiFetch("/escrow/" + orderId + "/admin/confirm-payout", { method: "POST", body: JSON.stringify({ transferRef: ref }) });
+    toast("✅ تم تأكيد تحويل المستحقات للمورد");
+    loadAdminEscrowPending();
+    if (typeof loadAdminOrders === "function") loadAdminOrders();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر التأكيد"));
+  }
+}
+window.adminConfirmEscrowPayout = adminConfirmEscrowPayout;
 
 async function loadAdminOrders() {
   var box = document.getElementById("admin-orders-table");
@@ -8831,22 +8892,41 @@ function openOrderEscrowReal(orderId) {
   if (netCommEl) netCommEl.innerHTML = '<span>صافي المورد: <strong style="color:var(--tp)">' + formatEgp(order.netToSupplier) + '</strong></span><span>عمولة: <strong style="color:var(--red)">' + formatEgp(order.commission) + '</strong></span>';
 
   var statusRow = modal.querySelector(".row .pill");
-  var statusLabels = { PENDING: "بانتظار الدفع", HELD: "محتجز ✓", RELEASED: "تم الإفراج ✓", DISPUTED: "متنازع عليه", REFUNDED: "مسترد", ARBITRATION: "قيد التحكيم" };
+  var statusLabels = { PENDING: "بانتظار الدفع", HELD: "محتجز ✓", RELEASED: "تم التحويل ✓", DISPUTED: "متنازع عليه", REFUNDED: "مسترد", ARBITRATION: "قيد التحكيم" };
   if (statusRow) statusRow.textContent = statusLabels[order.escrow.status] || order.escrow.status;
 
   var releaseBtn = document.getElementById("esc-release");
   var disputeBtn = document.getElementById("esc-dispute");
+  var myRole = window.loggedInRole === "supplier" ? "SUPPLIER" : "BUYER";
+
   if (releaseBtn) {
-    if (order.escrow.status === "HELD") {
-      releaseBtn.disabled = false;
-      releaseBtn.style.opacity = "1";
-      releaseBtn.title = "";
-      releaseBtn.textContent = "✅ تأكيد الاستلام والإفراج";
-      releaseBtn.onclick = function() { toast("⚠️ الإفراج الفعلي عن الأموال قيد استكمال ربط Paymob — تواصلي مع فريق إن مصر لإتمامه يدويًا حاليًا"); };
+    if (order.escrow.status === "PENDING" && myRole === "BUYER") {
+      if (order.escrow.fundDeclaredAt) {
+        releaseBtn.style.display = "none";
+        if (!modal.querySelector(".esc-info-note")) {
+          releaseBtn.insertAdjacentHTML("beforebegin", '<div class="esc-info-note" style="font-size:12px;color:var(--ts);padding:8px 0">📨 تم إعلان تحويلك — بانتظار تأكيد فريق إن مصر لاستلام المبلغ بنكيًا</div>');
+        }
+      } else {
+        releaseBtn.disabled = false; releaseBtn.style.opacity = "1"; releaseBtn.style.display = "block";
+        releaseBtn.textContent = "📨 أعلني عن تحويل بنكي";
+        releaseBtn.onclick = function() { declareEscrowPayment(orderId); };
+      }
+    } else if (order.escrow.status === "HELD" && myRole === "BUYER" && !order.escrow.buyerConfirmedAt) {
+      releaseBtn.disabled = false; releaseBtn.style.opacity = "1"; releaseBtn.style.display = "block";
+      releaseBtn.textContent = "✅ تأكيد الاستلام";
+      releaseBtn.onclick = function() { confirmEscrowReceipt(orderId); };
+    } else if (order.escrow.status === "HELD" && order.escrow.buyerConfirmedAt) {
+      releaseBtn.style.display = "none";
+      if (!modal.querySelector(".esc-info-note")) {
+        releaseBtn.insertAdjacentHTML("beforebegin", '<div class="esc-info-note" style="font-size:12px;color:var(--ts);padding:8px 0">✅ أكدتِ الاستلام — بانتظار تحويل فريق إن مصر للمستحقات للمورد</div>');
+      }
     } else {
       releaseBtn.style.display = "none";
     }
   }
+  var oldNote = modal.querySelector(".esc-info-note");
+  if (oldNote && releaseBtn && releaseBtn.style.display === "block") oldNote.remove();
+
   if (disputeBtn) {
     disputeBtn.style.display = (order.escrow.status === "HELD") ? "block" : "none";
     disputeBtn.onclick = function() { raiseOrderDisputeReal(orderId); };
@@ -8855,6 +8935,34 @@ function openOrderEscrowReal(orderId) {
   if (typeof openM === "function") openM("em");
 }
 window.openOrderEscrowReal = openOrderEscrowReal;
+
+async function declareEscrowPayment(orderId) {
+  var reference = prompt("رقم/مرجع التحويل البنكي (أو آخر أرقام الإيصال):");
+  if (!reference || !reference.trim()) return;
+  var note = prompt("ملاحظة إضافية (اختياري):") || undefined;
+  try {
+    await apiFetch("/escrow/" + orderId + "/declare-payment", { method: "POST", body: JSON.stringify({ reference: reference, note: note }) });
+    if (typeof closeM === "function") closeM("em");
+    toast("📨 تم إرسال إعلان التحويل — سيتأكد فريق إن مصر من استلام المبلغ بنكيًا قريبًا");
+    loadMyOrders();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إرسال الإعلان"));
+  }
+}
+window.declareEscrowPayment = declareEscrowPayment;
+
+async function confirmEscrowReceipt(orderId) {
+  if (!confirm("هل تأكدتِ من استلام الطلب بالكامل ومطابقته للمواصفات؟")) return;
+  try {
+    await apiFetch("/escrow/" + orderId + "/confirm-receipt", { method: "POST" });
+    if (typeof closeM === "function") closeM("em");
+    toast("✅ تم تأكيد الاستلام — سيقوم فريق إن مصر بتحويل المستحقات للمورد بنكيًا");
+    loadMyOrders();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تأكيد الاستلام"));
+  }
+}
+window.confirmEscrowReceipt = confirmEscrowReceipt;
 
 async function submitOrderReview(orderId) {
   var quality = prompt("تقييم جودة الخامات (من 1 إلى 5):", "5");

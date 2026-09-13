@@ -488,6 +488,10 @@ model Escrow {
   bankAccountRef String?
   gatewayRef     String?
   gatewayType    String?
+  fundProofRef   String?
+  fundDeclaredAt DateTime?
+  buyerConfirmedAt DateTime?
+  payoutProofRef String?
   heldAt         DateTime?
   releasedAt     DateTime?
   refundedAt     DateTime?

@@ -295,20 +295,47 @@ export class OrdersController {
 export class EscrowController {
   constructor(private escrow: EscrowService) {}
 
-  @Post(':orderId/fund')
-  @ApiOperation({ summary: 'دفع وتحميل الـ Escrow' })
-  fund(
+  @Post(':orderId/declare-payment')
+  @ApiOperation({ summary: 'إعلان المشتري عن تحويل بنكي تم إرساله يدويًا' })
+  declarePayment(
     @Param('orderId') orderId: string,
-    @Body() body: { gatewayToken: string },
+    @Body() body: { reference: string; note?: string },
     @Request() req: any,
   ) {
-    return this.escrow.fund(orderId, req.user.companyId, body.gatewayToken);
+    return this.escrow.declarePayment(orderId, req.user.companyId, body);
   }
 
-  @Post(':orderId/release')
-  @ApiOperation({ summary: 'تأكيد الاستلام والإفراج عن الأموال' })
-  release(@Param('orderId') orderId: string, @Request() req: any) {
-    return this.escrow.release(orderId, req.user.companyId);
+  @Post(':orderId/admin/confirm-funded')
+  @ApiOperation({ summary: 'تأكيد الأدمن استلام التحويل البنكي فعليًا (يدوي)' })
+  adminConfirmFunded(@Param('orderId') orderId: string, @Body() body: { note?: string }, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.escrow.adminConfirmFunded(orderId, body);
+  }
+
+  @Post(':orderId/confirm-receipt')
+  @ApiOperation({ summary: 'تأكيد المشتري استلام الطلب (لا يحوّل الأموال تلقائيًا)' })
+  buyerConfirmReceipt(@Param('orderId') orderId: string, @Request() req: any) {
+    return this.escrow.buyerConfirmReceipt(orderId, req.user.companyId);
+  }
+
+  @Post(':orderId/admin/confirm-payout')
+  @ApiOperation({ summary: 'تأكيد الأدمن تحويل المستحقات للمورد يدويًا' })
+  adminConfirmPayout(@Param('orderId') orderId: string, @Body() body: { transferRef: string; note?: string }, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.escrow.adminConfirmPayout(orderId, body);
+  }
+
+  @Get('admin/pending-actions')
+  @ApiOperation({ summary: 'كل الطلبات المنتظرة لإجراء يدوي من الأدمن (تحويلات واردة أو مستحقة)' })
+  listPendingActions(@Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.escrow.listPendingActions();
   }
 
   @Post(':orderId/dispute')
