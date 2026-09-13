@@ -817,7 +817,7 @@ export class CompanyProfileService {
         nameAr: dto.nameAr, nameEn: dto.nameEn, commercialRegNo: dto.commercialRegNo, taxId: dto.taxId,
         descriptionAr: dto.descriptionAr, websiteUrl: dto.websiteUrl,
         founded: dto.founded ? Number(dto.founded) : undefined,
-        employeeCount: dto.employeeCount ? Number(dto.employeeCount) : undefined,
+        employeeCount: dto.employeeCount != null ? String(dto.employeeCount) : undefined,
       },
     });
   }
