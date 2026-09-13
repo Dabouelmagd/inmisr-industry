@@ -5816,7 +5816,7 @@ var LOYALTY_TIERS = [{"id": "bronze", "name": "برونزي", "icon": "🥉", "m
 var SME_PROJECTS = [];
 // Real feasibility studies loaded from GET /incubator/admin/studies (see loadGovStudies below).
 var GOV_FEASIBILITY = [];
-var NOTIFICATIONS = [{"id": "n1", "icon": "📋", "text": "عرض سعر جديد على طلبك RFQ-0897 من حديد مصر للتجارة", "time": "منذ 10 دقائق", "read": false}, {"id": "n2", "icon": "✅", "text": "تم تأكيد استلام الإفراج عن Escrow للطلبية #0891", "time": "منذ ساعة", "read": false}, {"id": "n3", "icon": "🚚", "text": "الشحنة #0892 وصلت لنقطة التتبع: العاشر من رمضان", "time": "منذ 3 ساعات", "read": false}, {"id": "n4", "icon": "⭐", "text": "تلقيت تقييماً جديداً 5 نجوم من مصنع المستقبل للبناء", "time": "اليوم 9:15 ص", "read": true}, {"id": "n5", "icon": "🏆", "text": "تهانينا! انتقلتِ لمستوى الولاء الذهبي 🥇", "time": "أمس", "read": true}];
+var NOTIFICATIONS = [];
 var SUPPLIER_REVIEWS = {"حديد مصر للتجارة": [{"name": "مصنع المستقبل للبناء", "rating": 5, "text": "التزام كامل بالمواصفات والمواعيد. الشحنة وصلت في الوقت المحدد بالضبط.", "date": "منذ أسبوع"}, {"name": "شركة النيل للمقاولات", "rating": 4, "text": "جودة ممتازة لكن كان هناك تأخير يوم واحد في التسليم.", "date": "منذ شهر"}, {"name": "مصانع الدلتا", "rating": 5, "text": "أفضل مورد حديد تعاملنا معه على المنصة. شهادات الجودة موثقة بالكامل.", "date": "منذ شهرين"}], "طاقة مصر الشمسية": [{"name": "فيلا السلام للمقاولات", "rating": 5, "text": "الألواح بنفس الكفاءة المذكورة بالضبط. خدمة عملاء سريعة الرد.", "date": "منذ 3 أيام"}, {"name": "مصنع الأمل للأغذية", "rating": 5, "text": "تركيب نظام الطاقة الشمسية كامل لمصنعنا — احترافية عالية.", "date": "منذ أسبوعين"}]};
 // ══════════════════════════════════════════════════════════════════
 // LOYALTY PROGRAM
@@ -6158,9 +6158,33 @@ document.addEventListener("click", function(e) {
 // ══════════════════════════════════════════════════════════════════
 // NOTIFICATIONS
 // ══════════════════════════════════════════════════════════════════
+var NOTIF_ICON_MAP = {
+  RFQ_NEW: "📋", RFQ_QUOTE_RECEIVED: "💬", RFQ_ACCEPTED: "✅", RFQ_EXPIRED: "⌛",
+  ORDER_PLACED: "🛒", ORDER_SHIPPED: "🚚", ORDER_DELIVERED: "📦", ORDER_CONFIRMED: "✅",
+  ESCROW_FUNDED: "🔒", ESCROW_RELEASED: "✅", ESCROW_DISPUTED: "⚠️", PAYMENT_RECEIVED: "💰",
+  VERIFICATION_APPROVED: "✅", VERIFICATION_REJECTED: "❌", REVIEW_RECEIVED: "⭐"
+};
+
+async function loadNotifications() {
+  if (!window.isLoggedIn) return;
+  try {
+    var result = await apiFetch("/notifications?limit=20");
+    NOTIFICATIONS = (result.data || []).map(function(n) {
+      return { id: n.id, icon: NOTIF_ICON_MAP[n.type] || "🔔", text: n.bodyAr || n.titleAr, time: new Date(n.createdAt).toLocaleString("ar-EG"), read: n.isRead };
+    });
+    renderNotifications();
+  } catch (err) { /* stay silent — bell just won't populate */ }
+}
+window.loadNotifications = loadNotifications;
+
 function renderNotifications() {
   var list = document.getElementById("notifList");
   if (!list) return;
+  if (!NOTIFICATIONS.length) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;font-size:12px;color:var(--ts)">لا توجد إشعارات</div>';
+    updateNotifBadge();
+    return;
+  }
   list.innerHTML = NOTIFICATIONS.map(function(n) {
     return '<div class="notif-item" data-notif-id="' + n.id + '" style="display:flex;gap:10px;padding:11px 14px;border-bottom:1px solid var(--bd);cursor:pointer;' + (n.read ? '' : 'background:rgba(184,134,11,.05)') + '">' +
       '<span style="font-size:16px;flex-shrink:0">' + n.icon + '</span>' +
@@ -6188,6 +6212,7 @@ document.addEventListener("DOMContentLoaded", function() {
       e.stopPropagation();
       var open = notifDropdown.style.display === "block";
       notifDropdown.style.display = open ? "none" : "block";
+      if (!open) loadNotifications();
     });
     document.addEventListener("click", function(e) {
       if (!e.target.closest("#notifDropdown") && !e.target.closest("#notifBtn")) {
@@ -6196,18 +6221,25 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
   var markAllBtn = document.getElementById("markAllRead");
-  if (markAllBtn) markAllBtn.addEventListener("click", function() {
-    NOTIFICATIONS.forEach(function(n){ n.read = true; });
-    renderNotifications();
+  if (markAllBtn) markAllBtn.addEventListener("click", async function() {
+    try {
+      await apiFetch("/notifications/read-all", { method: "PATCH" });
+      NOTIFICATIONS.forEach(function(n){ n.read = true; });
+      renderNotifications();
+    } catch (err) { toast("⚠️ " + (err.message || "تعذر تنفيذ العملية")); }
   });
   renderNotifications();
+  loadNotifications();
 });
 
 document.addEventListener("click", function(e) {
   var item = e.target.closest("[data-notif-id]");
   if (item) {
     var n = NOTIFICATIONS.find(function(x){ return x.id === item.getAttribute("data-notif-id"); });
-    if (n) { n.read = true; renderNotifications(); }
+    if (n && !n.read) {
+      n.read = true; renderNotifications();
+      apiFetch("/notifications/" + n.id + "/read", { method: "PATCH" }).catch(function(){});
+    }
   }
 });
 
