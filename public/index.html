@@ -4150,7 +4150,7 @@ document.addEventListener("DOMContentLoaded",function(){
     document.getElementById("sp-response").textContent = s.rp || "24 ساعة";
     var rfqBtn = document.getElementById("sp-rfq-btn");
     rfqBtn.onclick = function(){ closeSupplierProfile(); window.startRfqFromSupplier(s.n, s.s); };
-    if (typeof renderSupplierReviews === "function") renderSupplierReviews(s.n);
+    if (typeof renderSupplierReviews === "function") renderSupplierReviews(s.id);
     m.classList.add("open");
   };
 
@@ -5820,7 +5820,7 @@ var SME_PROJECTS = [];
 // Real feasibility studies loaded from GET /incubator/admin/studies (see loadGovStudies below).
 var GOV_FEASIBILITY = [];
 var NOTIFICATIONS = [];
-var SUPPLIER_REVIEWS = {"حديد مصر للتجارة": [{"name": "مصنع المستقبل للبناء", "rating": 5, "text": "التزام كامل بالمواصفات والمواعيد. الشحنة وصلت في الوقت المحدد بالضبط.", "date": "منذ أسبوع"}, {"name": "شركة النيل للمقاولات", "rating": 4, "text": "جودة ممتازة لكن كان هناك تأخير يوم واحد في التسليم.", "date": "منذ شهر"}, {"name": "مصانع الدلتا", "rating": 5, "text": "أفضل مورد حديد تعاملنا معه على المنصة. شهادات الجودة موثقة بالكامل.", "date": "منذ شهرين"}], "طاقة مصر الشمسية": [{"name": "فيلا السلام للمقاولات", "rating": 5, "text": "الألواح بنفس الكفاءة المذكورة بالضبط. خدمة عملاء سريعة الرد.", "date": "منذ 3 أيام"}, {"name": "مصنع الأمل للأغذية", "rating": 5, "text": "تركيب نظام الطاقة الشمسية كامل لمصنعنا — احترافية عالية.", "date": "منذ أسبوعين"}]};
+// Real reviews now loaded per-supplier via renderSupplierReviews(companyId) -> GET /reviews/companies/:id
 // ══════════════════════════════════════════════════════════════════
 // LOYALTY PROGRAM
 // ══════════════════════════════════════════════════════════════════
@@ -6235,23 +6235,31 @@ document.addEventListener("click", function(e) {
 // ══════════════════════════════════════════════════════════════════
 // SUPPLIER TEXT REVIEWS (injected into profile modal)
 // ══════════════════════════════════════════════════════════════════
-function renderSupplierReviews(supplierName) {
+async function renderSupplierReviews(companyId) {
   var container = document.getElementById("sp-reviews-list");
-  if (!container) return;
-  var reviews = SUPPLIER_REVIEWS[supplierName];
-  if (!reviews || !reviews.length) {
-    container.innerHTML = '<div style="font-size:12px;color:var(--tt);text-align:center;padding:14px">لا توجد تقييمات نصية بعد</div>';
-    return;
+  if (!container || !companyId) return;
+  container.innerHTML = '<div style="font-size:12px;color:var(--tt);text-align:center;padding:14px">جارٍ التحميل...</div>';
+  try {
+    var result = await apiFetch("/reviews/companies/" + companyId + "?limit=10");
+    var reviews = result.data || [];
+    if (!reviews.length) {
+      container.innerHTML = '<div style="font-size:12px;color:var(--tt);text-align:center;padding:14px">لا توجد تقييمات نصية بعد</div>';
+      return;
+    }
+    container.innerHTML = reviews.map(function(r) {
+      var rating = Math.round(r.overallScore || 0);
+      var stars = "★".repeat(rating) + "☆".repeat(5 - rating);
+      var date = new Date(r.createdAt).toLocaleDateString("ar-EG");
+      return '<div style="padding:10px 0;border-bottom:1px solid var(--bd)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+        '<span style="font-size:12px;font-weight:600;color:var(--tp)">' + ((r.reviewer && r.reviewer.nameAr) || "—") + '</span>' +
+        '<span style="font-size:11px;color:#F59E0B">' + stars + '</span></div>' +
+        '<div style="font-size:12px;color:var(--ts);line-height:1.6;margin-bottom:3px">' + (r.comment || "") + '</div>' +
+        '<div style="font-size:9px;color:var(--tt)">' + date + '</div></div>';
+    }).join("");
+  } catch (err) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--tt);text-align:center;padding:14px">⚠️ تعذر تحميل التقييمات</div>';
   }
-  container.innerHTML = reviews.map(function(r) {
-    var stars = "★".repeat(r.rating) + "☆".repeat(5 - r.rating);
-    return '<div style="padding:10px 0;border-bottom:1px solid var(--bd)">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-      '<span style="font-size:12px;font-weight:600;color:var(--tp)">' + r.name + '</span>' +
-      '<span style="font-size:11px;color:#F59E0B">' + stars + '</span></div>' +
-      '<div style="font-size:12px;color:var(--ts);line-height:1.6;margin-bottom:3px">' + r.text + '</div>' +
-      '<div style="font-size:9px;color:var(--tt)">' + r.date + '</div></div>';
-  }).join("");
 }
 window.renderSupplierReviews = renderSupplierReviews;
 

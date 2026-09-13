@@ -292,15 +292,17 @@ export class ReviewsService {
 
   async getCompanyReviews(companyId: string, query: { page?: number; limit?: number; minRating?: number }) {
     const where: any = { revieweeId: companyId, isPublic: true };
-    if (query.minRating) where.overallScore = { gte: query.minRating };
+    if (query.minRating) where.overallScore = { gte: Number(query.minRating) };
+    const page  = Number(query.page)  || 1;
+    const limit = Number(query.limit) || 10;
 
     const [data, total, avg] = await Promise.all([
       this.prisma.review.findMany({
         where,
         include: { reviewer: { select: { nameAr: true } } },
         orderBy: { createdAt: 'desc' },
-        skip:    ((query.page || 1) - 1) * (query.limit || 10),
-        take:    query.limit || 10,
+        skip: (page - 1) * limit,
+        take: limit,
       }),
       this.prisma.review.count({ where }),
       this.prisma.review.aggregate({ where, _avg: { overallScore: true, qualityScore: true, timeScore: true, commScore: true } }),
@@ -314,7 +316,7 @@ export class ReviewsService {
         time:    +(avg._avg.timeScore    || 0).toFixed(2),
         comm:    +(avg._avg.commScore    || 0).toFixed(2),
       },
-      page: query.page || 1, totalPages: Math.ceil(total / (query.limit || 10)),
+      page, totalPages: Math.ceil(total / limit),
     };
   }
 }
