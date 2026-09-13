@@ -789,6 +789,41 @@ export class ServiceConsultationService {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// COMPANY PROFILE SERVICE — تعديل بيانات الشركة/المنشأة الخاصة بالمستخدم
+// ══════════════════════════════════════════════════════════════════
+
+@Injectable()
+export class CompanyProfileService {
+  constructor(private prisma: PrismaService) {}
+
+  async getMine(companyId: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      include: { location: true, categories: { include: { category: { select: { nameAr: true } } } } },
+    });
+    if (!company) throw new NotFoundException('لا يوجد ملف شركة مرتبط بحسابك');
+    return company;
+  }
+
+  async updateMine(companyId: string, dto: {
+    nameAr?: string; nameEn?: string; commercialRegNo?: string; taxId?: string;
+    descriptionAr?: string; websiteUrl?: string; founded?: number; employeeCount?: number;
+  }) {
+    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    if (!company) throw new NotFoundException('لا يوجد ملف شركة مرتبط بحسابك');
+    return this.prisma.company.update({
+      where: { id: companyId },
+      data: {
+        nameAr: dto.nameAr, nameEn: dto.nameEn, commercialRegNo: dto.commercialRegNo, taxId: dto.taxId,
+        descriptionAr: dto.descriptionAr, websiteUrl: dto.websiteUrl,
+        founded: dto.founded ? Number(dto.founded) : undefined,
+        employeeCount: dto.employeeCount ? Number(dto.employeeCount) : undefined,
+      },
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // COMPANY ASSISTANT SERVICE — مساعدون بحسابات مستقلة وصلاحيات محددة
 // ══════════════════════════════════════════════════════════════════
 

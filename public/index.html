@@ -1869,6 +1869,26 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   </div>
 </div>
 
+<div class="mov" id="company-profile-edit-modal">
+  <div class="modal" style="max-width:500px">
+    <button class="mc" onclick="closeM('company-profile-edit-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px">تعديل بيانات الشركة</div>
+    <div style="margin-bottom:12px"><span class="lbl">اسم الشركة (عربي)</span><input class="inp" id="cp-name-ar"></div>
+    <div style="margin-bottom:12px"><span class="lbl">اسم الشركة (إنجليزي)</span><input class="inp" id="cp-name-en"></div>
+    <div class="g2" style="gap:12px;margin-bottom:12px">
+      <div><span class="lbl">السجل التجاري</span><input class="inp" id="cp-cr"></div>
+      <div><span class="lbl">الرقم الضريبي</span><input class="inp" id="cp-tax"></div>
+    </div>
+    <div class="g2" style="gap:12px;margin-bottom:12px">
+      <div><span class="lbl">سنة التأسيس</span><input class="inp" type="number" id="cp-founded"></div>
+      <div><span class="lbl">عدد الموظفين</span><input class="inp" type="number" id="cp-employees"></div>
+    </div>
+    <div style="margin-bottom:12px"><span class="lbl">الموقع الإلكتروني</span><input class="inp" id="cp-website" placeholder="https://"></div>
+    <div style="margin-bottom:16px"><span class="lbl">نبذة عن الشركة</span><textarea class="inp" id="cp-desc" rows="3"></textarea></div>
+    <button class="bc" style="width:100%;padding:11px;font-size:13px" id="cp-save-btn" onclick="saveCompanyProfileEdit()">💾 حفظ التعديلات</button>
+  </div>
+</div>
+
 <div class="mov" id="provider-listing-modal">
   <div class="modal" style="max-width:500px">
     <button class="mc" onclick="closeM('provider-listing-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
@@ -2289,11 +2309,8 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
           <div class="lc" id="dash-loyalty-company"><div style="font-size:13px;color:var(--ts)">نقاط الولاء</div><div class="lp">6,840</div><div class="lt">ذهبي 🥇</div><div style="height:5px;background:var(--bg4);border-radius:2px;margin:14px 0"><div style="height:100%;width:68%;background:linear-gradient(90deg,#C09300,#FFD700);border-radius:2px"></div></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tt)"><span>ذهبي (5,000)</span><span>3,160 للبلاتيني</span></div></div>
           <div class="card" id="dash-quick-company"><div class="cb"><div style="font-size:13px;font-weight:700;margin-bottom:10px">إجراءات سريعة</div><div style="display:flex;flex-direction:column;gap:7px"><button class="bc" style="width:100%;padding:9px;border-radius:8px" data-page="rfq">📋 طلب عرض سعر</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" data-page="sup">🔍 تصفح الموردين</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" id="open-chat2">💬 المحادثات (3)</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" data-page="pricing">💎 ترقية الباقة</button></div></div></div>
           <div class="card" id="dash-services-company"><div class="cb"><div style="font-size:13px;font-weight:700;margin-bottom:10px">الخدمات الصناعية</div><div style="display:flex;flex-direction:column;gap:7px"><button class="bl" style="width:100%;padding:9px;border-radius:8px" data-page="financing">💳 التمويل الصناعي</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" data-page="inspection">🧪 الفحص والجودة</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" data-page="training">🎓 التدريب ورفع الكفاءة</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" data-page="supplychain">🛰️ سلسلة التوريد</button></div></div></div>
-          <div class="card" id="dash-profile-company"><div class="cb"><div style="font-size:13px;font-weight:700;margin-bottom:10px">بيانات الشركة</div>
-            <div class="row"><span style="color:var(--ts)">السجل التجاري</span><span style="font-weight:700">29481-CR</span></div>
-            <div class="row"><span style="color:var(--ts)">الرقم الضريبي</span><span style="font-weight:700">442-118-225</span></div>
-            <div class="row"><span style="color:var(--ts)">القطاع الصناعي</span><span style="font-weight:700">تشييد وبناء</span></div>
-            <div class="row"><span style="color:var(--ts)">حالة الحساب</span><span class="pill pg">موثق ✓</span></div>
+          <div class="card" id="dash-profile-company"><div class="cb"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:13px;font-weight:700">بيانات الشركة</div><button class="bl" style="font-size:11px;padding:4px 10px;border-radius:6px" onclick="openCompanyProfileEdit()">✏️ تعديل</button></div>
+            <div id="company-profile-view-company"><div style="font-size:12px;color:var(--ts);padding:10px 0">جارٍ التحميل...</div></div>
           </div></div>
         </div>
       </div>
@@ -2338,11 +2355,8 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
             <button class="bl" style="width:100%;padding:9px;border-radius:8px" data-page="inspection">🧪 الفحص والجودة</button>
             <button class="bl" style="width:100%;padding:9px;border-radius:8px" data-page="training">🎓 التدريب ورفع الكفاءة</button>
           </div></div></div>
-          <div class="card" id="dash-profile-supplier"><div class="cb"><div style="font-size:13px;font-weight:700;margin-bottom:10px">بيانات المنشأة</div>
-            <div class="row"><span style="color:var(--ts)">السجل التجاري</span><span style="font-weight:700">18372-CR</span></div>
-            <div class="row"><span style="color:var(--ts)">الرقم الضريبي</span><span style="font-weight:700">301-552-118</span></div>
-            <div class="row"><span style="color:var(--ts)">القطاع</span><span style="font-weight:700">الحديد ومشتقاته</span></div>
-            <div class="row"><span style="color:var(--ts)">حالة التحقق</span><span class="pill pg">نخبة موثّق ✓</span></div>
+          <div class="card" id="dash-profile-supplier"><div class="cb"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:13px;font-weight:700">بيانات المنشأة</div><button class="bl" style="font-size:11px;padding:4px 10px;border-radius:6px" onclick="openCompanyProfileEdit()">✏️ تعديل</button></div>
+            <div id="company-profile-view-supplier"><div style="font-size:12px;color:var(--ts);padding:10px 0">جارٍ التحميل...</div></div>
           </div></div>
         </div>
       </div>
@@ -3956,6 +3970,7 @@ function goTo(pg, fromBack){
       if (role === "worker" && typeof loadMyTradeApplications === "function") loadMyTradeApplications();
       if (role === "supplier" && typeof loadSupplierRfqs === "function") loadSupplierRfqs();
       if (role === "supplier" && typeof loadMyCustomers === "function") loadMyCustomers();
+      if ((role === "supplier" || role === "company") && typeof loadCompanyProfile === "function") loadCompanyProfile();
       var myServicesSection = document.getElementById("dash-myservices");
       var myServicesNavBtn = document.getElementById("dash-nav-myservices");
       var mfgOpsSection = document.getElementById("dash-mfg-ops");
@@ -8520,6 +8535,75 @@ async function loadMyCustomers() {
   }
 }
 window.loadMyCustomers = loadMyCustomers;
+
+// ── COMPANY PROFILE — real edit for بيانات الشركة / بيانات المنشأة ──
+var COMPANY_PROFILE_CACHE = null;
+
+function renderCompanyProfileView(company) {
+  var verifiedLabel = SUP_VERIFIED_LEVEL_LABEL[company.verifiedLevel] || "غير موثق";
+  var sectorName = (company.categories && company.categories[0] && company.categories[0].category && company.categories[0].category.nameAr) || "—";
+  var html =
+    '<div class="row"><span style="color:var(--ts)">السجل التجاري</span><span style="font-weight:700">' + (company.commercialRegNo || "—") + '</span></div>' +
+    '<div class="row"><span style="color:var(--ts)">الرقم الضريبي</span><span style="font-weight:700">' + (company.taxId || "—") + '</span></div>' +
+    '<div class="row"><span style="color:var(--ts)">القطاع</span><span style="font-weight:700">' + sectorName + '</span></div>' +
+    '<div class="row"><span style="color:var(--ts)">الموقع الإلكتروني</span><span style="font-weight:700">' + (company.websiteUrl || "—") + '</span></div>' +
+    '<div class="row"><span style="color:var(--ts)">حالة التحقق</span><span class="pill pg">' + verifiedLabel + '</span></div>';
+  var companyEl = document.getElementById("company-profile-view-company");
+  var supplierEl = document.getElementById("company-profile-view-supplier");
+  if (companyEl) companyEl.innerHTML = html;
+  if (supplierEl) supplierEl.innerHTML = html;
+}
+
+async function loadCompanyProfile() {
+  if (!window.isLoggedIn || !window.currentUser || !window.currentUser.companyId) return;
+  try {
+    COMPANY_PROFILE_CACHE = await apiFetch("/companies/me");
+    renderCompanyProfileView(COMPANY_PROFILE_CACHE);
+  } catch (err) { /* silent — cards just keep loading state */ }
+}
+window.loadCompanyProfile = loadCompanyProfile;
+
+function openCompanyProfileEdit() {
+  var c = COMPANY_PROFILE_CACHE || {};
+  document.getElementById("cp-name-ar").value = c.nameAr || "";
+  document.getElementById("cp-name-en").value = c.nameEn || "";
+  document.getElementById("cp-cr").value = c.commercialRegNo || "";
+  document.getElementById("cp-tax").value = c.taxId || "";
+  document.getElementById("cp-founded").value = c.founded || "";
+  document.getElementById("cp-employees").value = c.employeeCount || "";
+  document.getElementById("cp-website").value = c.websiteUrl || "";
+  document.getElementById("cp-desc").value = c.descriptionAr || "";
+  if (typeof openM === "function") openM("company-profile-edit-modal");
+}
+window.openCompanyProfileEdit = openCompanyProfileEdit;
+
+async function saveCompanyProfileEdit() {
+  var btn = document.getElementById("cp-save-btn");
+  btn.disabled = true; btn.textContent = "جارٍ الحفظ...";
+  try {
+    COMPANY_PROFILE_CACHE = await apiFetch("/companies/me", {
+      method: "PATCH",
+      body: JSON.stringify({
+        nameAr: document.getElementById("cp-name-ar").value,
+        nameEn: document.getElementById("cp-name-en").value || undefined,
+        commercialRegNo: document.getElementById("cp-cr").value || undefined,
+        taxId: document.getElementById("cp-tax").value || undefined,
+        founded: document.getElementById("cp-founded").value || undefined,
+        employeeCount: document.getElementById("cp-employees").value || undefined,
+        websiteUrl: document.getElementById("cp-website").value || undefined,
+        descriptionAr: document.getElementById("cp-desc").value || undefined,
+      })
+    });
+    renderCompanyProfileView(COMPANY_PROFILE_CACHE);
+    if (typeof closeM === "function") closeM("company-profile-edit-modal");
+    toast("✅ تم حفظ بيانات الشركة");
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر حفظ التعديلات"));
+  } finally {
+    btn.disabled = false; btn.textContent = "💾 حفظ التعديلات";
+  }
+}
+window.saveCompanyProfileEdit = saveCompanyProfileEdit;
 
 function renderMyOrdersTabs() {
   var active = MY_ORDERS_CACHE.filter(function(o){ return ACTIVE_ORDER_STATUSES.indexOf(o.status) !== -1; });

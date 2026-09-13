@@ -14,7 +14,7 @@ import { RfqService, CreateRfqDto, CreateQuoteDto } from '../rfq/rfq.service';
 import { EscrowService, DisputeDto } from '../escrow/escrow.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AntiLeakageService } from '../common/anti-leakage.service';
-import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, ProviderListingService, CompanyAssistantService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
+import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, ProviderListingService, CompanyAssistantService, CompanyProfileService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
 
 // ── Auth Guards (simplified) ───────────────────────────────────────
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -664,6 +664,29 @@ export class JobPostingController {
       throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
     }
     return this.jobs.adminReview(id, !!body.approve);
+  }
+}
+
+// ── Company Profile Controller (edit your own company/establishment) ──
+@ApiTags('company-profile')
+@Controller('companies/me')
+@UseGuards(JwtGuard)
+@ApiBearerAuth()
+export class CompanyProfileController {
+  constructor(private profile: CompanyProfileService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'بيانات شركتي الكاملة' })
+  getMine(@Request() req: any) {
+    if (!req.user.companyId) throw new ForbiddenException('لا يوجد حساب شركة مرتبط بحسابك');
+    return this.profile.getMine(req.user.companyId);
+  }
+
+  @Patch()
+  @ApiOperation({ summary: 'تعديل بيانات شركتي' })
+  updateMine(@Body() dto: any, @Request() req: any) {
+    if (!req.user.companyId) throw new ForbiddenException('لا يوجد حساب شركة مرتبط بحسابك');
+    return this.profile.updateMine(req.user.companyId, dto);
   }
 }
 
