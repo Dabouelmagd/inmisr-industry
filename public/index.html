@@ -6417,24 +6417,44 @@ window.openSubmitProduct = function() {
   if (m) m.classList.add("open");
 };
 
-window.submitNewProduct = function() {
+window.submitNewProduct = async function() {
   var name = (document.getElementById("np-name")||{}).value || "";
-  var supplier = (document.getElementById("np-supplier")||{}).value || "";
-  if (!name.trim() || !supplier.trim()) { toast("الرجاء إدخال اسم المنتج واسم المورد"); return; }
-  var newProduct = {
-    id: "pp" + (PENDING_PRODUCTS.length + 1),
-    name: name,
-    unit: (document.getElementById("np-unit")||{}).value || "وحدة",
-    sector: (document.getElementById("np-sector")||{}).value || "",
-    supplier: supplier,
-    price_hint: (document.getElementById("np-price")||{}).value || "—",
-    specs: (document.getElementById("np-specs")||{}).value || "",
-    status: "pending",
-    submitted: "الآن"
-  };
-  PENDING_PRODUCTS.push(newProduct);
-  document.getElementById("submit-product-modal").classList.remove("open");
-  toast("تم إرسال المنتج للمراجعة — سيظهر على المنصة بعد موافقة الإدارة");
+  var sector = (document.getElementById("np-sector")||{}).value || "";
+  if (!name.trim() || !sector) { toast("الرجاء إدخال اسم المنتج واختيار القطاع"); return; }
+  if (!window.isLoggedIn || !window.currentUser || !window.currentUser.companyId) {
+    toast("⚠️ الرجاء تسجيل الدخول بحساب مورد لإضافة منتج"); openLoginModal(); return;
+  }
+
+  var categories = await getRealCategories();
+  var categoryId = resolveCategoryId(sector, categories);
+  if (!categoryId) { toast("⚠️ تعذر التعرف على القطاع المختار: " + sector); return; }
+
+  var priceText = (document.getElementById("np-price")||{}).value || "";
+  var priceMatch = priceText.replace(/,/g, "").match(/\d+(\.\d+)?/);
+  var priceMin = priceMatch ? Number(priceMatch[0]) : undefined;
+
+  var btn = document.querySelector('#submit-product-modal button.bc');
+  if (btn) { btn.disabled = true; btn.textContent = "جارٍ الإرسال..."; }
+
+  try {
+    await apiFetch("/products", {
+      method: "POST",
+      body: JSON.stringify({
+        nameAr: name,
+        categoryId: categoryId,
+        unit: (document.getElementById("np-unit")||{}).value || "وحدة",
+        minQty: 1,
+        priceMin: priceMin,
+        specsJson: { description: (document.getElementById("np-specs")||{}).value || "" },
+      })
+    });
+    document.getElementById("submit-product-modal").classList.remove("open");
+    toast("✅ تم إرسال المنتج للمراجعة — سيظهر على المنصة بعد موافقة الإدارة");
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إرسال المنتج"));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "إرسال للمراجعة"; }
+  }
 };
 
 window.approveProduct = function(productId) {
