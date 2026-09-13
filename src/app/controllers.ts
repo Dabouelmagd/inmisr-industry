@@ -14,7 +14,7 @@ import { RfqService, CreateRfqDto, CreateQuoteDto } from '../rfq/rfq.service';
 import { EscrowService, DisputeDto } from '../escrow/escrow.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AntiLeakageService } from '../common/anti-leakage.service';
-import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
+import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, ProviderListingService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
 
 // ── Auth Guards (simplified) ───────────────────────────────────────
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -657,6 +657,75 @@ export class JobPostingController {
       throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
     }
     return this.jobs.adminReview(id, !!body.approve);
+  }
+}
+
+// ── Provider Listing Controller (registered shipping/packaging providers) ──
+@ApiTags('provider-listings')
+@Controller('provider-listings')
+export class ProviderListingController {
+  constructor(private providers: ProviderListingService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'قائمة مقدمي الخدمة المعتمدين (عامة)' })
+  listPublic(@Query('category') category: string) {
+    return this.providers.listPublic(category);
+  }
+
+  @Post()
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'إضافة خدمة شحن/تغليف — يتطلب حساب شركة مسجّل' })
+  create(@Body() dto: any, @Request() req: any) {
+    if (!req.user.companyId) throw new ForbiddenException('يجب تسجيل حساب شركة أولاً لإضافة خدمة');
+    return this.providers.create(req.user.companyId, dto.category, dto);
+  }
+
+  @Get('my')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'خدماتي المسجّلة' })
+  listMine(@Request() req: any) {
+    if (!req.user.companyId) throw new ForbiddenException('يجب تسجيل حساب شركة أولاً');
+    return this.providers.listMine(req.user.companyId);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تعديل خدمة مسجّلة (تُعاد للمراجعة)' })
+  update(@Param('id') id: string, @Body() dto: any, @Request() req: any) {
+    return this.providers.update(req.user.companyId, id, dto);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'حذف خدمة مسجّلة' })
+  remove(@Param('id') id: string, @Request() req: any) {
+    return this.providers.remove(req.user.companyId, id);
+  }
+
+  @Get('admin/all')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'كل خدمات الشحن/التغليف المسجّلة (أدمن)' })
+  adminList(@Query('category') category: string, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.providers.adminList(category);
+  }
+
+  @Post('admin/:id/review')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'الموافقة على خدمة مقدم أو رفضها (أدمن)' })
+  adminReview(@Param('id') id: string, @Body() body: { approve: boolean }, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.providers.adminReview(id, !!body.approve);
   }
 }
 

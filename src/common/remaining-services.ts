@@ -786,6 +786,73 @@ export class ServiceConsultationService {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// PROVIDER LISTING SERVICE — شركات شحن/تغليف مسجّلة تضيف خدماتها الخاصة
+// ══════════════════════════════════════════════════════════════════
+
+@Injectable()
+export class ProviderListingService {
+  constructor(private prisma: PrismaService) {}
+
+  async create(companyId: string, category: string, dto: { name: string; icon?: string; discountPct?: number; details?: any }) {
+    if (!['SHIPPING', 'PACKAGING'].includes(category)) throw new BadRequestException('فئة غير معروفة');
+    if (!dto.name?.trim()) throw new BadRequestException('اسم الخدمة مطلوب');
+    return this.prisma.providerListing.create({
+      data: {
+        companyId, category, name: dto.name, icon: dto.icon,
+        discountPct: dto.discountPct, detailsJson: dto.details || {}, status: 'PENDING',
+      },
+    });
+  }
+
+  async listMine(companyId: string) {
+    return this.prisma.providerListing.findMany({ where: { companyId }, orderBy: { createdAt: 'desc' } });
+  }
+
+  async update(companyId: string, id: string, dto: { name?: string; icon?: string; discountPct?: number; details?: any }) {
+    const listing = await this.prisma.providerListing.findUnique({ where: { id } });
+    if (!listing) throw new NotFoundException('الخدمة غير موجودة');
+    if (listing.companyId !== companyId) throw new ForbiddenException('غير مصرح بتعديل هذه الخدمة');
+    return this.prisma.providerListing.update({
+      where: { id },
+      data: {
+        name: dto.name, icon: dto.icon, discountPct: dto.discountPct,
+        detailsJson: dto.details, status: 'PENDING', // any edit goes back to review
+      },
+    });
+  }
+
+  async remove(companyId: string, id: string) {
+    const listing = await this.prisma.providerListing.findUnique({ where: { id } });
+    if (!listing) throw new NotFoundException('الخدمة غير موجودة');
+    if (listing.companyId !== companyId) throw new ForbiddenException('غير مصرح بحذف هذه الخدمة');
+    return this.prisma.providerListing.delete({ where: { id } });
+  }
+
+  // Public feed: approved only, with the registered company's real name.
+  async listPublic(category: string) {
+    return this.prisma.providerListing.findMany({
+      where: { category, status: 'APPROVED' },
+      include: { company: { select: { nameAr: true, trustScore: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async adminList(category?: string) {
+    return this.prisma.providerListing.findMany({
+      where: category ? { category } : undefined,
+      include: { company: { select: { nameAr: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async adminReview(id: string, approve: boolean) {
+    const listing = await this.prisma.providerListing.findUnique({ where: { id } });
+    if (!listing) throw new NotFoundException('الخدمة غير موجودة');
+    return this.prisma.providerListing.update({ where: { id }, data: { status: approve ? 'APPROVED' : 'REJECTED' } });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // INCUBATOR SERVICE
 // ══════════════════════════════════════════════════════════════════
 // ─── incubator/incubator.service.ts ───────────────────────────────

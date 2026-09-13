@@ -281,6 +281,7 @@ model Company {
   jobPostings              JobPosting[]
   adBookings               AdBooking[]
   specialOffers            SpecialOffer[]
+  providerListings         ProviderListing[]
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -970,6 +971,23 @@ model ServiceConsultation {
   updatedAt   DateTime @updatedAt
 
   @@map("service_consultations")
+}
+
+model ProviderListing {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  category    String   // SHIPPING / PACKAGING
+  name        String
+  icon        String?
+  discountPct Int?
+  detailsJson Json     @default("{}")
+  status      String   @default("PENDING") // PENDING / APPROVED / REJECTED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category, status])
+  @@map("provider_listings")
 }
 
 model FeasibilityStudy {
