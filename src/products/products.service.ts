@@ -40,11 +40,13 @@ export class ProductsService {
     }
     if (query.minPrice || query.maxPrice) {
       where.priceMin = {};
-      if (query.minPrice) where.priceMin.gte = query.minPrice;
-      if (query.maxPrice) where.priceMin.lte = query.maxPrice;
+      if (query.minPrice) where.priceMin.gte = Number(query.minPrice);
+      if (query.maxPrice) where.priceMin.lte = Number(query.maxPrice);
     }
 
-    const skip = ((query.page || 1) - 1) * (query.limit || 20);
+    const page  = Number(query.page)  || 1;
+    const limit = Number(query.limit) || 20;
+    const skip = (page - 1) * limit;
     const [data, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
@@ -53,12 +55,12 @@ export class ProductsService {
           company:  { select: { nameAr: true, verifiedLevel: true, trustScore: true, avgRating: true } },
         },
         orderBy: { views: 'desc' },
-        skip, take: query.limit || 20,
+        skip, take: limit,
       }),
       this.prisma.product.count({ where }),
     ]);
 
-    return { data, total, page: query.page || 1, limit: query.limit || 20, totalPages: Math.ceil(total / (query.limit || 20)) };
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async findOne(id: string) {

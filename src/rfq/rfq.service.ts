@@ -207,10 +207,12 @@ export class RfqService {
 
   // ── SEARCH RFQs ───────────────────────────────────────────────
   async findAll(query: RfqQueryDto) {
+    const page  = Number(query.page)  || 1;
+    const limit = Number(query.limit) || 20;
     const where: any = { status: RfqStatus.PUBLISHED };
     if (query.categoryId) where.categoryId = query.categoryId;
     if (query.city) where.deliveryCity = { contains: query.city };
-    if (query.minQty) where.quantity = { gte: query.minQty };
+    if (query.minQty) where.quantity = { gte: Number(query.minQty) };
 
     const [data, total] = await Promise.all([
       this.prisma.rfqRequest.findMany({
@@ -221,8 +223,8 @@ export class RfqService {
           quotes: { select: { id: true, supplierCompanyId: true } },
         },
         orderBy: { publishedAt: 'desc' },
-        skip: ((query.page || 1) - 1) * (query.limit || 20),
-        take: query.limit || 20,
+        skip: (page - 1) * limit,
+        take: limit,
       }),
       this.prisma.rfqRequest.count({ where }),
     ]);
@@ -230,10 +232,10 @@ export class RfqService {
     return {
       data,
       pagination: {
-        page: query.page || 1,
-        limit: query.limit || 20,
+        page,
+        limit,
         total,
-        totalPages: Math.ceil(total / (query.limit || 20)),
+        totalPages: Math.ceil(total / limit),
       },
     };
   }

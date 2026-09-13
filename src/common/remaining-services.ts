@@ -1101,6 +1101,8 @@ export class OrdersService {
     if (role === 'BUYER')    where.buyerCompanyId    = companyId;
     if (role === 'SUPPLIER') where.supplierCompanyId = companyId;
     if (query.status)        where.status            = query.status;
+    const page  = Number(query.page)  || 1;
+    const limit = Number(query.limit) || 20;
 
     const [data, total] = await Promise.all([
       this.prisma.order.findMany({
@@ -1113,13 +1115,13 @@ export class OrdersService {
           _count: { select: { messages: true, documents: true } },
         },
         orderBy: { createdAt: 'desc' },
-        skip: ((query.page || 1) - 1) * 20,
-        take: 20,
+        skip: (page - 1) * limit,
+        take: limit,
       }),
       this.prisma.order.count({ where }),
     ]);
 
-    return { data, total, page: query.page || 1, totalPages: Math.ceil(total / 20) };
+    return { data, total, page, totalPages: Math.ceil(total / limit) };
   }
 
   // Real customer relationship view: aggregates this company's own Order
