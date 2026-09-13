@@ -841,9 +841,25 @@ export class TradeApplicationController {
   constructor(private trade: TradeApplicationService) {}
 
   @Post()
-  @ApiOperation({ summary: 'تقديم فردي على وظيفة أو فرصة حرفية (بدون تسجيل دخول)' })
-  submit(@Body() dto: any) {
-    return this.trade.submit(dto);
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تقديم فردي على وظيفة أو فرصة حرفية (يتطلب حساب باحث عن عمل)' })
+  submit(@Body() dto: any, @Request() req: any) {
+    if (!req.user.workerId) {
+      throw new ForbiddenException('هذا الإجراء متاح لحسابات الباحثين عن عمل فقط');
+    }
+    return this.trade.submit(req.user.workerId, dto);
+  }
+
+  @Get('my')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تقديماتي وطلبات التحاقي بالتدريب' })
+  listMine(@Request() req: any) {
+    if (!req.user.workerId) {
+      throw new ForbiddenException('هذا الإجراء متاح لحسابات الباحثين عن عمل فقط');
+    }
+    return this.trade.listMine(req.user.workerId);
   }
 
   @Get('admin/all')

@@ -3901,6 +3901,7 @@ function goTo(pg, fromBack){
       supplierPanel.style.display = (role === "supplier") ? "block" : "none";
       companyPanel.style.display = (role === "company") ? "block" : "none";
       if (workerPanel) workerPanel.style.display = (role === "worker") ? "block" : "none";
+      if (role === "worker" && typeof loadMyTradeApplications === "function") loadMyTradeApplications();
       if (role === "supplier" && typeof loadSupplierRfqs === "function") loadSupplierRfqs();
       var myServicesSection = document.getElementById("dash-myservices");
       var myServicesNavBtn = document.getElementById("dash-nav-myservices");
@@ -7214,6 +7215,11 @@ var TRADE_APP_SEQ = 100;
 var TRADE_APPLICATIONS = [];
 
 function openTradeApplyModal(label, type) {
+  if (!requireLoginForService(function(){ openTradeApplyModal(label, type); })) return;
+  if (window.loggedInRole !== "worker") {
+    toast("⚠️ التقديم على الوظائف والحرف متاح لحسابات الباحثين عن عمل فقط");
+    return;
+  }
   document.getElementById("trade-apply-title").textContent = "التقديم على: " + label;
   document.getElementById("trade-apply-for").value = label;
   document.getElementById("trade-apply-type").value = type;
@@ -7237,6 +7243,7 @@ async function confirmTradeApply() {
     });
     if (typeof closeM === "function") closeM("trade-apply-modal");
     toast("تم استلام طلبك — سيتواصل معك فريق إن مصر قريبًا");
+    loadMyTradeApplications();
   } catch (err) {
     toast("⚠️ " + (err.message || "تعذر إرسال الطلب"));
   }
@@ -7306,10 +7313,22 @@ function renderWorkerDashboard() {
 }
 window.renderWorkerDashboard = renderWorkerDashboard;
 
+async function loadMyTradeApplications() {
+  if (!window.isLoggedIn || window.loggedInRole !== "worker") return;
+  try {
+    TRADE_APPLICATIONS = await apiFetch("/trade-applications/my");
+    renderWorkerDashboard();
+  } catch (err) {
+    toast("⚠️ تعذر تحميل طلباتك: " + (err.message || ""));
+  }
+}
+window.loadMyTradeApplications = loadMyTradeApplications;
+
 document.addEventListener("DOMContentLoaded", function() {
   renderJobPostingsList();
   renderJobPostingsMyList();
   renderWorkerDashboard();
+  loadMyTradeApplications();
 });
 
 function renderTrainingList() {
@@ -8955,6 +8974,7 @@ window.submitLogin = async function() {
     var serverRole = (data.user && data.user.role) || "";
     var uiRole = serverRole === "SUPPLIER" ? "supplier"
                : serverRole === "BUYER" ? "company"
+               : serverRole === "WORKER" ? "worker"
                : (serverRole === "ADMIN" || serverRole === "SUPER_ADMIN") ? "owner"
                : selectedLoginType;
 
@@ -10242,9 +10262,7 @@ window.submitRegistration = async function(role) {
   var cfg = {
     supplier: { prefix:"reg-sup", formId:"reg-supplier", btnId:"reg-submit-supplier", btnLabel:"إنشاء حساب المورد ←", loggedInRole:"supplier", apiRole:"SUPPLIER" },
     buyer:    { prefix:"reg-buy", formId:"reg-buyer",    btnId:"reg-submit-buyer",    btnLabel:"إنشاء حساب المشتري ←", loggedInRole:"company", apiRole:"BUYER" },
-    // NOTE: the backend Role enum (BUYER/SUPPLIER/INVESTOR/ADMIN/SUPER_ADMIN)
-    // has no WORKER role yet, so this path stays simulated until that's added.
-    worker:   { prefix:"reg-work", formId:"reg-worker",   btnId:"reg-submit-worker",   btnLabel:"إنشاء حسابي ←", loggedInRole:"worker", apiRole:null }
+    worker:   { prefix:"reg-work", formId:"reg-worker",   btnId:"reg-submit-worker",   btnLabel:"إنشاء حسابي ←", loggedInRole:"worker", apiRole:"WORKER" }
   }[role];
   if (!cfg) return;
 
@@ -10263,39 +10281,35 @@ window.submitRegistration = async function(role) {
   if (pass !== pass2) { toast("⚠️ كلمة المرور وتأكيدها غير متطابقين"); return; }
 
   var submitBtn = document.getElementById(cfg.btnId);
+  var body = { email: email, password: pass, role: cfg.apiRole };
 
-  // Worker registration has no backend role yet — keep the simulated flow.
-  if (!cfg.apiRole) {
-    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "جارٍ إنشاء الحساب..."; }
-    setTimeout(function() {
-      simulateSendEmail(email, "تأكيد إنشاء الحساب — إن مصر للصناعة");
-      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = cfg.btnLabel; }
-      if (rememberEl && rememberEl.checked) { window.rememberedRole = cfg.loggedInRole; }
-      toast("✅ تم إنشاء الحساب! تم إرسال رابط تأكيد إلى " + email + " — فعّلي حسابك من بريدك الإلكتروني");
-    }, 1100);
-    return;
+  if (role === "worker") {
+    var nameEl = document.getElementById("reg-work-name");
+    var phoneEl = document.getElementById("reg-work-phone");
+    var govEl = document.getElementById("reg-work-gov");
+    var tradeEl = document.getElementById("reg-work-trade");
+    var fullName = nameEl ? nameEl.value.trim() : "";
+    var phone = phoneEl ? phoneEl.value.trim() : "";
+    if (!fullName) { toast("⚠️ الرجاء إدخال الاسم بالكامل"); return; }
+    if (!phone) { toast("⚠️ الرجاء إدخال رقم الهاتف"); return; }
+    body.fullName = fullName;
+    body.phone = phone;
+    body.governorate = govEl ? govEl.value : undefined;
+    body.interestedTrade = (tradeEl && tradeEl.value !== "غير محدد") ? tradeEl.value : undefined;
+  } else {
+    var companyEl = document.getElementById(cfg.prefix + "-company");
+    var phoneEl2 = document.getElementById(cfg.prefix + "-phone");
+    var companyName = companyEl ? companyEl.value.trim() : "";
+    var phone2 = phoneEl2 ? phoneEl2.value.trim() : "";
+    if (!companyName) { toast("⚠️ الرجاء إدخال اسم الشركة / المصنع"); return; }
+    body.companyNameAr = companyName;
+    body.phone = phone2 || undefined;
   }
-
-  var companyEl = document.getElementById(cfg.prefix + "-company");
-  var phoneEl = document.getElementById(cfg.prefix + "-phone");
-  var companyName = companyEl ? companyEl.value.trim() : "";
-  var phone = phoneEl ? phoneEl.value.trim() : "";
-
-  if (!companyName) { toast("⚠️ الرجاء إدخال اسم الشركة / المصنع"); return; }
 
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "جارٍ إنشاء الحساب..."; }
 
   try {
-    await apiFetch("/auth/register", {
-      method: "POST",
-      body: JSON.stringify({
-        email: email,
-        password: pass,
-        role: cfg.apiRole,
-        companyNameAr: companyName,
-        phone: phone || undefined
-      })
-    });
+    await apiFetch("/auth/register", { method: "POST", body: JSON.stringify(body) });
 
     if (rememberEl && rememberEl.checked) { window.rememberedRole = cfg.loggedInRole; }
     toast("✅ تم إنشاء الحساب! تم إرسال رابط تأكيد إلى " + email + " — فعّلي حسابك من بريدك الإلكتروني");

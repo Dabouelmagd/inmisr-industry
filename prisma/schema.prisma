@@ -15,6 +15,7 @@ enum Role {
   BUYER
   SUPPLIER
   INVESTOR
+  WORKER
   ADMIN
   SUPER_ADMIN
 }
@@ -158,6 +159,7 @@ model User {
   otpCodes        OtpCode[]
   deviceTokens    DeviceToken[]
   company         Company?
+  workerProfile   WorkerProfile?
   sentMessages    Message[] @relation("sender")
   notifications   Notification[]
   auditLogs       AuditLog[]
@@ -776,8 +778,26 @@ model PromoCode {
   @@map("promo_codes")
 }
 
+model WorkerProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName        String
+  phone           String
+  governorate     String?
+  interestedTrade String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tradeApplications TradeApplication[]
+
+  @@map("worker_profiles")
+}
+
 model TradeApplication {
   id          String   @id @default(uuid())
+  workerId    String?
+  worker      WorkerProfile? @relation(fields: [workerId], references: [id])
   name        String
   phone       String
   governorate String?

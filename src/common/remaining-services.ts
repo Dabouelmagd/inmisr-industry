@@ -623,15 +623,21 @@ export class PromoCodeService {
 export class TradeApplicationService {
   constructor(private prisma: PrismaService) {}
 
-  async submit(dto: { name: string; phone: string; governorate?: string; appliedFor: string; type: string }) {
+  async submit(workerId: string, dto: { name: string; phone: string; governorate?: string; appliedFor: string; type: string }) {
     if (!dto.name?.trim() || !dto.phone?.trim()) {
       throw new BadRequestException('الاسم ورقم التليفون مطلوبان');
     }
     return this.prisma.tradeApplication.create({
       data: {
-        name: dto.name, phone: dto.phone, governorate: dto.governorate,
+        workerId, name: dto.name, phone: dto.phone, governorate: dto.governorate,
         appliedFor: dto.appliedFor, type: dto.type, contacted: false,
       },
+    });
+  }
+
+  async listMine(workerId: string) {
+    return this.prisma.tradeApplication.findMany({
+      where: { workerId }, orderBy: { createdAt: 'desc' },
     });
   }
 

@@ -26,11 +26,16 @@ export class AuthService {
 
   // ── REGISTER ──────────────────────────────────────────────────
   async register(dto: RegisterDto, adminBootstrapSecret?: string) {
+    const isWorker = dto.role === 'WORKER';
+
     if (AuthService.PRIVILEGED_ROLES.includes(dto.role)) {
       const expected = this.config.get<string>('ADMIN_BOOTSTRAP_SECRET');
       if (!expected || adminBootstrapSecret !== expected) {
         throw new ForbiddenException('غير مصرح بإنشاء حساب بهذه الصلاحية عبر التسجيل العام');
       }
+    } else if (isWorker) {
+      if (!dto.fullName?.trim()) throw new BadRequestException('الاسم بالكامل مطلوب');
+      if (!dto.phone?.trim()) throw new BadRequestException('رقم الهاتف مطلوب');
     } else if (!dto.companyNameAr) {
       throw new BadRequestException('اسم الشركة مطلوب');
     }
@@ -59,7 +64,7 @@ export class AuthService {
         phoneRelay: dto.phone ? `relay-${uuidv4().slice(0, 8)}@inmisr.net` : null,
         passwordHash,
         role: dto.role,
-        company: isStaff ? undefined : {
+        company: (isStaff || isWorker) ? undefined : {
           create: {
             nameAr: dto.companyNameAr,
             nameEn: dto.companyNameEn,
@@ -74,9 +79,17 @@ export class AuthService {
             } : undefined,
             subscription: { create: { plan: 'FREE' } },
           }
-        }
+        },
+        workerProfile: isWorker ? {
+          create: {
+            fullName: dto.fullName,
+            phone: dto.phone,
+            governorate: dto.governorate,
+            interestedTrade: dto.interestedTrade,
+          }
+        } : undefined,
       },
-      include: { company: true },
+      include: { company: true, workerProfile: true },
     });
 
     // Send OTP
@@ -169,7 +182,7 @@ export class AuthService {
           { phoneHash: await this.hashPhone(dto.emailOrPhone) },
         ],
       },
-      include: { company: { include: { subscription: true } } },
+      include: { company: { include: { subscription: true } }, workerProfile: true },
     });
 
     if (!user) throw new UnauthorizedException('بيانات الدخول غير صحيحة');
@@ -241,7 +254,7 @@ export class AuthService {
   async refreshTokens(refreshToken: string, ip: string, ua: string) {
     const stored = await this.prisma.refreshToken.findUnique({
       where: { token: refreshToken },
-      include: { user: { include: { company: { include: { subscription: true } } } } },
+      include: { user: { include: { company: { include: { subscription: true } }, workerProfile: true } } },
     });
 
     if (!stored || stored.isRevoked || stored.expiresAt < new Date()) {
@@ -267,6 +280,7 @@ export class AuthService {
       sub: user.id,
       role: user.role,
       companyId: user.company?.id,
+      workerId: user.workerProfile?.id,
       plan: user.company?.subscription?.plan || 'FREE',
     };
 
@@ -301,7 +315,11 @@ export class AuthService {
 
   private sanitizeUser(user: any) {
     const { passwordHash, twoFaSecret, phoneHash, ...safe } = user;
-    return safe;
+    return {
+      ...safe,
+      companyId: user.company?.id,
+      workerId: user.workerProfile?.id,
+    };
   }
 }
 
@@ -346,6 +364,14 @@ export class RegisterDto {
   @ApiProperty({ required: false })
   @IsString() @IsOptional()
   industrialZone?: string;
+
+  @ApiProperty({ example: 'أحمد كريم', required: false, description: 'مطلوب لتسجيل عامل/باحث عن عمل (role=WORKER)' })
+  @IsString() @IsOptional()
+  fullName?: string;
+
+  @ApiProperty({ example: 'اللحام الصناعي', required: false })
+  @IsString() @IsOptional()
+  interestedTrade?: string;
 }
 
 export class LoginDto {
