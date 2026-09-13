@@ -182,7 +182,7 @@ export class AuthService {
           { phoneHash: await this.hashPhone(dto.emailOrPhone) },
         ],
       },
-      include: { company: { include: { subscription: true } }, workerProfile: true },
+      include: { company: { include: { subscription: true } }, workerProfile: true, assistantOf: true },
     });
 
     if (!user) throw new UnauthorizedException('بيانات الدخول غير صحيحة');
@@ -254,7 +254,7 @@ export class AuthService {
   async refreshTokens(refreshToken: string, ip: string, ua: string) {
     const stored = await this.prisma.refreshToken.findUnique({
       where: { token: refreshToken },
-      include: { user: { include: { company: { include: { subscription: true } }, workerProfile: true } } },
+      include: { user: { include: { company: { include: { subscription: true } }, workerProfile: true, assistantOf: true } } },
     });
 
     if (!stored || stored.isRevoked || stored.expiresAt < new Date()) {
@@ -276,12 +276,15 @@ export class AuthService {
 
   // ── HELPERS ───────────────────────────────────────────────────
   private async generateTokens(user: any, ip: string, ua: string) {
+    const isActiveAssistant = user.assistantOf?.status === 'ACTIVE';
     const payload = {
       sub: user.id,
       role: user.role,
-      companyId: user.company?.id,
+      companyId: user.company?.id || (isActiveAssistant ? user.assistantOf.companyId : undefined),
       workerId: user.workerProfile?.id,
       plan: user.company?.subscription?.plan || 'FREE',
+      isAssistant: isActiveAssistant,
+      assistantPermissions: isActiveAssistant ? user.assistantOf.permissions : undefined,
     };
 
     const [accessToken, refreshToken] = await Promise.all([
@@ -315,10 +318,14 @@ export class AuthService {
 
   private sanitizeUser(user: any) {
     const { passwordHash, twoFaSecret, phoneHash, ...safe } = user;
+    const isActiveAssistant = user.assistantOf?.status === 'ACTIVE';
     return {
       ...safe,
-      companyId: user.company?.id,
+      companyId: user.company?.id || (isActiveAssistant ? user.assistantOf.companyId : undefined),
       workerId: user.workerProfile?.id,
+      isAssistant: isActiveAssistant,
+      assistantPermissions: isActiveAssistant ? user.assistantOf.permissions : undefined,
+      assistantRoleLabel: isActiveAssistant ? user.assistantOf.roleLabel : undefined,
     };
   }
 }

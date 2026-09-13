@@ -14,7 +14,7 @@ import { RfqService, CreateRfqDto, CreateQuoteDto } from '../rfq/rfq.service';
 import { EscrowService, DisputeDto } from '../escrow/escrow.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AntiLeakageService } from '../common/anti-leakage.service';
-import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, ProviderListingService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
+import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, ProviderListingService, CompanyAssistantService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
 
 // ── Auth Guards (simplified) ───────────────────────────────────────
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -657,6 +657,61 @@ export class JobPostingController {
       throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
     }
     return this.jobs.adminReview(id, !!body.approve);
+  }
+}
+
+// ── Company Assistant Controller (business team invites & permissions) ──
+@ApiTags('company-assistants')
+@Controller('company-assistants')
+export class CompanyAssistantController {
+  constructor(private assistants: CompanyAssistantService) {}
+
+  @Post('invite')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'دعوة مساعد جديد لحساب الشركة' })
+  invite(@Body() dto: any, @Request() req: any) {
+    if (!req.user.companyId) throw new ForbiddenException('يجب تسجيل حساب شركة أولاً');
+    return this.assistants.invite(req.user.companyId, dto);
+  }
+
+  @Get('my')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'قائمة مساعدي حسابي' })
+  listMine(@Request() req: any) {
+    if (!req.user.companyId) throw new ForbiddenException('يجب تسجيل حساب شركة أولاً');
+    return this.assistants.listMine(req.user.companyId);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تعديل صلاحيات مساعد' })
+  update(@Param('id') id: string, @Body() dto: any, @Request() req: any) {
+    return this.assistants.updatePermissions(req.user.companyId, id, dto);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'إزالة مساعد وتعطيل حسابه' })
+  remove(@Param('id') id: string, @Request() req: any) {
+    return this.assistants.remove(req.user.companyId, id);
+  }
+
+  @Post(':id/resend-invite')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'إعادة إرسال رابط الدعوة' })
+  resend(@Param('id') id: string, @Request() req: any) {
+    return this.assistants.resendInvite(req.user.companyId, id);
+  }
+
+  @Post('accept-invite')
+  @ApiOperation({ summary: 'قبول دعوة مساعد وتفعيل الحساب (بدون تسجيل دخول)' })
+  acceptInvite(@Body() body: { token: string; password: string }) {
+    return this.assistants.acceptInvite(body.token, body.password);
   }
 }
 

@@ -160,6 +160,7 @@ model User {
   deviceTokens    DeviceToken[]
   company         Company?
   workerProfile   WorkerProfile?
+  assistantOf     CompanyAssistant?
   sentMessages    Message[] @relation("sender")
   notifications   Notification[]
   auditLogs       AuditLog[]
@@ -282,6 +283,7 @@ model Company {
   adBookings               AdBooking[]
   specialOffers            SpecialOffer[]
   providerListings         ProviderListing[]
+  assistants               CompanyAssistant[]
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -971,6 +973,24 @@ model ServiceConsultation {
   updatedAt   DateTime @updatedAt
 
   @@map("service_consultations")
+}
+
+model CompanyAssistant {
+  id          String    @id @default(uuid())
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId      String?   @unique
+  user        User?     @relation(fields: [userId], references: [id])
+  inviteEmail String
+  name        String?
+  roleLabel   String
+  permissions Json      @default("[]")
+  status      String    @default("PENDING") // PENDING / ACTIVE / REMOVED
+  inviteToken String?   @unique
+  invitedAt   DateTime  @default(now())
+  activatedAt DateTime?
+
+  @@map("company_assistants")
 }
 
 model ProviderListing {

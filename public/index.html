@@ -1859,6 +1859,16 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   </div>
 </div>
 
+<div class="mov" id="accept-invite-modal">
+  <div class="modal" style="max-width:420px">
+    <div style="font-size:16px;font-weight:700;margin-bottom:6px">تفعيل حساب المساعد</div>
+    <div style="font-size:12px;color:var(--ts);margin-bottom:16px">اختاري كلمة مرور لحسابك الجديد لتفعيل الدعوة والبدء في استخدام المنصة</div>
+    <div style="margin-bottom:12px"><span class="lbl">كلمة المرور (8 أحرف على الأقل)</span><input class="inp" type="password" id="ai-pass"></div>
+    <div style="margin-bottom:16px"><span class="lbl">تأكيد كلمة المرور</span><input class="inp" type="password" id="ai-pass2"></div>
+    <button class="bc" style="width:100%;padding:11px;font-size:13px" id="ai-submit-btn" onclick="confirmAcceptInvite()">تفعيل الحساب وتسجيل الدخول</button>
+  </div>
+</div>
+
 <div class="mov" id="provider-listing-modal">
   <div class="modal" style="max-width:500px">
     <button class="mc" onclick="closeM('provider-listing-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
@@ -5184,7 +5194,7 @@ function scrollToDashSection(key, btn) {
     var el = document.getElementById(id);
     if (el) el.style.display = (sharedAllowed && targetId === id) ? "block" : "none";
   });
-  if (key === "team" && typeof renderBizTeamTable === "function") renderBizTeamTable();
+  if (key === "team" && typeof loadBizTeam === "function") loadBizTeam();
   if (key === "myservices" && typeof renderFinancingMiniList === "function") renderFinancingMiniList();
   if (key === "myservices" && typeof loadMyInspectionRequests === "function") loadMyInspectionRequests();
   if (key === "myservices" && typeof loadMyTrainingEnrollments === "function") loadMyTrainingEnrollments();
@@ -8241,7 +8251,36 @@ window.loadProviderListingsPublic = loadProviderListingsPublic;
 document.addEventListener("DOMContentLoaded", function() {
   loadProviderListingsPublic("SHIPPING", "shipping-providers-real");
   loadProviderListingsPublic("PACKAGING", "packaging-providers-real");
+
+  var params = new URLSearchParams(window.location.search);
+  var inviteToken = params.get("accept-invite");
+  if (inviteToken) {
+    window.__acceptInviteToken = inviteToken;
+    if (typeof openM === "function") openM("accept-invite-modal");
+  }
 });
+
+async function confirmAcceptInvite() {
+  var pass = document.getElementById("ai-pass").value;
+  var pass2 = document.getElementById("ai-pass2").value;
+  if (!pass || pass.length < 8) { toast("⚠️ كلمة المرور يجب أن تكون 8 أحرف على الأقل"); return; }
+  if (pass !== pass2) { toast("⚠️ كلمة المرور وتأكيدها غير متطابقين"); return; }
+  var btn = document.getElementById("ai-submit-btn");
+  btn.disabled = true; btn.textContent = "جارٍ التفعيل...";
+  try {
+    await apiFetch("/company-assistants/accept-invite", {
+      method: "POST", body: JSON.stringify({ token: window.__acceptInviteToken, password: pass })
+    });
+    if (typeof closeM === "function") closeM("accept-invite-modal");
+    toast("✅ تم تفعيل حسابك — سجّلي الدخول الآن ببريدك الإلكتروني وكلمة المرور الجديدة");
+    if (typeof openLoginModal === "function") openLoginModal();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تفعيل الحساب"));
+  } finally {
+    btn.disabled = false; btn.textContent = "تفعيل الحساب وتسجيل الدخول";
+  }
+}
+window.confirmAcceptInvite = confirmAcceptInvite;
 
 async function loadProviderListingsAdmin() {
   var box = document.getElementById("admin-provider-listings-table");
@@ -9701,10 +9740,7 @@ window.reviewProduct = reviewProduct;
 // (separate from the owner's admin-level Team feature above)
 // ══════════════════════════════════════════════════════════════════
 var BIZ_TEAM_SEQ = 100;
-var BIZ_TEAM_MEMBERS = [
-  {id:"BTM-001", name:"منى إبراهيم", email:"mona@company.net", role:"محاسب",
-   permissions:["عرض ومتابعة الطلبات","عرض التقارير والمدفوعات"], status:"نشط", cls:"pg", invitedDate:"2026-03-02"}
-];
+var BIZ_TEAM_MEMBERS = [];
 var BIZ_ROLE_PERMISSION_PRESETS = {
   "مسؤول مبيعات": ["view_orders","rfq_offers"],
   "محاسب": ["view_orders","finance"],
@@ -9722,26 +9758,44 @@ function applyBizRolePreset() {
 }
 window.applyBizRolePreset = applyBizRolePreset;
 
+var BIZ_STATUS_LABEL = { PENDING: "دعوة معلّقة", ACTIVE: "نشط", REMOVED: "مُزال" };
+var BIZ_STATUS_CLASS = { PENDING: "pa", ACTIVE: "pg", REMOVED: "pr" };
+
+async function loadBizTeam() {
+  var box = document.getElementById("biz-team-table");
+  if (!box || !window.isLoggedIn) return;
+  try {
+    BIZ_TEAM_MEMBERS = await apiFetch("/company-assistants/my");
+    renderBizTeamTable();
+  } catch (err) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:20px 0;text-align:center">⚠️ تعذر تحميل المساعدين: ' + (err.message || "") + '</div>';
+  }
+}
+window.loadBizTeam = loadBizTeam;
+
 function openBizTeamModal(editId) {
   document.getElementById("biz-team-edit-id").value = editId || "";
   if (editId) {
     var m = BIZ_TEAM_MEMBERS.find(function(x){ return x.id === editId; });
     if (m) {
-      document.getElementById("biz-team-title").textContent = "تعديل صلاحيات: " + m.name;
-      document.getElementById("biz-team-name").value = m.name;
-      document.getElementById("biz-team-email").value = m.email;
-      document.getElementById("biz-team-role").value = m.role;
+      document.getElementById("biz-team-title").textContent = "تعديل صلاحيات: " + (m.name || m.inviteEmail);
+      document.getElementById("biz-team-name").value = m.name || "";
+      document.getElementById("biz-team-email").value = m.inviteEmail;
+      document.getElementById("biz-team-email").disabled = true;
+      document.getElementById("biz-team-role").value = m.roleLabel;
       document.getElementById("biz-team-submit-btn").textContent = "💾 حفظ التعديلات";
-      ["عرض ومتابعة الطلبات","الرد على RFQ وتقديم عروض","إدارة المنتجات والخامات","متابعة الشحن والتسليم","عرض التقارير والمدفوعات","وصول كامل (مثل صاحب الحساب)"]
-        .forEach(function(label) {
-          var input = document.querySelector('#biz-team-modal input[value="' + label + '"]');
-          if (input) input.checked = m.permissions.indexOf(label) > -1;
-        });
+      var permKeys = ["view_orders","rfq_offers","products","shipping","finance","full_access"];
+      var permLabels = ["عرض ومتابعة الطلبات","الرد على RFQ وتقديم عروض","إدارة المنتجات والخامات","متابعة الشحن والتسليم","عرض التقارير والمدفوعات","⭐ وصول كامل (مثل صاحب الحساب)"];
+      permLabels.forEach(function(label, i) {
+        var input = document.querySelector('#biz-team-modal input[value="' + label + '"]');
+        if (input) input.checked = (m.permissions || []).indexOf(permKeys[i]) > -1;
+      });
     }
   } else {
     document.getElementById("biz-team-title").textContent = "إضافة مساعد جديد";
     document.getElementById("biz-team-name").value = "";
     document.getElementById("biz-team-email").value = "";
+    document.getElementById("biz-team-email").disabled = false;
     document.getElementById("biz-team-role").selectedIndex = 0;
     document.getElementById("biz-team-submit-btn").textContent = "📧 إرسال الدعوة";
     document.querySelectorAll('#biz-team-modal input[type="checkbox"]').forEach(function(cb){ cb.checked = false; });
@@ -9751,65 +9805,83 @@ function openBizTeamModal(editId) {
 }
 window.openBizTeamModal = openBizTeamModal;
 
-function confirmBizTeamInvite() {
+async function confirmBizTeamInvite() {
   var editId = document.getElementById("biz-team-edit-id").value;
   var name = document.getElementById("biz-team-name").value.trim();
   var email = document.getElementById("biz-team-email").value.trim();
   var role = document.getElementById("biz-team-role").value;
+  var permKeys = ["view_orders","rfq_offers","products","shipping","finance","full_access"];
+  var permLabels = ["عرض ومتابعة الطلبات","الرد على RFQ وتقديم عروض","إدارة المنتجات والخامات","متابعة الشحن والتسليم","عرض التقارير والمدفوعات","⭐ وصول كامل (مثل صاحب الحساب)"];
   var permissions = [];
-  document.querySelectorAll('#biz-team-modal input[type="checkbox"]:checked').forEach(function(cb){ permissions.push(cb.value); });
+  permLabels.forEach(function(label, i) {
+    var cb = document.querySelector('#biz-team-modal input[value="' + label + '"]');
+    if (cb && cb.checked) permissions.push(permKeys[i]);
+  });
 
-  if (!name || !email) { toast("الرجاء إدخال الاسم والبريد الإلكتروني"); return; }
+  if (!email) { toast("الرجاء إدخال البريد الإلكتروني"); return; }
   if (!permissions.length) { toast("الرجاء تحديد صلاحية واحدة على الأقل"); return; }
 
-  if (editId) {
-    var m = BIZ_TEAM_MEMBERS.find(function(x){ return x.id === editId; });
-    if (m) { m.name = name; m.email = email; m.role = role; m.permissions = permissions; }
-    toast("تم تحديث صلاحيات " + name);
-  } else {
-    BIZ_TEAM_SEQ += 1;
-    BIZ_TEAM_MEMBERS.unshift({
-      id: "BTM-" + BIZ_TEAM_SEQ, name:name, email:email, role:role, permissions:permissions,
-      status:"دعوة معلّقة", cls:"pa", invitedDate: new Date().toISOString().slice(0,10)
-    });
-    if (typeof simulateSendEmail === "function") simulateSendEmail(email, "دعوة للانضمام لإدارة حسابك على إن مصر للصناعة — " + role);
-    toast("📧 تم إرسال رابط الدعوة إلى " + email);
+  try {
+    if (editId) {
+      await apiFetch("/company-assistants/" + editId, {
+        method: "PATCH", body: JSON.stringify({ roleLabel: role, permissions: permissions })
+      });
+      toast("تم تحديث الصلاحيات");
+    } else {
+      await apiFetch("/company-assistants/invite", {
+        method: "POST", body: JSON.stringify({ email: email, name: name, roleLabel: role, permissions: permissions })
+      });
+      toast("📧 تم إرسال رابط الدعوة إلى " + email);
+    }
+    if (typeof closeM === "function") closeM("biz-team-modal");
+    loadBizTeam();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ العملية"));
   }
-  if (typeof closeM === "function") closeM("biz-team-modal");
-  renderBizTeamTable();
 }
 window.confirmBizTeamInvite = confirmBizTeamInvite;
 
-function resendBizTeamInvite(id) {
-  var m = BIZ_TEAM_MEMBERS.find(function(x){ return x.id === id; });
-  if (!m) return;
-  if (typeof simulateSendEmail === "function") simulateSendEmail(m.email, "تذكير: دعوة للانضمام لإدارة الحساب");
-  toast("تم إعادة إرسال الدعوة إلى " + m.email);
+async function resendBizTeamInvite(id) {
+  try {
+    await apiFetch("/company-assistants/" + id + "/resend-invite", { method: "POST" });
+    toast("تم إعادة إرسال الدعوة");
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إعادة الإرسال"));
+  }
 }
 window.resendBizTeamInvite = resendBizTeamInvite;
 
-function removeBizTeamMember(id) {
-  var idx = BIZ_TEAM_MEMBERS.findIndex(function(x){ return x.id === id; });
-  if (idx === -1) return;
-  var name = BIZ_TEAM_MEMBERS[idx].name;
-  BIZ_TEAM_MEMBERS.splice(idx, 1);
-  toast("تم إزالة " + name + " من المساعدين");
-  renderBizTeamTable();
+async function removeBizTeamMember(id) {
+  if (!confirm("هل أنتِ متأكدة من إزالة هذا المساعد؟ سيتم تعطيل حسابه فوراً.")) return;
+  try {
+    await apiFetch("/company-assistants/" + id, { method: "DELETE" });
+    toast("تم إزالة المساعد");
+    loadBizTeam();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإزالة"));
+  }
 }
 window.removeBizTeamMember = removeBizTeamMember;
+
+var BIZ_PERM_KEY_LABEL = {
+  view_orders: "عرض ومتابعة الطلبات", rfq_offers: "الرد على RFQ وتقديم عروض",
+  products: "إدارة المنتجات والخامات", shipping: "متابعة الشحن والتسليم",
+  finance: "عرض التقارير والمدفوعات", full_access: "⭐ وصول كامل"
+};
 
 function renderBizTeamTable() {
   var box = document.getElementById("biz-team-table");
   if (!box) return;
   box.innerHTML = BIZ_TEAM_MEMBERS.length ? BIZ_TEAM_MEMBERS.map(function(m) {
-    var permsBadges = m.permissions.map(function(p){ return '<span class="pill pb2" style="margin:2px;font-size:10px">' + p + '</span>'; }).join("");
+    var permsBadges = (m.permissions || []).map(function(p){ return '<span class="pill pb2" style="margin:2px;font-size:10px">' + (BIZ_PERM_KEY_LABEL[p] || p) + '</span>'; }).join("");
+    var invitedDate = new Date(m.invitedAt).toLocaleDateString("ar-EG");
     return '<div class="card" style="margin-bottom:12px"><div class="cb">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:8px">' +
-      '<div><div style="font-weight:700;font-size:14px">' + m.name + ' <span class="pill ' + m.cls + '" style="margin-right:6px">' + m.status + '</span></div>' +
-      '<div style="font-size:12px;color:var(--ts);margin-top:4px;direction:ltr;text-align:right">' + m.email + '</div>' +
-      '<div style="font-size:12px;color:var(--ts);margin-top:2px">الوظيفة: ' + m.role + ' · دُعي في ' + m.invitedDate + '</div></div>' +
+      '<div><div style="font-weight:700;font-size:14px">' + (m.name || m.inviteEmail) + ' <span class="pill ' + (BIZ_STATUS_CLASS[m.status] || "pa") + '" style="margin-right:6px">' + (BIZ_STATUS_LABEL[m.status] || m.status) + '</span></div>' +
+      '<div style="font-size:12px;color:var(--ts);margin-top:4px;direction:ltr;text-align:right">' + m.inviteEmail + '</div>' +
+      '<div style="font-size:12px;color:var(--ts);margin-top:2px">الوظيفة: ' + m.roleLabel + ' · دُعي في ' + invitedDate + '</div></div>' +
       '<div style="display:flex;gap:6px;flex-shrink:0">' +
-      (m.status === "دعوة معلّقة" ? '<button class="bl" style="font-size:11px;padding:5px 10px;border-radius:6px" onclick="resendBizTeamInvite(\'' + m.id + '\')">إعادة إرسال</button>' : '') +
+      (m.status === "PENDING" ? '<button class="bl" style="font-size:11px;padding:5px 10px;border-radius:6px" onclick="resendBizTeamInvite(\'' + m.id + '\')">إعادة إرسال</button>' : '') +
       '<button class="bl" style="font-size:11px;padding:5px 10px;border-radius:6px" onclick="openBizTeamModal(\'' + m.id + '\')">تعديل الصلاحيات</button>' +
       '<button style="background:rgba(206,17,38,.08);color:#CE1126;border:1px solid rgba(206,17,38,.25);border-radius:6px;padding:5px 10px;cursor:pointer;font-family:inherit;font-size:11px" onclick="removeBizTeamMember(\'' + m.id + '\')">إزالة</button>' +
       '</div></div>' +
@@ -9821,8 +9893,8 @@ function renderBizTeamTable() {
   var activeEl = document.getElementById("biz-team-active");
   var pendingEl = document.getElementById("biz-team-pending");
   if (totalEl) totalEl.textContent = BIZ_TEAM_MEMBERS.length;
-  if (activeEl) activeEl.textContent = BIZ_TEAM_MEMBERS.filter(function(m){ return m.status === "نشط"; }).length;
-  if (pendingEl) pendingEl.textContent = BIZ_TEAM_MEMBERS.filter(function(m){ return m.status === "دعوة معلّقة"; }).length;
+  if (activeEl) activeEl.textContent = BIZ_TEAM_MEMBERS.filter(function(m){ return m.status === "ACTIVE"; }).length;
+  if (pendingEl) pendingEl.textContent = BIZ_TEAM_MEMBERS.filter(function(m){ return m.status === "PENDING"; }).length;
 }
 window.renderBizTeamTable = renderBizTeamTable;
 
@@ -10274,7 +10346,7 @@ function triggerKnownDynamicRenders(pid) {
       typeof generateSystemReport === "function" && generateSystemReport();
     }
     if (pid === "dash") {
-      typeof renderBizTeamTable === "function" && renderBizTeamTable();
+      typeof loadBizTeam === "function" && loadBizTeam();
     }
   } catch (e) { /* best-effort only */ }
 }

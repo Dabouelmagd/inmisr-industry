@@ -4,6 +4,9 @@
 
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { v4 as uuidv4 } from 'uuid';
+import * as bcrypt from 'bcryptjs';
 
 // ══════════════════════════════════════════════════════════════════
 // GEO SERVICE
@@ -782,6 +785,94 @@ export class ServiceConsultationService {
     const item = await this.prisma.serviceConsultation.findUnique({ where: { id } });
     if (!item) throw new NotFoundException('الطلب غير موجود');
     return this.prisma.serviceConsultation.update({ where: { id }, data: { status } });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// COMPANY ASSISTANT SERVICE — مساعدون بحسابات مستقلة وصلاحيات محددة
+// ══════════════════════════════════════════════════════════════════
+
+@Injectable()
+export class CompanyAssistantService {
+  constructor(private prisma: PrismaService, private notifications: NotificationsService) {}
+
+  async invite(companyId: string, dto: { email: string; name?: string; roleLabel: string; permissions: string[] }) {
+    if (!dto.email?.trim()) throw new BadRequestException('البريد الإلكتروني مطلوب');
+    if (!dto.roleLabel?.trim()) throw new BadRequestException('الوظيفة مطلوبة');
+
+    const existingUser = await this.prisma.user.findFirst({ where: { email: { equals: dto.email, mode: 'insensitive' } } });
+    if (existingUser) throw new BadRequestException('هذا البريد الإلكتروني مستخدم بالفعل لحساب آخر على المنصة');
+
+    const inviteToken = uuidv4();
+    const assistant = await this.prisma.companyAssistant.create({
+      data: {
+        companyId, inviteEmail: dto.email, name: dto.name, roleLabel: dto.roleLabel,
+        permissions: dto.permissions || [], status: 'PENDING', inviteToken,
+      },
+    });
+
+    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    const inviteUrl = `https://inmisr.net/?accept-invite=${inviteToken}`;
+    await this.notifications.sendEmail(
+      dto.email,
+      `دعوة للانضمام لحساب ${company?.nameAr || 'شركة'} على إن مصر للصناعة`,
+      `تمت دعوتك للانضمام كـ ${dto.roleLabel}. لتفعيل حسابك افتحي الرابط: ${inviteUrl}`,
+      `<p>تمت دعوتك للانضمام لحساب <b>${company?.nameAr || ''}</b> بوظيفة <b>${dto.roleLabel}</b> على منصة إن مصر للصناعة.</p><p><a href="${inviteUrl}">اضغطي هنا لتفعيل حسابك</a></p>`,
+    );
+
+    return assistant;
+  }
+
+  async listMine(companyId: string) {
+    return this.prisma.companyAssistant.findMany({ where: { companyId, status: { not: 'REMOVED' } }, orderBy: { invitedAt: 'desc' } });
+  }
+
+  async updatePermissions(companyId: string, id: string, dto: { roleLabel?: string; permissions?: string[] }) {
+    const a = await this.prisma.companyAssistant.findUnique({ where: { id } });
+    if (!a || a.companyId !== companyId) throw new NotFoundException('المساعد غير موجود');
+    return this.prisma.companyAssistant.update({
+      where: { id }, data: { roleLabel: dto.roleLabel, permissions: dto.permissions },
+    });
+  }
+
+  async remove(companyId: string, id: string) {
+    const a = await this.prisma.companyAssistant.findUnique({ where: { id } });
+    if (!a || a.companyId !== companyId) throw new NotFoundException('المساعد غير موجود');
+    if (a.userId) {
+      await this.prisma.user.update({ where: { id: a.userId }, data: { isActive: false } });
+    }
+    return this.prisma.companyAssistant.update({ where: { id }, data: { status: 'REMOVED' } });
+  }
+
+  async resendInvite(companyId: string, id: string) {
+    const a = await this.prisma.companyAssistant.findUnique({ where: { id } });
+    if (!a || a.companyId !== companyId) throw new NotFoundException('المساعد غير موجود');
+    if (a.status !== 'PENDING') throw new BadRequestException('هذه الدعوة مُفعّلة بالفعل');
+    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    const inviteUrl = `https://inmisr.net/?accept-invite=${a.inviteToken}`;
+    await this.notifications.sendEmail(
+      a.inviteEmail,
+      `تذكير: دعوة للانضمام لحساب ${company?.nameAr || 'شركة'} على إن مصر للصناعة`,
+      `افتحي الرابط لتفعيل حسابك: ${inviteUrl}`,
+      `<p><a href="${inviteUrl}">اضغطي هنا لتفعيل حسابك</a></p>`,
+    );
+    return { message: 'تم إعادة إرسال الدعوة' };
+  }
+
+  async acceptInvite(token: string, password: string) {
+    if (!password || password.length < 8) throw new BadRequestException('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
+    const a = await this.prisma.companyAssistant.findUnique({ where: { inviteToken: token } });
+    if (!a || a.status !== 'PENDING') throw new BadRequestException('رابط الدعوة غير صالح أو مُستخدم بالفعل');
+
+    const company = await this.prisma.company.findUnique({ where: { id: a.companyId } });
+    const passwordHash = await bcrypt.hash(password, 12);
+    const user = await this.prisma.user.create({
+      data: { email: a.inviteEmail, passwordHash, role: company?.type || 'BUYER', emailVerified: true },
+    });
+    await this.prisma.companyAssistant.update({
+      where: { id: a.id }, data: { userId: user.id, status: 'ACTIVE', activatedAt: new Date() },
+    });
+    return { message: 'تم تفعيل حسابك بنجاح — يمكنك تسجيل الدخول الآن' };
   }
 }
 
