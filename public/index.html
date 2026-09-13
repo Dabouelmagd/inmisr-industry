@@ -8558,6 +8558,7 @@ function renderOrdersList(list, containerId, emptyMsg) {
       (o.escrow ? '<div style="font-size:11px;color:var(--ts);margin-bottom:10px">🔒 Escrow: ' + (o.escrow.status === "HELD" ? "محتجز" : o.escrow.status === "RELEASED" ? "تم الإفراج" : o.escrow.status === "DISPUTED" ? "متنازع عليه" : o.escrow.status) + '</div>' : '') +
       '<div style="display:flex;gap:8px">' +
       '<button class="bc" style="flex:1;padding:8px;font-size:13px;border-radius:8px" onclick="openOrderChatReal(\'' + o.id + '\')">💬 المحادثة</button>' +
+      (myRole === "BUYER" && o.status === "COMPLETED" ? '<button class="bl" style="flex:1;padding:8px;font-size:13px;border-radius:8px" onclick="submitOrderReview(\'' + o.id + '\')">⭐ قيّمي المورد</button>' : '') +
       (o.escrow ? '<button class="bl" style="flex:1;padding:8px;font-size:13px;border-radius:8px" onclick="openOrderEscrowReal(\'' + o.id + '\')">🔒 Escrow</button>' : '') +
       '</div></div></div>';
   }).join("");
@@ -8659,6 +8660,30 @@ function openOrderEscrowReal(orderId) {
   if (typeof openM === "function") openM("em");
 }
 window.openOrderEscrowReal = openOrderEscrowReal;
+
+async function submitOrderReview(orderId) {
+  var quality = prompt("تقييم جودة الخامات (من 1 إلى 5):", "5");
+  if (quality === null) return;
+  var time = prompt("تقييم الالتزام بالموعد (من 1 إلى 5):", "5");
+  if (time === null) return;
+  var comm = prompt("تقييم جودة التواصل (من 1 إلى 5):", "5");
+  if (comm === null) return;
+  var qualityScore = Number(quality), timeScore = Number(time), commScore = Number(comm);
+  if ([qualityScore, timeScore, commScore].some(function(n){ return isNaN(n) || n < 1 || n > 5; })) {
+    toast("⚠️ الرجاء إدخال أرقام من 1 إلى 5"); return;
+  }
+  var comment = prompt("تعليق (اختياري):") || undefined;
+  try {
+    await apiFetch("/reviews/orders/" + orderId, {
+      method: "POST",
+      body: JSON.stringify({ qualityScore: qualityScore, timeScore: timeScore, commScore: commScore, comment: comment })
+    });
+    toast("✅ شكراً لتقييمك — تم تحديث تقييم المورد");
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إرسال التقييم"));
+  }
+}
+window.submitOrderReview = submitOrderReview;
 
 async function raiseOrderDisputeReal(orderId) {
   var reason = prompt("وضّحي سبب النزاع بالتفصيل:");
