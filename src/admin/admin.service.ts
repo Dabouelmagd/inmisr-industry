@@ -405,4 +405,35 @@ export class AdminService {
       })),
     };
   }
+
+  // ── COMPANY SEARCH (for admin pickers, e.g. attaching a directly-added product) ──
+  async searchCompanies(q: string, type?: string) {
+    if (!q || q.trim().length < 2) return [];
+    return this.prisma.company.findMany({
+      where: {
+        nameAr: { contains: q, mode: 'insensitive' },
+        ...(type ? { type } : {}),
+      },
+      select: { id: true, nameAr: true, type: true, verifiedLevel: true },
+      take: 10,
+    });
+  }
+
+  // ── DIRECT PRODUCT PUBLISH (admin picks a real registered company) ──
+  async adminCreateProduct(dto: { companyId: string; categoryId: string; nameAr: string; unit: string; minQty?: number; priceMin?: number }) {
+    const company = await this.prisma.company.findUnique({ where: { id: dto.companyId } });
+    if (!company) throw new NotFoundException('الشركة غير موجودة');
+    return this.prisma.product.create({
+      data: {
+        companyId: dto.companyId,
+        categoryId: dto.categoryId,
+        nameAr: dto.nameAr,
+        unit: dto.unit,
+        minQty: dto.minQty || 1,
+        priceMin: dto.priceMin,
+        specsJson: {},
+        status: 'APPROVED',
+      },
+    });
+  }
 }

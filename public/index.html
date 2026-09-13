@@ -3398,7 +3398,10 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
       <div><span class="lbl">اسم المنتج</span><input class="inp" id="op-name" placeholder="اسم المنتج"></div>
       <div><span class="lbl">القطاع</span><select class="sel" id="op-sector"></select></div>
       <div><span class="lbl">وحدة القياس</span><select class="sel" id="op-unit"><option>طن</option><option>كجم</option><option>لتر</option><option>متر</option><option>وحدة</option></select></div>
-      <div><span class="lbl">المورد المرتبط (اختياري)</span><input class="inp" id="op-supplier" placeholder="اسم المورد"></div>
+      <div><span class="lbl">المورد المرتبط (ابحثي بالاسم)</span><input class="inp" id="op-supplier" placeholder="اكتبي اسم المورد..." oninput="searchOwnerProductCompany(this.value)" autocomplete="off">
+        <input type="hidden" id="op-supplier-id">
+        <div id="op-supplier-results" style="position:relative"></div>
+      </div>
     </div>
     <button class="bc" style="width:100%;padding:11px;border-radius:9px" onclick="ownerAddProductDirect()">نشر المنتج على المنصة فوراً</button>
   </div>
@@ -6572,14 +6575,55 @@ window.openOwnerAddProduct = function() {
   if (m) m.classList.add("open");
 };
 
-window.ownerAddProductDirect = function() {
+var ownerProductSearchTimer = null;
+window.searchOwnerProductCompany = function(q) {
+  document.getElementById("op-supplier-id").value = "";
+  clearTimeout(ownerProductSearchTimer);
+  var box = document.getElementById("op-supplier-results");
+  if (!q || q.trim().length < 2) { box.innerHTML = ""; return; }
+  ownerProductSearchTimer = setTimeout(async function() {
+    try {
+      var results = await apiFetch("/admin/companies/search?q=" + encodeURIComponent(q));
+      if (!results.length) { box.innerHTML = '<div style="font-size:11px;color:var(--ts);padding:6px 0">لا توجد نتائج</div>'; return; }
+      box.innerHTML = '<div style="position:absolute;top:2px;right:0;left:0;background:var(--surface2);border:1px solid var(--bd2);border-radius:8px;z-index:10;max-height:150px;overflow-y:auto">' +
+        results.map(function(c) {
+          return '<div style="padding:8px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--bd)" onclick="selectOwnerProductCompany(\'' + c.id + '\',\'' + c.nameAr.replace(/'/g, "\\'") + '\')">' + c.nameAr + ' <span style="color:var(--ts);font-size:10px">(' + c.type + ')</span></div>';
+        }).join("") + '</div>';
+    } catch (err) { box.innerHTML = ""; }
+  }, 350);
+};
+
+window.selectOwnerProductCompany = function(id, name) {
+  document.getElementById("op-supplier-id").value = id;
+  document.getElementById("op-supplier").value = name;
+  document.getElementById("op-supplier-results").innerHTML = "";
+};
+
+window.ownerAddProductDirect = async function() {
   var name = (document.getElementById("op-name")||{}).value || "";
   var sector = (document.getElementById("op-sector")||{}).value || "";
+  var companyId = (document.getElementById("op-supplier-id")||{}).value || "";
   if (!name.trim() || !sector) { toast("الرجاء إدخال اسم المنتج والقطاع"); return; }
-  if (!PRODUCT_CATALOG[sector]) PRODUCT_CATALOG[sector] = [];
-  PRODUCT_CATALOG[sector].push({name: name, unit: (document.getElementById("op-unit")||{}).value || "وحدة"});
-  document.getElementById("owner-product-modal").classList.remove("open");
-  toast("تم نشر المنتج مباشرة على المنصة في قطاع " + sector + " ✓");
+  if (!companyId) { toast("⚠️ الرجاء البحث عن المورد واختياره من القائمة"); return; }
+
+  var categories = await getRealCategories();
+  var categoryId = resolveCategoryId(sector, categories);
+  if (!categoryId) { toast("⚠️ تعذر التعرف على القطاع: " + sector); return; }
+
+  try {
+    await apiFetch("/admin/products/direct", {
+      method: "POST",
+      body: JSON.stringify({
+        companyId: companyId, categoryId: categoryId, nameAr: name,
+        unit: (document.getElementById("op-unit")||{}).value || "وحدة",
+      })
+    });
+    document.getElementById("owner-product-modal").classList.remove("open");
+    toast("✅ تم نشر المنتج مباشرة على المنصة");
+    if (typeof loadPendingProducts === "function") loadPendingProducts();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر نشر المنتج"));
+  }
 };
 
 // Delegated clicks

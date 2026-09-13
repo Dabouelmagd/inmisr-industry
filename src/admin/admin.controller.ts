@@ -32,6 +32,20 @@ export class AdminController {
     return this.admin.getRevenueBreakdown();
   }
 
+  @Get('companies/search')
+  @ApiOperation({ summary: 'بحث عن شركة حقيقية بالاسم (لإرفاق منتج مباشرة، أدمن)' })
+  searchCompanies(@Query('q') q: string, @Query('type') type: string, @Request() req: any) {
+    this.requireAdmin(req);
+    return this.admin.searchCompanies(q, type);
+  }
+
+  @Post('products/direct')
+  @ApiOperation({ summary: 'نشر منتج مباشرة لشركة حقيقية مسجّلة (أدمن)' })
+  adminCreateProduct(@Body() dto: any, @Request() req: any) {
+    this.requireAdmin(req);
+    return this.admin.adminCreateProduct(dto);
+  }
+
   @Get('orders')
   @ApiOperation({ summary: 'كل الطلبات على المنصة (أدمن)' })
   getOrders(@Query() q: any, @Request() req: any) {
