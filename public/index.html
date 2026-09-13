@@ -2644,14 +2644,14 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   </div>
 
   <div class="tabs" style="margin-bottom:18px">
-    <button class="tab on" onclick="switchAdsSubtab(this,&#39;types&#39;)">الأنواع والأسعار</button>
-    <button class="tab" onclick="switchAdsSubtab(this,&#39;bookings&#39;)">الحجوزات والمساحات</button>
+    <button class="tab on" onclick="switchAdsSubtab(this,&#39;realbooking&#39;)">🆕 نظام الحجز (حقيقي)</button>
     <button class="tab" onclick="switchAdsSubtab(this,&#39;supplier&#39;)">إعلانات الموردين <span class="pill pa" id="ads-supplier-tab-badge" style="margin-right:4px">0</span></button>
-    <button class="tab" onclick="switchAdsSubtab(this,&#39;owner&#39;)">إعلانات الأونر المباشرة</button>
-    <button class="tab" onclick="switchAdsSubtab(this,&#39;realbooking&#39;)">🆕 نظام الحجز الحقيقي</button>
+    <button class="tab" style="color:var(--tt)" onclick="switchAdsSubtab(this,&#39;types&#39;)">الأنواع والأسعار (تجريبي/قديم)</button>
+    <button class="tab" style="color:var(--tt)" onclick="switchAdsSubtab(this,&#39;bookings&#39;)">الحجوزات والمساحات (تجريبي/قديم)</button>
+    <button class="tab" style="color:var(--tt)" onclick="switchAdsSubtab(this,&#39;owner&#39;)">إعلانات الأونر المباشرة (تجريبي/قديم)</button>
   </div>
 
-  <div id="ads-sub-types">
+  <div id="ads-sub-types" style="display:none">
     <div style="font-size:12px;color:var(--ts);margin-bottom:12px;background:var(--bg3);border-radius:8px;padding:9px 12px">💡 الأسعار مُحدَّثة لتعكس تقديراً لسوق الإعلانات الرقمية B2B الصناعي في مصر لعام 2026 — قابلة للتعديل من فريق إن مصر حسب الطلب الفعلي</div>
     <div id="ad-types-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px"></div>
   </div>
@@ -2661,7 +2661,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
     <div id="ad-bookings-table"></div>
   </div>
 
-  <div id="ads-sub-realbooking" style="display:none">
+  <div id="ads-sub-realbooking">
     <div style="font-size:12px;color:var(--ts);margin-bottom:14px;background:var(--bg3);border-radius:8px;padding:9px 12px">🆕 نظام حجز حقيقي متصل بقاعدة البيانات — المساحات الخمسة من مواصفات النظام الإعلاني، بتقويم توافر حقيقي يمنع الحجز المزدوج، وتسعير متدرج حقيقي (أسبوعي / شهري -15% / ربع سنوي -30%)</div>
 
     <div class="g4" style="margin-bottom:20px">
@@ -4394,6 +4394,7 @@ document.addEventListener("DOMContentLoaded",function(){
     document.querySelectorAll(".asb").forEach(function(b){b.classList.remove("on");});
     if(btn)btn.classList.add("on");
     if (name === "ads") {
+      loadAdsV2Admin();
       renderAdTypes();
       renderAdBookings();
     }
