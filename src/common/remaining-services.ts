@@ -917,7 +917,7 @@ export class OrdersService {
           escrow: true,
           buyer: { select: { nameAr: true, location: true } },
           supplier: { select: { nameAr: true, location: true } },
-          rfq: { select: { categoryId: true, quantity: true, unit: true } },
+          rfq: { select: { quantity: true, unit: true, category: { select: { nameAr: true } } } },
           _count: { select: { messages: true, documents: true } },
         },
         orderBy: { createdAt: 'desc' },
