@@ -840,6 +840,13 @@ export class ServiceConsultationController {
     return this.consult.submit('SHIPPING', { companyName: dto.companyName, phone: dto.phone, details: dto.details });
   }
 
+  @Post('training')
+  @ApiOperation({ summary: 'طلب برنامج تدريب جماعي مخصص' })
+  submitTraining(@Body() dto: any, @Request() req: any) {
+    var companyName = (dto.companyName) || (req.user && req.user.companyId ? 'حساب مسجّل' : 'زائر');
+    return this.consult.submit('GROUP_TRAINING', { companyName: companyName, phone: dto.phone, details: dto.details });
+  }
+
   @Post('packaging')
   @ApiOperation({ summary: 'طلب تغليف مخصص (بدون تسجيل دخول)' })
   submitPackaging(@Body() dto: any) {

@@ -7343,9 +7343,17 @@ window.loadMyTrainingEnrollments = loadMyTrainingEnrollments;
 function renderTrainingList() { loadMyTrainingEnrollments(); }
 window.renderTrainingList = renderTrainingList;
 
-function requestGroupTraining() {
+async function requestGroupTraining() {
   if (!requireLoginForService(requestGroupTraining)) return;
-  toast("تم إرسال طلبك — سيتواصل معك فريق التدريب لتصميم برنامج مخصص");
+  try {
+    await apiFetch("/service-consultations/training", {
+      method: "POST",
+      body: JSON.stringify({ companyName: (window.currentUser && window.currentUser.company && window.currentUser.company.nameAr) || undefined, details: { source: "group-training-page" } })
+    });
+    toast("تم إرسال طلبك — سيتواصل معك فريق التدريب لتصميم برنامج مخصص");
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إرسال الطلب"));
+  }
 }
 window.requestGroupTraining = requestGroupTraining;
 
