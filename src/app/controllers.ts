@@ -602,6 +602,23 @@ export class FactoryNeedController {
     return this.factoryNeeds.listMine(req.user.companyId);
   }
 
+  @Post(':id/offers')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تقديم عرض على طلب احتياج منشور' })
+  submitOffer(@Param('id') id: string, @Body() dto: any, @Request() req: any) {
+    if (!req.user.companyId) throw new ForbiddenException('يجب تسجيل حساب شركة أولاً');
+    return this.factoryNeeds.submitOffer(id, req.user.companyId, dto);
+  }
+
+  @Get(':id/offers')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'ردود العروض على طلب احتياجي (صاحب الطلب فقط)' })
+  listOffers(@Param('id') id: string, @Request() req: any) {
+    return this.factoryNeeds.listOffersForNeed(id, req.user.companyId);
+  }
+
   @Get('admin/all')
   @UseGuards(JwtGuard)
   @ApiBearerAuth()

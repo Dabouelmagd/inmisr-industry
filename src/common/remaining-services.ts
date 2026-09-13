@@ -418,7 +418,7 @@ export class TrainingService {
 
 @Injectable()
 export class FactoryNeedService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private notifications: NotificationsService) {}
 
   async submit(companyId: string, dto: { needType: string; description: string; quantity?: string }) {
     if (!dto.description?.trim()) throw new BadRequestException('وصف الاحتياج مطلوب');
@@ -466,6 +466,42 @@ export class FactoryNeedService {
     if (need.status !== 'PENDING') throw new BadRequestException('تمت مراجعة هذا الطلب بالفعل');
     return this.prisma.factoryNeed.update({
       where: { id }, data: { status: approve ? 'APPROVED' : 'REJECTED' },
+    });
+  }
+
+  // ── OFFERS — real 'تقديم عرض' responses to a posted need ────────
+  async submitOffer(factoryNeedId: string, respondentCompanyId: string, dto: { message?: string }) {
+    const need = await this.prisma.factoryNeed.findUnique({
+      where: { id: factoryNeedId },
+      include: { company: { include: { user: true } } },
+    });
+    if (!need) throw new NotFoundException('الطلب غير موجود');
+    if (need.companyId === respondentCompanyId) throw new BadRequestException('لا يمكنك التقديم على طلبك الخاص');
+
+    const offer = await this.prisma.factoryNeedOffer.create({
+      data: { factoryNeedId, respondentCompanyId, message: dto.message },
+    });
+
+    if (need.company.user) {
+      await this.notifications.send(
+        need.company.user.id, 'RFQ_QUOTE_RECEIVED',
+        'اهتمام جديد بطلب الاحتياج الخاص بك',
+        `شركة مسجّلة أبدت اهتمامًا بطلبك: ${need.needType} — ${need.description}`,
+        { factoryNeedId },
+      );
+    }
+
+    return offer;
+  }
+
+  async listOffersForNeed(factoryNeedId: string, requesterCompanyId: string) {
+    const need = await this.prisma.factoryNeed.findUnique({ where: { id: factoryNeedId } });
+    if (!need) throw new NotFoundException('الطلب غير موجود');
+    if (need.companyId !== requesterCompanyId) throw new ForbiddenException('غير مصرح لك بعرض ردود هذا الطلب');
+    return this.prisma.factoryNeedOffer.findMany({
+      where: { factoryNeedId },
+      include: { respondent: { select: { nameAr: true, trustScore: true, avgRating: true } } },
+      orderBy: { createdAt: 'desc' },
     });
   }
 }

@@ -279,6 +279,7 @@ model Company {
   inspectionRequests InspectionRequest[]
   trainingEnrollments TrainingEnrollment[]
   factoryNeeds        FactoryNeed[]
+  factoryNeedOffers   FactoryNeedOffer[]
   reverseLogisticsRequests ReverseLogisticsRequest[]
   jobPostings              JobPosting[]
   adBookings               AdBooking[]
@@ -719,6 +720,7 @@ model FactoryNeed {
   status      String   @default("PENDING")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  offers      FactoryNeedOffer[]
 
   @@index([companyId, status])
   @@map("factory_needs")
@@ -998,6 +1000,18 @@ model CompanyAssistant {
   activatedAt DateTime?
 
   @@map("company_assistants")
+}
+
+model FactoryNeedOffer {
+  id                  String   @id @default(uuid())
+  factoryNeedId       String
+  factoryNeed         FactoryNeed @relation(fields: [factoryNeedId], references: [id], onDelete: Cascade)
+  respondentCompanyId String
+  respondent          Company  @relation(fields: [respondentCompanyId], references: [id])
+  message             String?
+  createdAt           DateTime @default(now())
+
+  @@map("factory_need_offers")
 }
 
 model ProviderListing {
