@@ -286,8 +286,6 @@ model Company {
   assistants               CompanyAssistant[]
   qualityCertificates      QualityCertificate[]
   qualityNotes             QualityNote[]
-  qualityCertificates      QualityCertificate[]
-  qualityNotes             QualityNote[]
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
