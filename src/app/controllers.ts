@@ -14,7 +14,7 @@ import { RfqService, CreateRfqDto, CreateQuoteDto } from '../rfq/rfq.service';
 import { EscrowService, DisputeDto } from '../escrow/escrow.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AntiLeakageService } from '../common/anti-leakage.service';
-import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, ProviderListingService, CompanyAssistantService, CompanyProfileService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
+import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, ProviderListingService, CompanyAssistantService, CompanyProfileService, QualityService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
 
 // ── Auth Guards (simplified) ───────────────────────────────────────
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -756,6 +756,49 @@ export class CompanyAssistantController {
   @ApiOperation({ summary: 'قبول دعوة مساعد وتفعيل الحساب (بدون تسجيل دخول)' })
   acceptInvite(@Body() body: { token: string; password: string }) {
     return this.assistants.acceptInvite(body.token, body.password);
+  }
+}
+
+// ── Quality Controller (certificates + non-conformance notes) ──────
+@ApiTags('quality')
+@Controller('quality')
+@UseGuards(JwtGuard)
+@ApiBearerAuth()
+export class QualityController {
+  constructor(private quality: QualityService) {}
+
+  @Get('certificates')
+  @ApiOperation({ summary: 'شهادات الجودة الخاصة بمنشأتي' })
+  listCertificates(@Request() req: any) {
+    if (!req.user.companyId) throw new ForbiddenException('يجب تسجيل حساب شركة أولاً');
+    return this.quality.listCertificates(req.user.companyId);
+  }
+
+  @Post('certificates')
+  @ApiOperation({ summary: 'إضافة شهادة جودة جديدة' })
+  addCertificate(@Body() dto: any, @Request() req: any) {
+    if (!req.user.companyId) throw new ForbiddenException('يجب تسجيل حساب شركة أولاً');
+    return this.quality.addCertificate(req.user.companyId, dto);
+  }
+
+  @Delete('certificates/:id')
+  @ApiOperation({ summary: 'حذف شهادة جودة' })
+  removeCertificate(@Param('id') id: string, @Request() req: any) {
+    return this.quality.removeCertificate(req.user.companyId, id);
+  }
+
+  @Get('notes')
+  @ApiOperation({ summary: 'سجل ملاحظات الجودة الخاصة بمنشأتي' })
+  listNotes(@Request() req: any) {
+    if (!req.user.companyId) throw new ForbiddenException('يجب تسجيل حساب شركة أولاً');
+    return this.quality.listNotes(req.user.companyId);
+  }
+
+  @Post('notes')
+  @ApiOperation({ summary: 'تسجيل ملاحظة جودة جديدة' })
+  addNote(@Body() dto: any, @Request() req: any) {
+    if (!req.user.companyId) throw new ForbiddenException('يجب تسجيل حساب شركة أولاً');
+    return this.quality.addNote(req.user.companyId, dto);
   }
 }
 

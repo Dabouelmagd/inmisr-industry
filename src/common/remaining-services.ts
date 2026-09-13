@@ -912,6 +912,44 @@ export class CompanyAssistantService {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// QUALITY SERVICE — شهادات الجودة وملاحظات عدم المطابقة الخاصة بالمنشأة
+// ══════════════════════════════════════════════════════════════════
+
+@Injectable()
+export class QualityService {
+  constructor(private prisma: PrismaService) {}
+
+  async listCertificates(companyId: string) {
+    return this.prisma.qualityCertificate.findMany({ where: { companyId }, orderBy: { expiryDate: 'asc' } });
+  }
+
+  async addCertificate(companyId: string, dto: { name: string; issuer?: string; expiryDate: string }) {
+    if (!dto.name?.trim()) throw new BadRequestException('اسم الشهادة مطلوب');
+    if (!dto.expiryDate) throw new BadRequestException('تاريخ الانتهاء مطلوب');
+    return this.prisma.qualityCertificate.create({
+      data: { companyId, name: dto.name, issuer: dto.issuer, expiryDate: new Date(dto.expiryDate) },
+    });
+  }
+
+  async removeCertificate(companyId: string, id: string) {
+    const cert = await this.prisma.qualityCertificate.findUnique({ where: { id } });
+    if (!cert || cert.companyId !== companyId) throw new NotFoundException('الشهادة غير موجودة');
+    return this.prisma.qualityCertificate.delete({ where: { id } });
+  }
+
+  async listNotes(companyId: string) {
+    return this.prisma.qualityNote.findMany({ where: { companyId }, orderBy: { createdAt: 'desc' } });
+  }
+
+  async addNote(companyId: string, dto: { description: string; severity?: string }) {
+    if (!dto.description?.trim()) throw new BadRequestException('وصف الملاحظة مطلوب');
+    return this.prisma.qualityNote.create({
+      data: { companyId, description: dto.description, severity: dto.severity || 'متوسط' },
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // PROVIDER LISTING SERVICE — شركات شحن/تغليف مسجّلة تضيف خدماتها الخاصة
 // ══════════════════════════════════════════════════════════════════
 

@@ -7811,93 +7811,123 @@ window.renderInspectionList = renderInspectionList;
 
 // ── الجودة (Quality certificates + non-conformance log) ──────
 var QUALITY_CERT_SEQ = 100;
-var QUALITY_CERTIFICATES = [
-  {id:"CERT-101", name:"ISO 9001:2015", issuer:"SGS", expiry:"2026-11-30", status:"سارية ✓", cls:"pg"},
-  {id:"CERT-102", name:"شهادة الحلال", issuer:"الهيئة العامة للرقابة الغذائية", expiry:"2026-08-15", status:"قاربت على الانتهاء ⚠", cls:"pa"},
-  {id:"CERT-103", name:"COA — تحليل دفعة", issuer:"معامل المعتمدية", expiry:"2026-02-01", status:"منتهية ✗", cls:"pr"}
-];
+var QUALITY_CERTIFICATES = [];
 
-function certStatusFromDate(expiry) {
-  var today = new Date();
-  var exp = new Date(expiry);
-  var daysLeft = (exp - today) / (1000*60*60*24);
-  if (daysLeft < 0) return {status:"منتهية ✗", cls:"pr"};
-  if (daysLeft < 60) return {status:"قاربت على الانتهاء ⚠", cls:"pa"};
-  return {status:"سارية ✓", cls:"pg"};
-}
-
-function addQualityCertificate() {
+async function addQualityCertificate() {
   var nameEl = document.getElementById("cert-name");
   var issuerEl = document.getElementById("cert-issuer");
   var expiryEl = document.getElementById("cert-expiry");
   var name = nameEl.value.trim();
   var expiry = expiryEl.value;
   if (!name || !expiry) { toast("الرجاء إدخال اسم الشهادة وتاريخ الانتهاء"); return; }
-  QUALITY_CERT_SEQ += 1;
-  var st = certStatusFromDate(expiry);
-  QUALITY_CERTIFICATES.unshift({
-    id: "CERT-" + QUALITY_CERT_SEQ, name:name, issuer: issuerEl.value.trim() || "—",
-    expiry: expiry, status: st.status, cls: st.cls
-  });
-  nameEl.value = ""; issuerEl.value = ""; expiryEl.value = "";
-  if (typeof closeM === "function") closeM("add-cert-modal");
-  toast("تمت إضافة الشهادة — سيتم تنبيهك قبل انتهائها بـ 60 يوم");
-  renderQualityCertificates();
+  try {
+    await apiFetch("/quality/certificates", {
+      method: "POST",
+      body: JSON.stringify({ name: name, issuer: issuerEl.value.trim() || undefined, expiryDate: expiry })
+    });
+    nameEl.value = ""; issuerEl.value = ""; expiryEl.value = "";
+    if (typeof closeM === "function") closeM("add-cert-modal");
+    toast("تمت إضافة الشهادة — سيتم تنبيهك قبل انتهائها بـ 60 يوم");
+    loadQualityCertificates();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إضافة الشهادة"));
+  }
 }
 window.addQualityCertificate = addQualityCertificate;
 
-function requestCertRenewal(certId) {
+async function requestCertRenewal(certId) {
   toast("تم إرسال طلب تجديد الشهادة — سيتواصل معك فريق الفحص والجودة");
 }
 window.requestCertRenewal = requestCertRenewal;
 
+function certStatusFromDateReal(expiryDate) {
+  var days = Math.floor((new Date(expiryDate) - new Date()) / 86400000);
+  if (days < 0) return { status: "منتهية", cls: "pr" };
+  if (days <= 60) return { status: "قريبة الانتهاء", cls: "pa" };
+  return { status: "سارية", cls: "pg" };
+}
+
+async function loadQualityCertificates() {
+  var box = document.getElementById("quality-certificates-list");
+  if (!box || !window.isLoggedIn) return;
+  try {
+    QUALITY_CERTIFICATES = await apiFetch("/quality/certificates");
+    renderQualityCertificates();
+  } catch (err) {
+    box.innerHTML = '<div style="font-size:12px;color:var(--ts);padding:10px 0">⚠️ تعذر تحميل الشهادات</div>';
+  }
+}
+window.loadQualityCertificates = loadQualityCertificates;
+
 function renderQualityCertificates() {
   var box = document.getElementById("quality-certificates-list");
   if (!box) return;
+  if (!QUALITY_CERTIFICATES.length) {
+    box.innerHTML = '<div style="font-size:12px;color:var(--ts);padding:10px 0">لا توجد شهادات مسجّلة بعد</div>';
+    return;
+  }
   box.innerHTML = QUALITY_CERTIFICATES.map(function(c) {
+    var st = certStatusFromDateReal(c.expiryDate);
+    var expiryLabel = new Date(c.expiryDate).toLocaleDateString("ar-EG");
     return '<div class="row"><div><div style="font-weight:700;font-size:13px">' + c.name + '</div>' +
-      '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + c.issuer + ' · ينتهي في ' + c.expiry + '</div></div>' +
-      '<div style="display:flex;align-items:center;gap:8px"><span class="pill ' + c.cls + '">' + c.status + '</span>' +
-      (c.cls !== "pg" ? '<button class="bl" style="font-size:11px;padding:4px 10px;border-radius:6px" onclick="requestCertRenewal(\'' + c.id + '\')">تجديد</button>' : '') +
+      '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + (c.issuer || "—") + ' · ينتهي في ' + expiryLabel + '</div></div>' +
+      '<div style="display:flex;align-items:center;gap:8px"><span class="pill ' + st.cls + '">' + st.status + '</span>' +
+      (st.cls !== "pg" ? '<button class="bl" style="font-size:11px;padding:4px 10px;border-radius:6px" onclick="requestCertRenewal(\'' + c.id + '\')">تجديد</button>' : '') +
       '</div></div>';
   }).join("");
 }
 window.renderQualityCertificates = renderQualityCertificates;
 
-var QUALITY_NOTE_SEQ = 100;
-var QUALITY_NOTES = [
-  {id:"QN-100", desc:"تباين طفيف في سُمك الصاج عن المواصفة المتفق عليها", severity:"متوسط", cls:"pa"}
-];
+var QUALITY_NOTES = [];
 
-function addQualityNote() {
+async function addQualityNote() {
   var descEl = document.getElementById("qnote-desc");
   var sevEl = document.getElementById("qnote-severity");
   var desc = descEl.value.trim();
   if (!desc) { toast("الرجاء كتابة وصف الملاحظة"); return; }
-  QUALITY_NOTE_SEQ += 1;
-  var sevCls = sevEl.value === "عالٍ" ? "pr" : (sevEl.value === "متوسط" ? "pa" : "pg");
-  QUALITY_NOTES.unshift({id:"QN-" + QUALITY_NOTE_SEQ, desc:desc, severity:sevEl.value, cls:sevCls});
-  descEl.value = "";
-  toast("تم تسجيل ملاحظة الجودة");
-  renderQualityNotes();
+  try {
+    await apiFetch("/quality/notes", {
+      method: "POST",
+      body: JSON.stringify({ description: desc, severity: sevEl.value })
+    });
+    descEl.value = "";
+    toast("تم تسجيل ملاحظة الجودة");
+    loadQualityNotes();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تسجيل الملاحظة"));
+  }
 }
 window.addQualityNote = addQualityNote;
+
+async function loadQualityNotes() {
+  var box = document.getElementById("quality-notes-list");
+  if (!box || !window.isLoggedIn) return;
+  try {
+    QUALITY_NOTES = await apiFetch("/quality/notes");
+    renderQualityNotes();
+  } catch (err) {
+    box.innerHTML = '<div style="font-size:12px;color:var(--ts);padding:10px 0">⚠️ تعذر تحميل الملاحظات</div>';
+  }
+}
+window.loadQualityNotes = loadQualityNotes;
 
 function renderQualityNotes() {
   var box = document.getElementById("quality-notes-list");
   if (!box) return;
+  var sevCls = { "عالٍ": "pr", "متوسط": "pa", "منخفض": "pg" };
   box.innerHTML = QUALITY_NOTES.length ? QUALITY_NOTES.map(function(n) {
-    return '<div class="row"><div><div style="font-weight:700;font-size:13px">' + n.id + '</div>' +
-      '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + n.desc + '</div></div>' +
-      '<span class="pill ' + n.cls + '">خطورة ' + n.severity + '</span></div>';
+    var date = new Date(n.createdAt).toLocaleDateString("ar-EG");
+    return '<div class="row"><div><div style="font-weight:700;font-size:13px">' + n.description + '</div>' +
+      '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + date + '</div></div>' +
+      '<span class="pill ' + (sevCls[n.severity] || "pa") + '">خطورة ' + n.severity + '</span></div>';
   }).join("") : '<div style="font-size:13px;color:var(--ts);padding:14px 0">لا توجد ملاحظات جودة مسجّلة</div>';
 }
 window.renderQualityNotes = renderQualityNotes;
 
 document.addEventListener("DOMContentLoaded", function() {
   renderAuditRequestsList();
-  renderQualityCertificates();
-  renderQualityNotes();
+  loadQualityCertificates();
+  loadQualityNotes();
 });
 
 // ── ADMIN REVIEW PANEL ───────────────────────────────────────────
