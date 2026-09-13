@@ -286,6 +286,8 @@ model Company {
   assistants               CompanyAssistant[]
   qualityCertificates      QualityCertificate[]
   qualityNotes             QualityNote[]
+  qualityCertificates      QualityCertificate[]
+  qualityNotes             QualityNote[]
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -995,29 +997,6 @@ model CompanyAssistant {
   @@map("company_assistants")
 }
 
-model QualityCertificate {
-  id         String    @id @default(uuid())
-  companyId  String
-  company    Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  name       String
-  issuer     String?
-  expiryDate DateTime
-  createdAt  DateTime  @default(now())
-
-  @@map("quality_certificates")
-}
-
-model QualityNote {
-  id          String   @id @default(uuid())
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  description String
-  severity    String   @default("متوسط")
-  createdAt   DateTime @default(now())
-
-  @@map("quality_notes")
-}
-
 model ProviderListing {
   id          String   @id @default(uuid())
   companyId   String
@@ -1033,6 +1012,29 @@ model ProviderListing {
 
   @@index([category, status])
   @@map("provider_listings")
+}
+
+model QualityCertificate {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name       String
+  issuer     String?
+  expiryDate DateTime
+  createdAt  DateTime @default(now())
+
+  @@map("quality_certificates")
+}
+
+model QualityNote {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  description String
+  severity    String
+  createdAt   DateTime @default(now())
+
+  @@map("quality_notes")
 }
 
 model FeasibilityStudy {

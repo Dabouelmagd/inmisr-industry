@@ -759,7 +759,7 @@ export class CompanyAssistantController {
   }
 }
 
-// ── Quality Controller (certificates + non-conformance notes) ──────
+// ── Quality Controller (supplier quality certificates & notes) ──────
 @ApiTags('quality')
 @Controller('quality')
 @UseGuards(JwtGuard)
@@ -768,14 +768,14 @@ export class QualityController {
   constructor(private quality: QualityService) {}
 
   @Get('certificates')
-  @ApiOperation({ summary: 'شهادات الجودة الخاصة بمنشأتي' })
+  @ApiOperation({ summary: 'شهادات الجودة الخاصة بشركتي' })
   listCertificates(@Request() req: any) {
     if (!req.user.companyId) throw new ForbiddenException('يجب تسجيل حساب شركة أولاً');
     return this.quality.listCertificates(req.user.companyId);
   }
 
   @Post('certificates')
-  @ApiOperation({ summary: 'إضافة شهادة جودة جديدة' })
+  @ApiOperation({ summary: 'إضافة شهادة جودة' })
   addCertificate(@Body() dto: any, @Request() req: any) {
     if (!req.user.companyId) throw new ForbiddenException('يجب تسجيل حساب شركة أولاً');
     return this.quality.addCertificate(req.user.companyId, dto);
@@ -788,14 +788,14 @@ export class QualityController {
   }
 
   @Get('notes')
-  @ApiOperation({ summary: 'سجل ملاحظات الجودة الخاصة بمنشأتي' })
+  @ApiOperation({ summary: 'ملاحظات الجودة الخاصة بشركتي' })
   listNotes(@Request() req: any) {
     if (!req.user.companyId) throw new ForbiddenException('يجب تسجيل حساب شركة أولاً');
     return this.quality.listNotes(req.user.companyId);
   }
 
   @Post('notes')
-  @ApiOperation({ summary: 'تسجيل ملاحظة جودة جديدة' })
+  @ApiOperation({ summary: 'إضافة ملاحظة جودة' })
   addNote(@Body() dto: any, @Request() req: any) {
     if (!req.user.companyId) throw new ForbiddenException('يجب تسجيل حساب شركة أولاً');
     return this.quality.addNote(req.user.companyId, dto);

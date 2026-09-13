@@ -912,15 +912,25 @@ export class CompanyAssistantService {
 }
 
 // ══════════════════════════════════════════════════════════════════
-// QUALITY SERVICE — شهادات الجودة وملاحظات عدم المطابقة الخاصة بالمنشأة
+// QUALITY SERVICE — شهادات الجودة وملاحظات الجودة للمورد
 // ══════════════════════════════════════════════════════════════════
 
 @Injectable()
 export class QualityService {
   constructor(private prisma: PrismaService) {}
 
+  private certStatus(expiryDate: Date) {
+    const daysLeft = Math.ceil((expiryDate.getTime() - Date.now()) / 86400000);
+    if (daysLeft < 0) return { status: 'EXPIRED', cls: 'pr' };
+    if (daysLeft <= 60) return { status: 'EXPIRING', cls: 'pa' };
+    return { status: 'ACTIVE', cls: 'pg' };
+  }
+
   async listCertificates(companyId: string) {
-    return this.prisma.qualityCertificate.findMany({ where: { companyId }, orderBy: { expiryDate: 'asc' } });
+    const certs = await this.prisma.qualityCertificate.findMany({
+      where: { companyId }, orderBy: { expiryDate: 'asc' },
+    });
+    return certs.map(c => ({ ...c, ...this.certStatus(c.expiryDate) }));
   }
 
   async addCertificate(companyId: string, dto: { name: string; issuer?: string; expiryDate: string }) {
@@ -941,10 +951,10 @@ export class QualityService {
     return this.prisma.qualityNote.findMany({ where: { companyId }, orderBy: { createdAt: 'desc' } });
   }
 
-  async addNote(companyId: string, dto: { description: string; severity?: string }) {
+  async addNote(companyId: string, dto: { description: string; severity: string }) {
     if (!dto.description?.trim()) throw new BadRequestException('وصف الملاحظة مطلوب');
     return this.prisma.qualityNote.create({
-      data: { companyId, description: dto.description, severity: dto.severity || 'متوسط' },
+      data: { companyId, description: dto.description, severity: dto.severity || 'منخفض' },
     });
   }
 }

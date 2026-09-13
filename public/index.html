@@ -7836,7 +7836,16 @@ async function addQualityCertificate() {
 window.addQualityCertificate = addQualityCertificate;
 
 async function requestCertRenewal(certId) {
-  toast("تم إرسال طلب تجديد الشهادة — سيتواصل معك فريق الفحص والجودة");
+  var cert = QUALITY_CERTIFICATES.find(function(c){ return c.id === certId; });
+  try {
+    await apiFetch("/service-consultations/training", {
+      method: "POST",
+      body: JSON.stringify({ details: { kind: "cert-renewal", certificateId: certId, certificateName: cert && cert.name } })
+    });
+    toast("تم إرسال طلب تجديد الشهادة — سيتواصل معك فريق الفحص والجودة");
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إرسال الطلب"));
+  }
 }
 window.requestCertRenewal = requestCertRenewal;
 
