@@ -68,6 +68,20 @@ export class AuthController {
     return this.auth.register(dto, adminSecret);
   }
 
+  @Post('forgot-password')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({ summary: 'طلب كود لإعادة تعيين كلمة المرور' })
+  forgotPassword(@Body() body: { emailOrPhone: string }) {
+    return this.auth.forgotPassword(body.emailOrPhone);
+  }
+
+  @Post('reset-password')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({ summary: 'تعيين كلمة مرور جديدة بكود التحقق' })
+  resetPassword(@Body() body: { emailOrPhone: string; code: string; newPassword: string }) {
+    return this.auth.resetPasswordWithOtp(body.emailOrPhone, body.code, body.newPassword);
+  }
+
   // ── Team / Assistants — owner (SUPER_ADMIN) only ─────────────────
   @Get('team')
   @UseGuards(JwtGuard)

@@ -1869,6 +1869,26 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   </div>
 </div>
 
+<div class="mov" id="forgot-password-modal">
+  <div class="modal" style="max-width:400px">
+    <button class="mc" onclick="closeM('forgot-password-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
+    <div id="fp-step1">
+      <div style="font-size:16px;font-weight:700;margin-bottom:6px">نسيت كلمة المرور؟</div>
+      <div style="font-size:12px;color:var(--ts);margin-bottom:16px">اكتبي بريدك الإلكتروني وسنرسل لك كود تحقق</div>
+      <div style="margin-bottom:16px"><span class="lbl">البريد الإلكتروني / رقم الهاتف</span><input class="inp" id="fp-email" dir="ltr"></div>
+      <button class="bc" style="width:100%;padding:11px;font-size:13px" id="fp-send-btn" onclick="sendForgotPasswordCode()">إرسال كود التحقق</button>
+    </div>
+    <div id="fp-step2" style="display:none">
+      <div style="font-size:16px;font-weight:700;margin-bottom:6px">أدخلي الكود وكلمة المرور الجديدة</div>
+      <div style="font-size:12px;color:var(--ts);margin-bottom:16px">وصل كود مكوّن من 6 أرقام لبريدك الإلكتروني (صالح 10 دقائق)</div>
+      <div style="margin-bottom:12px"><span class="lbl">كود التحقق</span><input class="inp" id="fp-code" dir="ltr" maxlength="6"></div>
+      <div style="margin-bottom:12px"><span class="lbl">كلمة المرور الجديدة</span><input class="inp" type="password" id="fp-newpass" dir="ltr"></div>
+      <div style="margin-bottom:16px"><span class="lbl">تأكيد كلمة المرور</span><input class="inp" type="password" id="fp-newpass2" dir="ltr"></div>
+      <button class="bc" style="width:100%;padding:11px;font-size:13px" id="fp-reset-btn" onclick="confirmResetPassword()">تعيين كلمة المرور الجديدة</button>
+    </div>
+  </div>
+</div>
+
 <div class="mov" id="company-profile-edit-modal">
   <div class="modal" style="max-width:500px">
     <button class="mc" onclick="closeM('company-profile-edit-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
@@ -9315,13 +9335,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 var selectedLoginType = null;
 
-var DEMO_ACCOUNTS = {
-  supplier: { email: "supplier@demo.inmisr.net", pass: "Demo@1234", label: "حديد مصر للتجارة (مورد)" },
-  company:  { email: "buyer@demo.inmisr.net",    pass: "Demo@1234", label: "مصنع المستقبل للبناء (شركة)" },
-  owner:    { email: "owner@demo.inmisr.net",    pass: "Owner@1234", label: "داتا لايف (أونر / سوبر أدمن)" },
-  worker:   { email: "worker@demo.inmisr.net",   pass: "Demo@1234", label: "أحمد كريم (عامل / باحث عن عمل)", name: "أحمد كريم", phone: "01012345678" }
-};
-
+// Demo credential autofill removed — DEMO_ACCOUNTS is no longer used anywhere.
 window.openLoginModal = function() {
   selectedLoginType = null;
   ["supplier","company","owner","worker"].forEach(function(t){ document.getElementById("login-btn-"+t).classList.remove("sel"); });
@@ -9345,39 +9359,11 @@ window.selectLoginType = function(type) {
   selectedLoginType = type;
   ["supplier","company","owner","worker"].forEach(function(t){ document.getElementById("login-btn-"+t).classList.toggle("sel", t === type); });
   document.getElementById("login-form-fields").style.display = "block";
-  var acc = DEMO_ACCOUNTS[type];
-  var textEl = document.getElementById("demo-creds-text");
-  if (textEl && acc) textEl.textContent = acc.email + "  /  " + acc.pass;
-};
-
-window.fillDemoCreds = function() {
-  if (!selectedLoginType) { toast("اختاري نوع الحساب أولاً"); return; }
-  var acc = DEMO_ACCOUNTS[selectedLoginType];
-  if (!acc) return;
-  document.getElementById("login-email").value = acc.email;
-  document.getElementById("login-password").value = acc.pass;
-  toast("تم تعبئة البيانات التجريبية — اضغطي دخول");
 };
 
 window.socialLogin = function(provider) {
-  if (!selectedLoginType) { toast("الرجاء اختيار نوع الحساب أولاً"); return; }
-  var acc = DEMO_ACCOUNTS[selectedLoginType];
   var providerName = provider === "google" ? "Google" : "Facebook";
-  toast("جارٍ الدخول بحساب " + providerName + "...");
-  setTimeout(function() {
-    document.getElementById("login-modal").classList.remove("open");
-    window.isLoggedIn = true;
-    window.loggedInRole = selectedLoginType;
-    if (typeof runPendingActionAfterLogin === "function" && runPendingActionAfterLogin()) {
-      toast("تم تسجيل الدخول ✓ — جارٍ استكمال طلبك...");
-    } else if (selectedLoginType === "owner") {
-      toast("تم الدخول بنجاح عبر " + providerName + " — مرحباً بك في لوحة تحكم الإدارة");
-      goTo("admin");
-    } else {
-      toast("تم الدخول بنجاح عبر " + providerName + " — مرحباً بك في لوحة تحكم حسابك");
-      goTo("dash");
-    }
-  }, 900);
+  toast("تسجيل الدخول بحساب " + providerName + " غير متاح حاليًا — الرجاء الدخول بالبريد الإلكتروني وكلمة المرور");
 };
 
 function openChangePasswordModal() {
@@ -10847,12 +10833,57 @@ window.submitRegistration = async function(role) {
 
 window.openForgotPasswordFlow = function() {
   var email = (document.getElementById("login-email") || {}).value || "";
-  if (!email.trim()) {
-    toast("⚠️ اكتبي بريدك الإلكتروني أولاً ثم اضغطي «نسيت كلمة المرور؟»");
-    return;
+  document.getElementById("fp-email").value = email;
+  document.getElementById("fp-step1").style.display = "block";
+  document.getElementById("fp-step2").style.display = "none";
+  document.getElementById("fp-code").value = "";
+  document.getElementById("fp-newpass").value = "";
+  document.getElementById("fp-newpass2").value = "";
+  if (typeof openM === "function") openM("forgot-password-modal");
+};
+
+var FORGOT_PASSWORD_TARGET = "";
+
+window.sendForgotPasswordCode = async function() {
+  var email = document.getElementById("fp-email").value.trim();
+  if (!email) { toast("⚠️ اكتبي بريدك الإلكتروني أو رقم هاتفك"); return; }
+  var btn = document.getElementById("fp-send-btn");
+  btn.disabled = true; btn.textContent = "جارٍ الإرسال...";
+  try {
+    await apiFetch("/auth/forgot-password", { method: "POST", body: JSON.stringify({ emailOrPhone: email }) });
+    FORGOT_PASSWORD_TARGET = email;
+    document.getElementById("fp-step1").style.display = "none";
+    document.getElementById("fp-step2").style.display = "block";
+    toast("📧 إذا كان الحساب مسجلاً، سيصلك كود التحقق الآن");
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إرسال الكود"));
+  } finally {
+    btn.disabled = false; btn.textContent = "إرسال كود التحقق";
   }
-  simulateSendEmail(email.trim(), "إعادة تعيين كلمة المرور — إن مصر للصناعة");
-  toast("📧 تم إرسال رابط إعادة تعيين كلمة المرور إلى " + email.trim());
+};
+
+window.confirmResetPassword = async function() {
+  var code = document.getElementById("fp-code").value.trim();
+  var pass = document.getElementById("fp-newpass").value;
+  var pass2 = document.getElementById("fp-newpass2").value;
+  if (!code) { toast("⚠️ ادخلي كود التحقق"); return; }
+  if (!pass || pass.length < 8) { toast("⚠️ كلمة المرور يجب أن تكون 8 أحرف على الأقل"); return; }
+  if (pass !== pass2) { toast("⚠️ كلمة المرور وتأكيدها غير متطابقين"); return; }
+  var btn = document.getElementById("fp-reset-btn");
+  btn.disabled = true; btn.textContent = "جارٍ التعيين...";
+  try {
+    await apiFetch("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ emailOrPhone: FORGOT_PASSWORD_TARGET, code: code, newPassword: pass })
+    });
+    if (typeof closeM === "function") closeM("forgot-password-modal");
+    toast("✅ تم تغيير كلمة المرور — سجّلي الدخول بكلمة المرور الجديدة");
+    document.getElementById("login-email").value = FORGOT_PASSWORD_TARGET;
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تغيير كلمة المرور"));
+  } finally {
+    btn.disabled = false; btn.textContent = "تعيين كلمة المرور الجديدة";
+  }
 };
 
 // Hook remember-me into the existing login flow so re-checking persists role across the session

@@ -250,6 +250,44 @@ export class AuthService {
     return { message: 'تم التحقق بنجاح' };
   }
 
+  // ── FORGOT / RESET PASSWORD ─────────────────────────────────────
+  async forgotPassword(emailOrPhone: string) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          emailOrPhone.includes('@') ? { email: { equals: emailOrPhone, mode: 'insensitive' } } : {},
+          { phoneHash: await this.hashPhone(emailOrPhone) },
+        ],
+      },
+    });
+    // Always return the same message regardless of whether the account
+    // exists, so this endpoint can't be used to enumerate registered emails.
+    if (user) {
+      await this.sendOtp(user.id, 'PASSWORD_RESET', user.email, undefined);
+    }
+    return { message: 'إذا كان هذا البريد/الرقم مسجلاً لدينا، سيصلك كود لإعادة تعيين كلمة المرور' };
+  }
+
+  async resetPasswordWithOtp(emailOrPhone: string, code: string, newPassword: string) {
+    if (!newPassword || newPassword.length < 8) {
+      throw new BadRequestException('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
+    }
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          emailOrPhone.includes('@') ? { email: { equals: emailOrPhone, mode: 'insensitive' } } : {},
+          { phoneHash: await this.hashPhone(emailOrPhone) },
+        ],
+      },
+    });
+    if (!user) throw new BadRequestException('كود غير صحيح أو منتهي الصلاحية');
+
+    await this.verifyOtp(user.id, code, 'PASSWORD_RESET'); // throws if invalid/expired/used
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await this.prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+    return { message: 'تم تغيير كلمة المرور بنجاح — يمكنك تسجيل الدخول الآن' };
+  }
+
   // ── REFRESH TOKEN ─────────────────────────────────────────────
   async refreshTokens(refreshToken: string, ip: string, ua: string) {
     const stored = await this.prisma.refreshToken.findUnique({
