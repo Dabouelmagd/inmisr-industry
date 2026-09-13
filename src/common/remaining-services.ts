@@ -758,6 +758,34 @@ export class SolarLeadService {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// SERVICE CONSULTATION SERVICE — طلبات مشورة شحن + تغليف مخصص (بدون تسجيل دخول)
+// ══════════════════════════════════════════════════════════════════
+
+@Injectable()
+export class ServiceConsultationService {
+  constructor(private prisma: PrismaService) {}
+
+  async submit(kind: string, dto: { companyName: string; phone?: string; details?: any }) {
+    if (!dto.companyName?.trim()) throw new BadRequestException('اسم الشركة مطلوب');
+    return this.prisma.serviceConsultation.create({
+      data: { kind, companyName: dto.companyName, phone: dto.phone, detailsJson: dto.details || {}, status: 'PENDING' },
+    });
+  }
+
+  async adminList(kind?: string) {
+    return this.prisma.serviceConsultation.findMany({
+      where: kind ? { kind } : undefined, orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async adminUpdateStatus(id: string, status: string) {
+    const item = await this.prisma.serviceConsultation.findUnique({ where: { id } });
+    if (!item) throw new NotFoundException('الطلب غير موجود');
+    return this.prisma.serviceConsultation.update({ where: { id }, data: { status } });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // INCUBATOR SERVICE
 // ══════════════════════════════════════════════════════════════════
 // ─── incubator/incubator.service.ts ───────────────────────────────

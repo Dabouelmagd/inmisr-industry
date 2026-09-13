@@ -18,7 +18,7 @@ import { EscrowService }          from '../escrow/escrow.service';
 import { NotificationsService }   from '../notifications/notifications.service';
 import { AntiLeakageService }     from '../common/anti-leakage.service';
 import {
-  GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, IncubatorService, OrdersService, MessagesService,
+  GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, IncubatorService, OrdersService, MessagesService,
 } from '../common/remaining-services';
 
 // ── Infrastructure Services ────────────────────────────────────────
@@ -60,7 +60,7 @@ import {
 import {
   HealthController, AuthController, SuppliersController,
   RfqController, OrdersController, EscrowController,
-  MessagesController, GeoController, FinanceController, InspectionController, TrainingController, FactoryNeedController, ReverseLogisticsController, JobPostingController, SmeProjectController, PromoCodeController, TradeApplicationController, SpecialOfferController, SolarLeadController,
+  MessagesController, GeoController, FinanceController, InspectionController, TrainingController, FactoryNeedController, ReverseLogisticsController, JobPostingController, SmeProjectController, PromoCodeController, TradeApplicationController, SpecialOfferController, SolarLeadController, ServiceConsultationController,
   IncubatorController, NotificationsController, AntiLeakageController,
 } from './controllers';
 import {
@@ -98,7 +98,7 @@ import { PaymobWebhookController, FawryWebhookController } from '../escrow/paymo
     // Core
     HealthController, AuthController, SuppliersController,
     RfqController, OrdersController, EscrowController,
-    MessagesController, GeoController, FinanceController, InspectionController, TrainingController, FactoryNeedController, ReverseLogisticsController, JobPostingController, SmeProjectController, PromoCodeController, TradeApplicationController, SpecialOfferController, SolarLeadController,
+    MessagesController, GeoController, FinanceController, InspectionController, TrainingController, FactoryNeedController, ReverseLogisticsController, JobPostingController, SmeProjectController, PromoCodeController, TradeApplicationController, SpecialOfferController, SolarLeadController, ServiceConsultationController,
     IncubatorController, NotificationsController, AntiLeakageController,
     // Auth extras
     PasswordResetController,
@@ -119,7 +119,7 @@ import { PaymobWebhookController, FawryWebhookController } from '../escrow/paymo
     // Core
     PrismaService, AuthService, SuppliersService, RfqService,
     EscrowService, NotificationsService, AntiLeakageService,
-    GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, IncubatorService, OrdersService, MessagesService,
+    GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, IncubatorService, OrdersService, MessagesService,
     // Infrastructure
     EncryptionService, UploadService, CronService,
     InMisrWebSocketGateway, QueueService, SearchService,

@@ -959,6 +959,19 @@ model SolarLead {
   @@map("solar_leads")
 }
 
+model ServiceConsultation {
+  id          String   @id @default(uuid())
+  kind        String   // SHIPPING / PACKAGING
+  companyName String
+  phone       String?
+  detailsJson Json     @default("{}")
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("service_consultations")
+}
+
 model FeasibilityStudy {
   id             String   @id @default(uuid())
   title          String

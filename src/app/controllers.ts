@@ -14,7 +14,7 @@ import { RfqService, CreateRfqDto, CreateQuoteDto } from '../rfq/rfq.service';
 import { EscrowService, DisputeDto } from '../escrow/escrow.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AntiLeakageService } from '../common/anti-leakage.service';
-import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
+import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
 
 // ── Auth Guards (simplified) ───────────────────────────────────────
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -657,6 +657,47 @@ export class JobPostingController {
       throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
     }
     return this.jobs.adminReview(id, !!body.approve);
+  }
+}
+
+// ── Service Consultation Controller (shipping + custom packaging leads) ──
+@ApiTags('service-consultations')
+@Controller('service-consultations')
+export class ServiceConsultationController {
+  constructor(private consult: ServiceConsultationService) {}
+
+  @Post('shipping')
+  @ApiOperation({ summary: 'طلب مشورة لوجستية (بدون تسجيل دخول)' })
+  submitShipping(@Body() dto: any) {
+    return this.consult.submit('SHIPPING', { companyName: dto.companyName, phone: dto.phone, details: dto.details });
+  }
+
+  @Post('packaging')
+  @ApiOperation({ summary: 'طلب تغليف مخصص (بدون تسجيل دخول)' })
+  submitPackaging(@Body() dto: any) {
+    return this.consult.submit('PACKAGING', { companyName: dto.companyName, phone: dto.phone, details: dto.details });
+  }
+
+  @Get('admin/all')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'كل طلبات الاستشارة (أدمن)' })
+  adminList(@Query('kind') kind: string, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.consult.adminList(kind);
+  }
+
+  @Post('admin/:id/status')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تحديث حالة طلب استشارة (أدمن)' })
+  adminUpdateStatus(@Param('id') id: string, @Body() body: { status: string }, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.consult.adminUpdateStatus(id, body.status);
   }
 }
 

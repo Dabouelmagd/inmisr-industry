@@ -4663,11 +4663,28 @@ window.calcPackaging = function() {
   document.getElementById("pkg-pct").textContent = pct + "%";
 };
 
-window.submitCustomPackaging = function() {
+window.submitCustomPackaging = async function() {
   var co = (document.getElementById("pkg-company")||{}).value||"";
   if (!co.trim()) { toast("الرجاء إدخال اسم الشركة"); return; }
-  document.getElementById("pkg-custom-modal").classList.remove("open");
-  toast("تم إرسال طلب التغليف المخصص — سيتواصل معك متخصص خلال 4 ساعات");
+  try {
+    await apiFetch("/service-consultations/packaging", {
+      method: "POST",
+      body: JSON.stringify({
+        companyName: co,
+        details: {
+          product: (document.getElementById("pkg-product")||{}).value,
+          monthlyQty: (document.getElementById("pkg-monthly")||{}).value,
+          budget: (document.getElementById("pkg-budget")||{}).value,
+          description: (document.getElementById("pkg-desc")||{}).value,
+          wantsSamples: !!(document.getElementById("pkg-sample")||{}).checked
+        }
+      })
+    });
+    document.getElementById("pkg-custom-modal").classList.remove("open");
+    toast("تم إرسال طلب التغليف المخصص — سيتواصل معك متخصص خلال 4 ساعات");
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إرسال الطلب"));
+  }
 };
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -4725,11 +4742,28 @@ window.openShipRequest = function() {
   if (m) m.classList.add("open");
 };
 
-window.submitShipRequest = function() {
+window.submitShipRequest = async function() {
   var co = (document.getElementById("ship-company") || {}).value || "";
   if (!co.trim()) { toast("الرجاء إدخال اسم الشركة"); return; }
-  document.getElementById("ship-modal").classList.remove("open");
-  toast("تم إرسال طلب المشورة — سيتواصل معك متخصص اللوجستيك خلال ساعتين");
+  var phone = (document.getElementById("ship-phone") || {}).value || "";
+  try {
+    await apiFetch("/service-consultations/shipping", {
+      method: "POST",
+      body: JSON.stringify({
+        companyName: co, phone: phone || undefined,
+        details: {
+          goodsType: (document.getElementById("ship-goods")||{}).value,
+          weight: (document.getElementById("ship-wt")||{}).value,
+          from: (document.getElementById("ship-fr")||{}).value,
+          to: (document.getElementById("ship-to2")||{}).value
+        }
+      })
+    });
+    document.getElementById("ship-modal").classList.remove("open");
+    toast("تم إرسال طلب المشورة — سيتواصل معك متخصص اللوجستيك خلال ساعتين");
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إرسال الطلب"));
+  }
 };
 
 document.addEventListener("DOMContentLoaded", function() {
