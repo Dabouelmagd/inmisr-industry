@@ -412,8 +412,8 @@ export class AdminService {
     return this.prisma.company.findMany({
       where: {
         nameAr: { contains: q, mode: 'insensitive' },
-        ...(type ? { type } : {}),
-      },
+        ...(type ? { type: type as any } : {}),
+      } as any,
       select: { id: true, nameAr: true, type: true, verifiedLevel: true },
       take: 10,
     });
