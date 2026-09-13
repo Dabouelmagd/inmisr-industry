@@ -47,8 +47,9 @@ export class SuppliersService {
     }
 
     const orderBy = this.buildOrderBy(query.sortBy);
-    const skip = ((query.page || 1) - 1) * (query.limit || 20);
-    const take = query.limit || 20;
+    const page = Number(query.page) || 1;
+    const take = Number(query.limit) || 20;
+    const skip = (page - 1) * take;
 
     const [data, total] = await Promise.all([
       this.prisma.company.findMany({
@@ -78,7 +79,7 @@ export class SuppliersService {
 
     return {
       data: enriched,
-      pagination: { page: query.page || 1, limit: take, total, totalPages: Math.ceil(total / take) },
+      pagination: { page, limit: take, total, totalPages: Math.ceil(total / take) },
     };
   }
 

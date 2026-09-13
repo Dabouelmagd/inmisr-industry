@@ -10,6 +10,41 @@ import { NotificationsService } from '../notifications/notifications.service';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
+// Real (public, well-known) approximate coordinates for Egypt's major
+// industrial zones and governorate capitals — used to place a newly
+// registered company somewhere close to its real stated location,
+// instead of every single company landing on the exact same point
+// (which is what a hardcoded 30.0444/31.2357 default used to do,
+// silently breaking geo-radius supplier search for every real user).
+const EGYPT_ZONE_COORDS: Record<string, { lat: number; lng: number }> = {
+  'العاشر من رمضان': { lat: 30.3060, lng: 31.7500 },
+  '6 أكتوبر': { lat: 29.9660, lng: 30.9232 },
+  'العبور': { lat: 30.1970, lng: 31.4710 },
+  'السادات': { lat: 30.3610, lng: 30.5180 },
+  'برج العرب': { lat: 30.8418, lng: 29.6208 },
+  'المحلة': { lat: 30.9730, lng: 31.1670 },
+  'المحلة الكبرى': { lat: 30.9730, lng: 31.1670 },
+  'الروبيكي': { lat: 29.9000, lng: 31.3500 },
+  'العين السخنة': { lat: 29.6000, lng: 32.3167 },
+  'دمياط': { lat: 31.4165, lng: 31.8133 },
+  'بدر': { lat: 30.1500, lng: 31.7167 },
+  'مدينة بدر': { lat: 30.1500, lng: 31.7167 },
+  'القاهرة': { lat: 30.0444, lng: 31.2357 },
+  'الجيزة': { lat: 30.0131, lng: 31.2089 },
+  'الإسكندرية': { lat: 31.2001, lng: 29.9187 },
+  'الإسكندرية الجديدة': { lat: 31.1313, lng: 29.7913 },
+};
+
+function resolveZoneCoords(industrialZone?: string, city?: string, governorate?: string): { lat: number; lng: number } {
+  const key = industrialZone || city || governorate;
+  if (key && EGYPT_ZONE_COORDS[key]) return EGYPT_ZONE_COORDS[key];
+  // Small deterministic jitter (±~5km) so unmatched locations don't all
+  // stack on the exact same pin either.
+  const seed = (key || 'default').split('').reduce((s, c) => s + c.charCodeAt(0), 0);
+  const jitter = ((seed % 100) / 100 - 0.5) * 0.08;
+  return { lat: 30.0444 + jitter, lng: 31.2357 + jitter };
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -74,7 +109,7 @@ export class AuthService {
                 city: dto.city,
                 governorate: dto.governorate || dto.city,
                 industrialZone: dto.industrialZone,
-                lat: 30.0444, lng: 31.2357, // Default Cairo
+                ...resolveZoneCoords(dto.industrialZone, dto.city, dto.governorate),
               }
             } : undefined,
             subscription: { create: { plan: 'FREE' } },
