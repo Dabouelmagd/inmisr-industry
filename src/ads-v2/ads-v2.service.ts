@@ -551,7 +551,7 @@ export class AdsV2Service {
 
 // ── Controller ──────────────────────────────────────────────────
 @ApiTags('ads-v2')
-@Controller('ads-v2')
+@Controller('promo-placements')
 export class AdsV2Controller {
   constructor(private ads: AdsV2Service) {}
 

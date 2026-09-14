@@ -4467,7 +4467,7 @@ document.addEventListener("DOMContentLoaded",function(){
     var grid = document.getElementById("adreq-types-grid");
     if (!grid) return;
     try {
-      ADREQ_SLOTS_CACHE = await apiFetch("/ads-v2/slots");
+      ADREQ_SLOTS_CACHE = await apiFetch("/promo-placements/slots");
       grid.innerHTML = ADREQ_SLOTS_CACHE.map(function(s) {
         var icon = (typeof AD_SLOT_ICONS !== "undefined" && AD_SLOT_ICONS[s.locationKey]) || "📢";
         return '<div class="ad-type-card" data-adreq-type="' + s.id + '" onclick="selectAdType(this,\'' + s.id + '\')">' +
@@ -4527,13 +4527,13 @@ document.addEventListener("DOMContentLoaded",function(){
       var formData = new FormData();
       formData.append("banner", bannerFile);
       var token = getAuthToken("inmisr_access_token");
-      var uploadRes = await fetch(API_BASE + "/ads-v2/upload-banner", {
+      var uploadRes = await fetch(API_BASE + "/promo-placements/upload-banner", {
         method: "POST", headers: token ? { "Authorization": "Bearer " + token } : {}, body: formData
       });
       var uploadBody = await uploadRes.json().catch(function(){ return null; });
       if (!uploadRes.ok) throw new Error((uploadBody && uploadBody.message) || "تعذر رفع صورة الإعلان");
 
-      await apiFetch("/ads-v2/bookings", {
+      await apiFetch("/promo-placements/bookings", {
         method: "POST",
         body: JSON.stringify({
           slotId: typeId,
@@ -8481,7 +8481,7 @@ var ADSV2_SLOT_LABELS = {
 
 async function loadAdsV2Admin() {
   try {
-    var stats = await apiFetch("/ads-v2/admin/dashboard");
+    var stats = await apiFetch("/promo-placements/admin/dashboard");
     document.getElementById("adsv2-kpi-revenue").textContent = formatEgp(stats.totalRevenue);
     document.getElementById("adsv2-kpi-active").textContent = stats.activeAds;
     document.getElementById("adsv2-kpi-pending").textContent = stats.pendingApprovals;
@@ -8491,7 +8491,7 @@ async function loadAdsV2Admin() {
   }
 
   try {
-    var slots = await apiFetch("/ads-v2/slots");
+    var slots = await apiFetch("/promo-placements/slots");
     var grid = document.getElementById("adsv2-slots-grid");
     if (grid) {
       grid.innerHTML = slots.map(function(s) {
@@ -8525,7 +8525,7 @@ window.loadAdsV2Admin = loadAdsV2Admin;
 
 async function toggleAdsenseFallback(slotId, enabled) {
   try {
-    await apiFetch("/ads-v2/admin/slots/" + slotId + "/adsense", {
+    await apiFetch("/promo-placements/admin/slots/" + slotId + "/adsense", {
       method: "PATCH",
       body: JSON.stringify({ enabled: enabled })
     });
@@ -8540,7 +8540,7 @@ async function loadAdsV2Alerts() {
   var box = document.getElementById("adsv2-alerts-panel");
   if (!box) return;
   try {
-    var alerts = await apiFetch("/ads-v2/admin/alerts");
+    var alerts = await apiFetch("/promo-placements/admin/alerts");
     if (!alerts.length) {
       box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:10px 0">لا توجد تنبيهات حالية ✅</div>';
       return;
@@ -8562,7 +8562,7 @@ window.loadAdsV2Alerts = loadAdsV2Alerts;
 
 async function resolveAdsV2Alert(id) {
   try {
-    await apiFetch("/ads-v2/admin/alerts/" + id + "/resolve", { method: "POST" });
+    await apiFetch("/promo-placements/admin/alerts/" + id + "/resolve", { method: "POST" });
     toast("تم تعليم التنبيه كمُعالَج");
     loadAdsV2Alerts();
   } catch (err) {
@@ -8575,7 +8575,7 @@ async function loadAdsV2Inventory() {
   var box = document.getElementById("adsv2-inventory-table");
   if (!box) return;
   try {
-    var list = await apiFetch("/ads-v2/admin/inventory");
+    var list = await apiFetch("/promo-placements/admin/inventory");
     if (!list.length) {
       box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">لا توجد حجوزات إعلانية حتى الآن</div>';
       return;
@@ -8619,7 +8619,7 @@ window.loadAdsV2Inventory = loadAdsV2Inventory;
 async function adsV2Review(id, approve) {
   var reason = approve ? undefined : prompt("سبب الرفض (اختياري):") || undefined;
   try {
-    await apiFetch("/ads-v2/admin/" + id + "/review", { method: "POST", body: JSON.stringify({ approve: approve, reason: reason }) });
+    await apiFetch("/promo-placements/admin/" + id + "/review", { method: "POST", body: JSON.stringify({ approve: approve, reason: reason }) });
     toast(approve ? "✅ تم قبول الحجز" : "تم رفض الحجز");
     loadAdsV2Admin();
   } catch (err) {
@@ -8631,7 +8631,7 @@ window.adsV2Review = adsV2Review;
 async function adsV2MarkPaid(id) {
   if (!confirm("تأكيد استلام الدفع (تحويل بنكي/مطابقة يدوية)؟")) return;
   try {
-    await apiFetch("/ads-v2/admin/" + id + "/mark-paid", { method: "POST" });
+    await apiFetch("/promo-placements/admin/" + id + "/mark-paid", { method: "POST" });
     toast("✅ تم تسجيل الحجز كمدفوع");
     loadAdsV2Admin();
   } catch (err) {
@@ -8643,7 +8643,7 @@ window.adsV2MarkPaid = adsV2MarkPaid;
 async function adsV2Cancel(id) {
   if (!confirm("تأكيد إلغاء هذا الحجز الإعلاني نهائيًا؟")) return;
   try {
-    await apiFetch("/ads-v2/admin/" + id + "/cancel", { method: "POST" });
+    await apiFetch("/promo-placements/admin/" + id + "/cancel", { method: "POST" });
     toast("تم إلغاء الحجز");
     loadAdsV2Admin();
   } catch (err) {
@@ -8669,7 +8669,7 @@ async function renderAdSlot(locationKey, containerId, opts) {
 
   var result;
   try {
-    result = await apiFetch("/ads-v2/serve/" + locationKey + (qs.length ? "?" + qs.join("&") : ""));
+    result = await apiFetch("/promo-placements/serve/" + locationKey + (qs.length ? "?" + qs.join("&") : ""));
   } catch (err) {
     return false; // never break the page layout over an ad-fetch failure
   }
@@ -8734,14 +8734,14 @@ function renderAdSlideshow(container, ads, today) {
       localStorage.setItem(capKey, String(parseInt(localStorage.getItem(capKey) || "0", 10) + 1));
     }
     var variantQs = ad.variantId ? "?variant=" + ad.variantId : "";
-    var clickUrl = API_BASE + "/ads-v2/click/" + ad.campaignId + variantQs;
+    var clickUrl = API_BASE + "/promo-placements/click/" + ad.campaignId + variantQs;
     var dots = ads.length > 1 ? '<div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);display:flex;gap:5px">' +
       ads.map(function(_, di) { return '<span style="width:6px;height:6px;border-radius:50%;background:' + (di === i ? "#fff" : "rgba(255,255,255,.4)") + '"></span>'; }).join("") + '</div>' : "";
     container.innerHTML = '<a href="' + clickUrl + '" target="_blank" rel="noopener sponsored" style="display:block;position:relative;min-height:200px">' +
       '<img src="' + ad.bannerUrl + '" alt="' + (ad.advertiserName || "إعلان") + '" style="width:100%;height:100%;min-height:200px;object-fit:cover;display:block;border-radius:8px">' +
       '<span style="position:absolute;top:4px;left:4px;background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:2px 7px;border-radius:5px">إعلان</span>' +
       dots + '</a>';
-    fetch(API_BASE + "/ads-v2/impression/" + ad.campaignId + variantQs, { method: "POST" }).catch(function(){});
+    fetch(API_BASE + "/promo-placements/impression/" + ad.campaignId + variantQs, { method: "POST" }).catch(function(){});
   }
 
   showAd(idx);
@@ -9024,7 +9024,7 @@ async function loadRealAdPricing() {
   var box = document.getElementById("real-ad-pricing-grid");
   if (!box) return;
   try {
-    var slots = await apiFetch("/ads-v2/slots");
+    var slots = await apiFetch("/promo-placements/slots");
     box.innerHTML = slots.map(function(s) {
       var icon = AD_SLOT_ICONS[s.locationKey] || "📣";
       var desc = AD_SLOT_DESC[s.locationKey] || s.dimensions;
@@ -9543,7 +9543,7 @@ async function openAdBookingModal() {
   var slotSel = document.getElementById("adb-slot");
   slotSel.innerHTML = '<option value="">جارٍ التحميل...</option>';
   try {
-    ADSV2_SLOTS_CACHE = await apiFetch("/ads-v2/slots");
+    ADSV2_SLOTS_CACHE = await apiFetch("/promo-placements/slots");
     slotSel.innerHTML = ADSV2_SLOTS_CACHE.map(function(s) {
       return '<option value="' + s.id + '" data-price="' + s.basePriceWeekly + '">' + s.name + ' (' + formatEgp(s.basePriceWeekly) + '/أسبوع)</option>';
     }).join("");
@@ -9629,7 +9629,7 @@ async function submitAdBooking() {
   btn.disabled = true; btn.textContent = "جارٍ الحجز...";
 
   try {
-    var booking = await apiFetch("/ads-v2/bookings", {
+    var booking = await apiFetch("/promo-placements/bookings", {
       method: "POST",
       body: JSON.stringify({
         slotId: slotId, startDate: start, billingPeriod: period,
@@ -9644,11 +9644,11 @@ async function submitAdBooking() {
     if (abEnabled) {
       // Booking's own banner/destination becomes variant A; variant B is
       // the second creative. Both at 50/50 so pickVariant() splits evenly.
-      await apiFetch("/ads-v2/bookings/" + booking.id + "/variants", {
+      await apiFetch("/promo-placements/bookings/" + booking.id + "/variants", {
         method: "POST",
         body: JSON.stringify({ label: "A", bannerUrl: banner, destinationUrl: destination, weightPct: 50 })
       });
-      await apiFetch("/ads-v2/bookings/" + booking.id + "/variants", {
+      await apiFetch("/promo-placements/bookings/" + booking.id + "/variants", {
         method: "POST",
         body: JSON.stringify({ label: "B", bannerUrl: variantBBanner, destinationUrl: variantBDestination, weightPct: 50 })
       });
@@ -9670,7 +9670,7 @@ async function loadMyAdBookings() {
   var box = document.getElementById("ad-bookings-mylist");
   if (!box) return;
   try {
-    var list = await apiFetch("/ads-v2/bookings/my");
+    var list = await apiFetch("/promo-placements/bookings/my");
     if (!list.length) { box.innerHTML = '<div style="font-size:13px;color:var(--ts)">لا توجد حجوزات إعلانية حتى الآن</div>'; return; }
     var reviewLabel = { PENDING_REVIEW: "قيد المراجعة", APPROVED: "مقبول", REJECTED: "مرفوض", CANCELLED: "ملغي" };
     var reviewCls = { PENDING_REVIEW: "pa", APPROVED: "pg", REJECTED: "pr", CANCELLED: "pr" };
@@ -9960,10 +9960,10 @@ async function openSlotCalendar(slotId, slotName) {
   if (typeof openM === "function") openM("slot-calendar-modal");
 
   try {
-    var slots = await apiFetch("/ads-v2/slots");
+    var slots = await apiFetch("/promo-placements/slots");
     var slot = slots.find(function(s) { return s.id === slotId; });
     var maxConcurrent = slot ? slot.maxConcurrentAds : 1;
-    var bookings = await apiFetch("/ads-v2/slots/" + slotId + "/calendar?months=2");
+    var bookings = await apiFetch("/promo-placements/slots/" + slotId + "/calendar?months=2");
 
     var dayNames = ["أحد", "اثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
     var html = dayNames.map(function(d) { return '<div style="text-align:center;color:var(--ts);font-weight:700;padding:4px 0">' + d + '</div>'; }).join("");
@@ -10004,7 +10004,7 @@ async function openGiftAdModal() {
   var slotSel = document.getElementById("ga-slot");
   slotSel.innerHTML = '<option value="">جارٍ التحميل...</option>';
   try {
-    var slots = await apiFetch("/ads-v2/slots");
+    var slots = await apiFetch("/promo-placements/slots");
     slotSel.innerHTML = slots.map(function(s) {
       return '<option value="' + s.id + '">' + s.name + ' — ' + s.dimensions + '</option>';
     }).join("");
@@ -10059,13 +10059,13 @@ window.submitGiftAd = async function() {
     var formData = new FormData();
     formData.append("banner", bannerFile);
     var token = getAuthToken("inmisr_access_token");
-    var uploadRes = await fetch(API_BASE + "/ads-v2/upload-banner", {
+    var uploadRes = await fetch(API_BASE + "/promo-placements/upload-banner", {
       method: "POST", headers: token ? { "Authorization": "Bearer " + token } : {}, body: formData
     });
     var uploadBody = await uploadRes.json().catch(function(){ return null; });
     if (!uploadRes.ok) throw new Error((uploadBody && uploadBody.message) || "تعذر رفع صورة الإعلان");
 
-    await apiFetch("/ads-v2/admin/gift-booking", {
+    await apiFetch("/promo-placements/admin/gift-booking", {
       method: "POST",
       body: JSON.stringify({
         advertiserId: companyId, slotId: slotId,
