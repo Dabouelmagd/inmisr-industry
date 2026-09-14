@@ -456,6 +456,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
     <button class="nb" data-page="adreq"><svg viewBox="0 0 24 24"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a2 2 0 11-3.2 2.4"/></svg>أعلن معنا</button>
     <button class="nb" data-page="incubator"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>الحاضنة</button>
     <button class="nb" data-page="dash"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>لوحة التحكم</button>
+    <button class="nb" id="nav-logout-btn" onclick="doLogout()" style="display:none"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>تسجيل خروج</button>
   </div>
   <div id="global-search-wrap" style="position:relative;width:100%;max-width:320px;flex-shrink:0">
     <div style="position:relative">
@@ -4452,7 +4453,7 @@ document.addEventListener("DOMContentLoaded",function(){
     try {
       var formData = new FormData();
       formData.append("banner", bannerFile);
-      var token = window.localStorage.getItem("inmisr_access_token");
+      var token = getAuthToken("inmisr_access_token");
       var uploadRes = await fetch(API_BASE + "/ads-v2/upload-banner", {
         method: "POST", headers: token ? { "Authorization": "Bearer " + token } : {}, body: formData
       });
@@ -10050,8 +10051,7 @@ async function confirmChangePassword() {
     if (typeof closeM === "function") closeM("change-password-modal");
     // The server revokes all sessions on password change, so the local
     // session is stale now too — clear it and send them back to login.
-    window.localStorage.removeItem("inmisr_access_token");
-    window.localStorage.removeItem("inmisr_refresh_token");
+    clearAuthTokens();
     window.isLoggedIn = false;
     setTimeout(function(){ goTo("home"); if (typeof openOwnerLogin === "function") openOwnerLogin(); }, 1200);
   } catch (err) {
@@ -10072,6 +10072,80 @@ function toggleLoginPasswordVisibility() {
 }
 window.toggleLoginPasswordVisibility = toggleLoginPasswordVisibility;
 
+// ── AUTH TOKEN STORAGE — real "تذكرني" semantics ─────────────────
+// Checked: localStorage (survives closing the browser entirely).
+// Unchecked: sessionStorage (cleared the moment the tab/browser closes)
+// — this is what a "remember me" checkbox is actually supposed to
+// control; before this fix, tokens always went to localStorage
+// regardless of the checkbox, which never did anything real.
+function saveAuthTokens(accessToken, refreshToken, remember) {
+  var store = remember ? window.localStorage : window.sessionStorage;
+  var other = remember ? window.sessionStorage : window.localStorage;
+  store.setItem("inmisr_access_token", accessToken);
+  store.setItem("inmisr_refresh_token", refreshToken);
+  // Clear the other storage so a stale token never lingers in both.
+  other.removeItem("inmisr_access_token");
+  other.removeItem("inmisr_refresh_token");
+}
+window.saveAuthTokens = saveAuthTokens;
+
+function getAuthToken(key) {
+  return window.localStorage.getItem(key) || window.sessionStorage.getItem(key);
+}
+window.getAuthToken = getAuthToken;
+
+function clearAuthTokens() {
+  window.localStorage.removeItem("inmisr_access_token");
+  window.localStorage.removeItem("inmisr_refresh_token");
+  window.sessionStorage.removeItem("inmisr_access_token");
+  window.sessionStorage.removeItem("inmisr_refresh_token");
+}
+window.clearAuthTokens = clearAuthTokens;
+
+async function doLogout() {
+  try { await apiFetch("/auth/logout", { method: "POST" }); } catch (e) { /* token may already be stale — still clear locally */ }
+  clearAuthTokens();
+  window.isLoggedIn = false;
+  window.loggedInRole = null;
+  window.currentUser = null;
+  updateLogoutButtonVisibility();
+  toast("تم تسجيل الخروج");
+  goTo("home");
+}
+window.doLogout = doLogout;
+
+function updateLogoutButtonVisibility() {
+  var btn = document.getElementById("nav-logout-btn");
+  if (btn) btn.style.display = window.isLoggedIn ? "" : "none";
+}
+window.updateLogoutButtonVisibility = updateLogoutButtonVisibility;
+
+// ── SESSION RESTORATION — this never existed before: a saved token
+// (even with "تذكرني" checked) was never actually re-validated on
+// page load, so every refresh silently logged the user back out of
+// the UI even though their token was still sitting in storage.
+async function restoreSession() {
+  var token = getAuthToken("inmisr_access_token");
+  if (!token) return;
+  try {
+    var result = await apiFetch("/auth/me");
+    var u = result.user;
+    var uiRole = u.role === "SUPPLIER" ? "supplier"
+               : u.role === "BUYER" ? "company"
+               : u.role === "WORKER" ? "worker"
+               : (u.role === "ADMIN" || u.role === "SUPER_ADMIN") ? "owner"
+               : null;
+    window.isLoggedIn = true;
+    window.loggedInRole = uiRole;
+    window.currentUser = u;
+    updateLogoutButtonVisibility();
+  } catch (err) {
+    clearAuthTokens(); // token expired/invalid — don't keep a dead session lying around
+  }
+}
+window.restoreSession = restoreSession;
+document.addEventListener("DOMContentLoaded", restoreSession);
+
 window.submitLogin = async function() {
   if (!selectedLoginType) { toast("الرجاء اختيار نوع الحساب"); return; }
   var email = (document.getElementById("login-email") || {}).value || "";
@@ -10087,8 +10161,9 @@ window.submitLogin = async function() {
       body: JSON.stringify({ emailOrPhone: email.trim(), password: pass.trim() })
     });
 
-    window.localStorage.setItem("inmisr_access_token", data.accessToken);
-    window.localStorage.setItem("inmisr_refresh_token", data.refreshToken);
+    var rememberEl = document.getElementById("login-remember");
+    var remember = !!(rememberEl && rememberEl.checked);
+    saveAuthTokens(data.accessToken, data.refreshToken, remember);
 
     // Map the server's real role back to the UI's role vocabulary,
     // rather than trusting whichever tab the person happened to click.
@@ -10103,12 +10178,7 @@ window.submitLogin = async function() {
     window.isLoggedIn = true;
     window.loggedInRole = uiRole;
     window.currentUser = data.user;
-
-    var rememberEl = document.getElementById("login-remember");
-    if (rememberEl && rememberEl.checked) {
-      window.rememberedRole = uiRole;
-      try { window.name = "inmisr_remember:" + uiRole; } catch(e) {}
-    }
+    updateLogoutButtonVisibility();
 
     if (typeof runPendingActionAfterLogin === "function" && runPendingActionAfterLogin()) {
       toast("تم تسجيل الدخول ✓ — جارٍ استكمال طلبك...");
@@ -11395,7 +11465,7 @@ var API_BASE = "https://api.inmisr.net/api/v1";
 
 async function apiFetch(path, options) {
   options = options || {};
-  var token = window.localStorage.getItem("inmisr_access_token");
+  var token = getAuthToken("inmisr_access_token");
   var headers = Object.assign(
     { "Content-Type": "application/json" },
     token ? { "Authorization": "Bearer " + token } : {},
@@ -11419,7 +11489,7 @@ window.uploadCompanyLogo = async function(inputEl) {
   try {
     var formData = new FormData();
     formData.append("logo", file);
-    var token = window.localStorage.getItem("inmisr_access_token");
+    var token = getAuthToken("inmisr_access_token");
     var res = await fetch(API_BASE + "/companies/me/logo", {
       method: "POST",
       headers: token ? { "Authorization": "Bearer " + token } : {},
