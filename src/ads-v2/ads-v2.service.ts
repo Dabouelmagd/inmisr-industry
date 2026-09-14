@@ -11,8 +11,11 @@ import {
 } from '@nestjs/common';
 import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, Res,
-  UseGuards, Request, HttpCode, HttpStatus,
+  UseGuards, Request, HttpCode, HttpStatus, UseInterceptors, UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { join, extname } from 'path';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { PrismaService } from '../common/prisma.service';
 import { JwtGuard } from '../auth/jwt.guard';
@@ -73,6 +76,23 @@ export class AdsV2Service {
   // ── SLOTS (fixed catalog, seeded once — see prisma/seed-ad-slots.ts) ──
   async listSlots() {
     return this.prisma.adSlot.findMany({ where: { isActive: true }, orderBy: { basePriceWeekly: 'desc' } });
+  }
+
+  async updateSlot(slotId: string, dto: { name?: string; dimensions?: string; basePriceWeekly?: number; maxConcurrentAds?: number; isActive?: boolean }) {
+    const slot = await this.prisma.adSlot.findUnique({ where: { id: slotId } });
+    if (!slot) throw new NotFoundException('المساحة الإعلانية غير موجودة');
+    if (dto.maxConcurrentAds != null && dto.maxConcurrentAds > 5) {
+      throw new BadRequestException('الحد الأقصى للإعلانات المتزامنة في مساحة واحدة هو 5 (عرض شرائحي)');
+    }
+    return this.prisma.adSlot.update({
+      where: { id: slotId },
+      data: {
+        name: dto.name, dimensions: dto.dimensions,
+        basePriceWeekly: dto.basePriceWeekly != null ? Number(dto.basePriceWeekly) : undefined,
+        maxConcurrentAds: dto.maxConcurrentAds != null ? Number(dto.maxConcurrentAds) : undefined,
+        isActive: dto.isActive,
+      },
+    });
   }
 
   // ── PRICING ────────────────────────────────────────────────────
@@ -532,6 +552,33 @@ export class AdsV2Controller {
   }
 
   // Advertiser (authenticated company)
+  @Post('upload-banner')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @UseInterceptors(FileInterceptor('banner', {
+    storage: diskStorage({
+      destination: join(process.cwd(), 'uploads', 'ad-banners'),
+      filename: (req: any, file, cb) => {
+        const companyId = req.user?.companyId || 'unknown';
+        const ext = extname(file.originalname) || '.png';
+        cb(null, `${companyId}-${Date.now()}${ext}`);
+      },
+    }),
+    fileFilter: (req, file, cb) => {
+      if (!/^image\/(png|jpe?g|webp)$/.test(file.mimetype)) {
+        return cb(new BadRequestException('الملف لازم يكون صورة PNG أو JPG أو WEBP'), false);
+      }
+      cb(null, true);
+    },
+    limits: { fileSize: 3 * 1024 * 1024 }, // 3MB
+  }))
+  @ApiOperation({ summary: 'رفع صورة الإعلان (بانر)' })
+  uploadBanner(@UploadedFile() file: any, @Request() req: any) {
+    if (!req.user.companyId) throw new ForbiddenException('يجب تسجيل حساب شركة أولاً');
+    if (!file) throw new BadRequestException('لم يتم إرفاق أي ملف');
+    return { bannerUrl: `/uploads/ad-banners/${file.filename}` };
+  }
+
   @Post('bookings')
   @UseGuards(JwtGuard)
   @ApiBearerAuth()
@@ -662,6 +709,15 @@ export class AdsV2Controller {
   }
 
   // ── AdSense fallback toggle (per slot, admin) ────────────────────
+  @Patch('admin/slots/:slotId')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تعديل إعدادات مساحة إعلانية (الاسم، السعر، الحد الأقصى للإعلانات المتزامنة، إلخ) — أدمن' })
+  updateSlot(@Param('slotId') slotId: string, @Body() dto: any, @Request() req: any) {
+    this.requireAdmin(req);
+    return this.ads.updateSlot(slotId, dto);
+  }
+
   @Patch('admin/slots/:slotId/adsense')
   @UseGuards(JwtGuard)
   @ApiBearerAuth()

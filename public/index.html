@@ -3131,24 +3131,26 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
 <div class="page" id="page-adreq">
   <div style="padding:32px;max-width:620px;margin:0 auto">
     <div style="font-size:26px;font-weight:700;margin-bottom:6px">طلب مساحة إعلانية</div>
-    <div style="font-size:13px;color:var(--ts);margin-bottom:24px">أعلن عن منتجاتك لآلاف المصانع والشركات الصناعية</div>
-    <div id="adreq-types-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px"></div>
+    <div style="font-size:13px;color:var(--ts);margin-bottom:24px">أعلن عن منتجاتك لآلاف المصانع والشركات الصناعية — الأسعار والمساحات محدّثة لحظيًا</div>
+    <div id="adreq-types-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px"><div style="grid-column:1/-1;text-align:center;font-size:13px;color:var(--ts);padding:14px 0">جارٍ تحميل المساحات المتاحة...</div></div>
     <div style="background:var(--surface);border:1px solid var(--bd);border-radius:14px;padding:22px">
       <div class="g2" style="gap:14px;margin-bottom:14px">
-        <div><span class="lbl">اسم الشركة</span><input class="inp" id="ad-company" placeholder="اسم شركتك"></div>
-        <div><span class="lbl">نوع الإعلان</span><input class="inp" id="ad-type-val" placeholder="اختر من الأعلى" readonly><input type="hidden" id="ad-type-id"></div>
-        <div><span class="lbl">مدة الإعلان</span><select class="sel" id="ad-duration"><option>شهر واحد</option><option>3 أشهر (-10%)</option><option>6 أشهر (-20%)</option><option>سنة (-30%)</option></select></div>
-        <div><span class="lbl">البريد الإلكتروني</span><input class="inp" id="ad-email" placeholder="ads@company.com" dir="ltr"></div>
+        <div><span class="lbl">نوع الإعلان</span><input class="inp" id="ad-type-val" placeholder="اختاري من الأعلى" readonly><input type="hidden" id="ad-type-id"></div>
+        <div><span class="lbl">مدة الحجز</span><select class="sel" id="ad-duration"><option value="WEEKLY">أسبوع</option><option value="MONTHLY" selected>شهر (خصم 15%)</option><option value="QUARTERLY">ربع سنة — 3 أشهر (خصم 30%)</option></select></div>
+        <div><span class="lbl">تاريخ البدء</span><input class="inp" type="date" id="ad-start-date"></div>
+        <div><span class="lbl">رابط الصفحة عند الضغط على الإعلان</span><input class="inp" id="ad-destination" placeholder="https://" dir="ltr"></div>
       </div>
       <div style="margin-bottom:14px">
-  <span class="lbl">طريقة الدفع</span>
-  <div id="ad-payment-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:6px"><div class="pay-method-card" data-pay-id="card" onclick="selectAdPayment(this,&#39;card&#39;,&#39;بطاقة ائتمان / مدى (Visa, Mastercard)&#39;)"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">💳</span><div style="flex:1"><div style="font-size:13px;font-weight:700">بطاقة ائتمان / مدى (Visa, Mastercard)</div><div style="font-size:11px;color:var(--ts);margin-top:2px">دفع فوري عبر بوابة Paymob المرخصة</div></div></div><div style="font-size:11px;color:var(--tt);margin-top:8px">2.5% رسوم بوابة الدفع</div></div><div class="pay-method-card" data-pay-id="fawry" onclick="selectAdPayment(this,&#39;fawry&#39;,&#39;فوري (Fawry)&#39;)"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">🟡</span><div style="flex:1"><div style="font-size:13px;font-weight:700">فوري (Fawry)</div><div style="font-size:11px;color:var(--ts);margin-top:2px">الدفع نقداً من أي ماكينة أو منفذ فوري</div></div></div><div style="font-size:11px;color:var(--tt);margin-top:8px">رسوم ثابتة 5 ج.م</div></div><div class="pay-method-card" data-pay-id="vfcash" onclick="selectAdPayment(this,&#39;vfcash&#39;,&#39;فودافون كاش / محافظ موبايل&#39;)"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">📱</span><div style="flex:1"><div style="font-size:13px;font-weight:700">فودافون كاش / محافظ موبايل</div><div style="font-size:11px;color:var(--ts);margin-top:2px">الدفع من محفظتك الإلكترونية مباشرة</div></div></div><div style="font-size:11px;color:var(--tt);margin-top:8px">1.5% رسوم المحفظة</div></div><div class="pay-method-card" data-pay-id="bank" onclick="selectAdPayment(this,&#39;bank&#39;,&#39;تحويل بنكي مباشر&#39;)"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">🏦</span><div style="flex:1"><div style="font-size:13px;font-weight:700">تحويل بنكي مباشر</div><div style="font-size:11px;color:var(--ts);margin-top:2px">تحويل لحساب الشركة — يتطلب إثبات تحويل</div></div></div><div style="font-size:11px;color:var(--tt);margin-top:8px">بدون رسوم إضافية</div></div></div>
-  <input type="hidden" id="ad-payment-method" value="">
-</div>
-      <span class="lbl">وصف الإعلان</span>
-      <textarea class="inp" rows="3" id="ad-desc" style="resize:none;margin-bottom:14px" placeholder="ما تريدين الإعلان عنه..."></textarea>
+        <span class="lbl">صورة الإعلان (البانر) — بالمقاس المطلوب للمساحة المختارة</span>
+        <input class="inp" type="file" id="ad-banner-file" accept="image/png,image/jpeg,image/webp" style="padding:8px">
+        <div id="ad-banner-preview" style="margin-top:8px;display:none"><img style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid var(--bd)"></div>
+        <div id="ad-banner-status" style="font-size:11px;color:var(--ts);margin-top:6px"></div>
+      </div>
+      <div style="background:var(--bg3);border-radius:9px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--ts)" id="ad-specs-hint">اختاري نوع الإعلان أعلاه لمعرفة المقاس المطلوب بالضبط</div>
+      <span class="lbl">وصف الإعلان (اختياري)</span>
+      <textarea class="inp" rows="2" id="ad-desc" style="resize:none;margin-bottom:14px" placeholder="ملاحظات إضافية عن الحملة..."></textarea>
       <div style="background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:9px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--ts)">✅ سيراجع فريق إن مصر طلبك خلال 24 ساعة — لا يُنشر إعلان بدون موافقة الإدارة</div>
-      <button class="bc" style="width:100%;padding:12px;font-size:14px;border-radius:10px" onclick="submitAdRequest()">إرسال طلب الإعلان</button>
+      <button class="bc" style="width:100%;padding:12px;font-size:14px;border-radius:10px" id="ad-submit-btn" onclick="submitAdRequest()">إرسال طلب الإعلان</button>
     </div>
   </div>
 </div>
@@ -4332,40 +4334,94 @@ document.addEventListener("DOMContentLoaded",function(){
     }
   };
 
-  // Ad type selector (ad request page - public) — renders live from AD_TYPES
-  function renderAdreqTypesGrid() {
+  // Ad type selector (ad request page - public) — renders live from the real ads-v2 slot catalog
+  var ADREQ_SLOTS_CACHE = [];
+  async function renderAdreqTypesGrid() {
     var grid = document.getElementById("adreq-types-grid");
-    if (!grid || typeof AD_TYPES === "undefined") return;
-    grid.innerHTML = AD_TYPES.map(function(t) {
-      return '<div class="ad-type-card" data-adreq-type="' + t.id + '" onclick="selectAdType(this,\'' + t.id + '\')">' +
-        '<div style="font-size:24px;margin-bottom:8px">' + (t.icon||"📢") + '</div>' +
-        '<div style="font-size:14px;font-weight:700">' + t.name + '</div>' +
-        '<div style="font-size:13px;color:var(--ts);margin-top:4px">' + t.size + ' · ' + t.desc + '</div>' +
-        '<div style="font-size:15px;font-weight:700;color:var(--red);margin-top:8px">' + t.price_month.toLocaleString("ar-EG") + ' ج.م/شهر</div>' +
-        '</div>';
-    }).join("");
+    if (!grid) return;
+    try {
+      ADREQ_SLOTS_CACHE = await apiFetch("/ads-v2/slots");
+      grid.innerHTML = ADREQ_SLOTS_CACHE.map(function(s) {
+        var icon = (typeof AD_SLOT_ICONS !== "undefined" && AD_SLOT_ICONS[s.locationKey]) || "📢";
+        return '<div class="ad-type-card" data-adreq-type="' + s.id + '" onclick="selectAdType(this,\'' + s.id + '\')">' +
+          '<div style="font-size:24px;margin-bottom:8px">' + icon + '</div>' +
+          '<div style="font-size:14px;font-weight:700">' + s.name + '</div>' +
+          '<div style="font-size:13px;color:var(--ts);margin-top:4px">' + s.dimensions + '</div>' +
+          '<div style="font-size:15px;font-weight:700;color:var(--red);margin-top:8px">' + s.basePriceWeekly.toLocaleString("ar-EG") + ' ج.م/أسبوع</div>' +
+          '</div>';
+      }).join("");
+    } catch (err) {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;font-size:13px;color:var(--ts);padding:14px 0">⚠️ تعذر تحميل المساحات المتاحة</div>';
+    }
   }
   window.renderAdreqTypesGrid = renderAdreqTypesGrid;
   document.addEventListener("DOMContentLoaded", renderAdreqTypesGrid);
 
-  window.selectAdType = function(el, type){
+  window.selectAdType = function(el, slotId){
     document.querySelectorAll(".ad-type-card").forEach(function(c){c.classList.remove("sel");});
     el.classList.add("sel");
-    var typeObj = (typeof AD_TYPES !== "undefined") ? AD_TYPES.find(function(t){ return t.id === type; }) : null;
-    var inp = document.getElementById("ad-type-val"); if(inp) inp.value = typeObj ? typeObj.name : type;
-    var hidden = document.getElementById("ad-type-id"); if (hidden) hidden.value = type;
+    var slot = ADREQ_SLOTS_CACHE.find(function(s){ return s.id === slotId; });
+    var inp = document.getElementById("ad-type-val"); if(inp) inp.value = slot ? slot.name : slotId;
+    var hidden = document.getElementById("ad-type-id"); if (hidden) hidden.value = slotId;
+    var hint = document.getElementById("ad-specs-hint");
+    if (hint && slot) hint.textContent = "📐 المقاس المطلوب: " + slot.dimensions + " — ارفعي صورة بنفس هذا المقاس لأفضل نتيجة";
   };
 
-  window.submitAdRequest = function(){
-    var co = (document.getElementById("ad-company")||{}).value||"";
-    var tp = (document.getElementById("ad-type-val")||{}).value||"";
+  window.uploadAdBanner = null; // set below once file selected
+  document.addEventListener("change", function(e) {
+    if (e.target && e.target.id === "ad-banner-file") {
+      var file = e.target.files && e.target.files[0];
+      var preview = document.getElementById("ad-banner-preview");
+      if (file && preview) {
+        preview.style.display = "block";
+        preview.querySelector("img").src = URL.createObjectURL(file);
+      }
+    }
+  });
+
+  window.submitAdRequest = async function(){
+    if (!requireLoginForService(submitAdRequest)) return;
     var typeId = (document.getElementById("ad-type-id")||{}).value||"";
-    if(!co.trim()){ toast("الرجاء إدخال اسم الشركة"); return; }
-    if(!tp.trim() || !typeId){ toast("الرجاء اختيار نوع الإعلان"); return; }
-    toast("تم إرسال طلب الإعلان — سيراجعه فريق إن مصر خلال 24 ساعة");
-    setTimeout(function(){ goTo("home"); }, 1500);
-  };
+    var destination = (document.getElementById("ad-destination")||{}).value||"";
+    var startDateVal = (document.getElementById("ad-start-date")||{}).value;
+    var billingPeriod = (document.getElementById("ad-duration")||{}).value || "MONTHLY";
+    var bannerFile = (document.getElementById("ad-banner-file")||{}).files;
+    bannerFile = bannerFile && bannerFile[0];
 
+    if (!typeId) { toast("⚠️ الرجاء اختيار نوع/مساحة الإعلان"); return; }
+    if (!destination.trim()) { toast("⚠️ الرجاء إدخال رابط الصفحة المستهدفة"); return; }
+    if (!bannerFile) { toast("⚠️ الرجاء رفع صورة الإعلان"); return; }
+
+    var btn = document.getElementById("ad-submit-btn");
+    btn.disabled = true; btn.textContent = "جارٍ الرفع والإرسال...";
+    try {
+      var formData = new FormData();
+      formData.append("banner", bannerFile);
+      var token = window.localStorage.getItem("inmisr_access_token");
+      var uploadRes = await fetch(API_BASE + "/ads-v2/upload-banner", {
+        method: "POST", headers: token ? { "Authorization": "Bearer " + token } : {}, body: formData
+      });
+      var uploadBody = await uploadRes.json().catch(function(){ return null; });
+      if (!uploadRes.ok) throw new Error((uploadBody && uploadBody.message) || "تعذر رفع صورة الإعلان");
+
+      await apiFetch("/ads-v2/bookings", {
+        method: "POST",
+        body: JSON.stringify({
+          slotId: typeId,
+          bannerUrl: uploadBody.data.bannerUrl,
+          destinationUrl: destination,
+          startDate: startDateVal ? new Date(startDateVal).toISOString() : new Date().toISOString(),
+          billingPeriod: billingPeriod,
+        })
+      });
+      toast("✅ تم إرسال طلب الإعلان — سيراجعه فريق إن مصر خلال 24 ساعة");
+      setTimeout(function(){ goTo("dash"); }, 1500);
+    } catch (err) {
+      toast("⚠️ " + (err.message || "تعذر إرسال طلب الإعلان"));
+    } finally {
+      btn.disabled = false; btn.textContent = "إرسال طلب الإعلان";
+    }
+  };
   // Admin ad approve/reject (used in pending list cards)
   window.approveAd = function(btn){
     var card = btn.closest(".card"); if(!card)return;
@@ -8484,10 +8540,10 @@ async function renderAdSlot(locationKey, containerId, opts) {
     return false; // never break the page layout over an ad-fetch failure
   }
 
-  // Frequency capping (client-side, per visitor per day — no server-side
-  // user tracking needed): skip any candidate already shown enough times today.
+  // Frequency capping (client-side, per visitor per day) — filters candidates,
+  // but (unlike before) we now keep ALL that pass instead of just the first one.
   var today = new Date().toISOString().slice(0, 10);
-  var ad = null;
+  var eligible = [];
   for (var i = 0; i < (result.ads || []).length; i++) {
     var candidate = result.ads[i];
     if (candidate.frequencyCap) {
@@ -8495,22 +8551,14 @@ async function renderAdSlot(locationKey, containerId, opts) {
       var seenCount = parseInt(localStorage.getItem(capKey) || "0", 10);
       if (seenCount >= candidate.frequencyCap) continue;
     }
-    ad = candidate;
-    break;
+    eligible.push(candidate);
+    if (eligible.length >= 5) break; // slideshow cap: never rotate more than 5 concurrent ads
   }
 
-  if (ad) {
-    if (ad.frequencyCap) {
-      var capKey2 = "adcap:" + ad.campaignId + ":" + today;
-      localStorage.setItem(capKey2, String(parseInt(localStorage.getItem(capKey2) || "0", 10) + 1));
-    }
-    var variantQs = ad.variantId ? "?variant=" + ad.variantId : "";
-    var clickUrl = API_BASE + "/ads-v2/click/" + ad.campaignId + variantQs;
-    container.innerHTML = '<a href="' + clickUrl + '" target="_blank" rel="noopener sponsored" style="display:block;position:relative">' +
-      '<img src="' + ad.bannerUrl + '" alt="' + (ad.advertiserName || "إعلان") + '" style="width:100%;height:auto;display:block;border-radius:8px">' +
-      '<span style="position:absolute;top:4px;left:4px;background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:2px 7px;border-radius:5px">إعلان</span></a>';
+  if (eligible.length) {
     container.style.display = "";
-    fetch(API_BASE + "/ads-v2/impression/" + ad.campaignId + variantQs, { method: "POST" }).catch(function(){});
+    container.style.minHeight = "160px"; // taller ad area — was collapsing to the image's natural height
+    renderAdSlideshow(container, eligible, today);
     return true;
   }
 
@@ -8536,6 +8584,41 @@ async function renderAdSlot(locationKey, containerId, opts) {
   }
 }
 window.renderAdSlot = renderAdSlot;
+
+// ── AD SLIDESHOW — rotates through up to 5 concurrent ads instead of
+// showing only one statically. Each ad gets its own impression logged
+// as it's shown (not just the first one), and its own frequency-cap
+// bookkeeping, matching what a real rotating placement should do.
+function renderAdSlideshow(container, ads, today) {
+  var idx = 0;
+  if (container.__adSlideshowTimer) clearInterval(container.__adSlideshowTimer);
+
+  function showAd(i) {
+    var ad = ads[i];
+    if (ad.frequencyCap) {
+      var capKey = "adcap:" + ad.campaignId + ":" + today;
+      localStorage.setItem(capKey, String(parseInt(localStorage.getItem(capKey) || "0", 10) + 1));
+    }
+    var variantQs = ad.variantId ? "?variant=" + ad.variantId : "";
+    var clickUrl = API_BASE + "/ads-v2/click/" + ad.campaignId + variantQs;
+    var dots = ads.length > 1 ? '<div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);display:flex;gap:5px">' +
+      ads.map(function(_, di) { return '<span style="width:6px;height:6px;border-radius:50%;background:' + (di === i ? "#fff" : "rgba(255,255,255,.4)") + '"></span>'; }).join("") + '</div>' : "";
+    container.innerHTML = '<a href="' + clickUrl + '" target="_blank" rel="noopener sponsored" style="display:block;position:relative;min-height:160px">' +
+      '<img src="' + ad.bannerUrl + '" alt="' + (ad.advertiserName || "إعلان") + '" style="width:100%;height:100%;min-height:160px;object-fit:cover;display:block;border-radius:8px">' +
+      '<span style="position:absolute;top:4px;left:4px;background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:2px 7px;border-radius:5px">إعلان</span>' +
+      dots + '</a>';
+    fetch(API_BASE + "/ads-v2/impression/" + ad.campaignId + variantQs, { method: "POST" }).catch(function(){});
+  }
+
+  showAd(idx);
+  if (ads.length > 1) {
+    container.__adSlideshowTimer = setInterval(function() {
+      idx = (idx + 1) % ads.length;
+      showAd(idx);
+    }, 5000);
+  }
+}
+window.renderAdSlideshow = renderAdSlideshow;
 
 // ── MY ORDERS (buyer/supplier real order tracking) ──────────────────
 var MY_ORDERS_CACHE = [];
