@@ -1374,13 +1374,8 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   <div class="sec">
     <div class="sec-title">أسعار الإعلانات على المنصة</div>
     <div class="sec-sub">زيدي ظهورك أمام آلاف المصانع والموردين بمساحات إعلانية مستهدفة</div>
-    <div class="g3" style="max-width:1100px;margin:0 auto">
-      <div class="card"><div class="cb"><div style="font-size:24px;margin-bottom:8px">📊</div><div style="font-size:13px;font-weight:700;margin-bottom:4px">بانر علوي (Leaderboard)</div><div style="font-size:12px;color:var(--ts);margin-bottom:8px">728×90 · يظهر أعلى كل صفحات المنصة</div><div style="font-size:18px;font-weight:700;color:var(--red)">2,000 <span style="font-size:12px;color:var(--ts);font-weight:400">ج.م/شهر</span></div></div></div>
-      <div class="card"><div class="cb"><div style="font-size:24px;margin-bottom:8px">📱</div><div style="font-size:13px;font-weight:700;margin-bottom:4px">إعلان جانبي (Sidebar)</div><div style="font-size:12px;color:var(--ts);margin-bottom:8px">300×250 · يظهر أسفل قائمة القطاعات</div><div style="font-size:18px;font-weight:700;color:var(--red)">1,200 <span style="font-size:12px;color:var(--ts);font-weight:400">ج.م/شهر</span></div></div></div>
-      <div class="card"><div class="cb"><div style="font-size:24px;margin-bottom:8px">⭐</div><div style="font-size:13px;font-weight:700;margin-bottom:4px">مورد مميز (Featured)</div><div style="font-size:12px;color:var(--ts);margin-bottom:8px">أولوية ظهور في البحث وصفحة الموردين</div><div style="font-size:18px;font-weight:700;color:var(--red)">3,500 <span style="font-size:12px;color:var(--ts);font-weight:400">ج.م/شهر</span></div></div></div>
-      <div class="card"><div class="cb"><div style="font-size:24px;margin-bottom:8px">🏠</div><div style="font-size:13px;font-weight:700;margin-bottom:4px">بانر وسط الرئيسية</div><div style="font-size:12px;color:var(--ts);margin-bottom:8px">728×90 · بين القطاعات وأفضل الموردين</div><div style="font-size:18px;font-weight:700;color:var(--red)">2,500 <span style="font-size:12px;color:var(--ts);font-weight:400">ج.م/شهر</span></div></div></div>
-      <div class="card"><div class="cb"><div style="font-size:24px;margin-bottom:8px">🚀</div><div style="font-size:13px;font-weight:700;margin-bottom:4px">إعلان الحاضنة (للمستثمرين)</div><div style="font-size:12px;color:var(--ts);margin-bottom:8px">728×90 · يظهر في صفحة الحاضنة الصناعية</div><div style="font-size:18px;font-weight:700;color:var(--red)">1,800 <span style="font-size:12px;color:var(--ts);font-weight:400">ج.م/شهر</span></div></div></div>
-      <div class="card" style="border:1px solid var(--gold)"><div class="cb" style="text-align:center;display:flex;flex-direction:column;justify-content:center;height:100%"><div style="font-size:24px;margin-bottom:8px">💬</div><div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--gold)">خصومات الاشتراك الطويل</div><div style="font-size:12px;color:var(--ts);line-height:1.7">10% خصم لـ 3 أشهر · 20% خصم لـ 6 أشهر · 30% خصم للاشتراك السنوي</div></div></div>
+    <div class="g3" id="real-ad-pricing-grid" style="max-width:1100px;margin:0 auto">
+      <div style="grid-column:1/-1;text-align:center;font-size:13px;color:var(--ts);padding:20px 0">جارٍ تحميل أسعار المساحات الإعلانية...</div>
     </div>
     <div style="text-align:center;margin-top:20px">
       <button class="bc" style="padding:11px 28px;border-radius:9px;font-size:13px" data-page="adreq">طلب مساحة إعلانية ←</button>
@@ -3998,6 +3993,9 @@ function goTo(pg, fromBack){
   }
   if (pg === "map" && typeof loadIndustrialMap === "function") {
     loadIndustrialMap();
+  }
+  if (pg === "pricing" && typeof loadRealAdPricing === "function") {
+    loadRealAdPricing();
   }
   if (pg === "dash") {
     var companyPanel = document.getElementById("dash-header-company");
@@ -8789,6 +8787,46 @@ async function loadMyCustomers() {
   }
 }
 window.loadMyCustomers = loadMyCustomers;
+
+// ── REAL AD PRICING — from the live ads-v2 slot catalog, not a static table ──
+var AD_SLOT_ICONS = {
+  HERO_SPOTLIGHT: "🌟", TOP_TICKER: "📢", EXIT_INTENT_MODAL: "💬",
+  SPONSORED_SUPPLIER_CARD: "⭐", SECTION_DIVIDER: "📊",
+};
+var AD_SLOT_DESC = {
+  HERO_SPOTLIGHT: "أعلى الصفحة الرئيسية مباشرة — أقوى ظهور على المنصة بالكامل",
+  TOP_TICKER: "شريط متحرك يظهر أعلى كل صفحات المنصة الداخلية",
+  EXIT_INTENT_MODAL: "نافذة تظهر مرة واحدة لكل جلسة عند محاولة المغادرة",
+  SPONSORED_SUPPLIER_CARD: "بطاقة مميزة ضمن قائمة الموردين — حتى 3 معلنين بالتزامن",
+  SECTION_DIVIDER: "بانر أفقي بين أقسام الصفحة الرئيسية",
+};
+var AD_BILLING_MULT = { WEEKLY: 1, MONTHLY: 4 * 0.85, QUARTERLY: 12 * 0.70 };
+
+async function loadRealAdPricing() {
+  var box = document.getElementById("real-ad-pricing-grid");
+  if (!box) return;
+  try {
+    var slots = await apiFetch("/ads-v2/slots");
+    box.innerHTML = slots.map(function(s) {
+      var icon = AD_SLOT_ICONS[s.locationKey] || "📣";
+      var desc = AD_SLOT_DESC[s.locationKey] || s.dimensions;
+      var monthly = Math.round(s.basePriceWeekly * AD_BILLING_MULT.MONTHLY);
+      return '<div class="card"><div class="cb">' +
+        '<div style="font-size:24px;margin-bottom:8px">' + icon + '</div>' +
+        '<div style="font-size:13px;font-weight:700;margin-bottom:4px">' + s.name + '</div>' +
+        '<div style="font-size:12px;color:var(--ts);margin-bottom:8px">' + s.dimensions + ' · ' + desc + '</div>' +
+        '<div style="font-size:18px;font-weight:700;color:var(--red)">' + formatEgp(monthly) + ' <span style="font-size:12px;color:var(--ts);font-weight:400">شهريًا (من ' + formatEgp(s.basePriceWeekly) + '/أسبوع)</span></div>' +
+        '</div></div>';
+    }).join("") + '<div class="card" style="border:1px solid var(--gold)"><div class="cb" style="text-align:center;display:flex;flex-direction:column;justify-content:center;height:100%"><div style="font-size:24px;margin-bottom:8px">💬</div><div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--gold)">خصومات الاشتراك الطويل</div><div style="font-size:12px;color:var(--ts);line-height:1.7">خصم 15% للاشتراك الشهري (بدل 4 أسابيع منفصلة) · خصم 30% للاشتراك الربع سنوي (بدل 12 أسبوعًا منفصلة)</div></div></div>';
+  } catch (err) {
+    box.innerHTML = '<div style="grid-column:1/-1;text-align:center;font-size:13px;color:var(--ts);padding:20px 0">⚠️ تعذر تحميل الأسعار — يرجى المحاولة لاحقًا</div>';
+  }
+}
+window.loadRealAdPricing = loadRealAdPricing;
+
+document.addEventListener("DOMContentLoaded", function() {
+  if (document.getElementById("real-ad-pricing-grid")) loadRealAdPricing();
+});
 
 // ── INDUSTRIAL MAP — real suppliers from GET /geo/suppliers, positioned
 // by their real industrial zone (the zone anchor points below match the
