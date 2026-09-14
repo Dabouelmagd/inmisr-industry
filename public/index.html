@@ -11715,14 +11715,18 @@ window.submitRegistration = async function(role) {
   }
 };
 
+var FORGOT_PASSWORD_LOGIN_TYPE = null;
+
 window.openForgotPasswordFlow = function() {
   var email = (document.getElementById("login-email") || {}).value || "";
+  FORGOT_PASSWORD_LOGIN_TYPE = selectedLoginType || null;
   document.getElementById("fp-email").value = email;
   document.getElementById("fp-step1").style.display = "block";
   document.getElementById("fp-step2").style.display = "none";
   document.getElementById("fp-code").value = "";
   document.getElementById("fp-newpass").value = "";
   document.getElementById("fp-newpass2").value = "";
+  if (typeof closeM === "function") closeM("login-modal");
   if (typeof openM === "function") openM("forgot-password-modal");
 };
 
@@ -11761,8 +11765,20 @@ window.confirmResetPassword = async function() {
       body: JSON.stringify({ emailOrPhone: FORGOT_PASSWORD_TARGET, code: code, newPassword: pass })
     });
     if (typeof closeM === "function") closeM("forgot-password-modal");
-    toast("✅ تم تغيير كلمة المرور — سجّلي الدخول بكلمة المرور الجديدة");
-    document.getElementById("login-email").value = FORGOT_PASSWORD_TARGET;
+    toast("✅ تم تغيير كلمة المرور بنجاح — سجّلي الدخول الآن بكلمة المرور الجديدة");
+    setTimeout(function() {
+      if (FORGOT_PASSWORD_LOGIN_TYPE === "owner" && typeof openOwnerLogin === "function") {
+        openOwnerLogin();
+      } else if (typeof openM === "function") {
+        openM("login-modal");
+        if (FORGOT_PASSWORD_LOGIN_TYPE && typeof selectLoginType === "function") {
+          selectLoginType(FORGOT_PASSWORD_LOGIN_TYPE);
+        }
+      }
+      document.getElementById("login-email").value = FORGOT_PASSWORD_TARGET;
+      var passField = document.getElementById("login-password");
+      if (passField) passField.focus();
+    }, 400);
   } catch (err) {
     toast("⚠️ " + (err.message || "تعذر تغيير كلمة المرور"));
   } finally {
