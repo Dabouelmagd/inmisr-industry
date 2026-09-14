@@ -4083,6 +4083,8 @@ function goTo(pg, fromBack){
   }
   var tickerEl = document.querySelector(".ticker");
   if (tickerEl) tickerEl.style.display = (pg === "home") ? "flex" : "none";
+  var sectorsSidebarEl = document.getElementById("sidebar");
+  if (sectorsSidebarEl) sectorsSidebarEl.style.display = (pg === "admin") ? "none" : "";
   if (pg === "admin" && typeof loadAdminOverview === "function") {
     loadAdminOverview();
   }
