@@ -11578,11 +11578,36 @@ async function apiFetch(path, options) {
     token ? { "Authorization": "Bearer " + token } : {},
     options.headers || {}
   );
-  var res = await fetch(API_BASE + path, Object.assign({}, options, { headers: headers }));
+  var res;
+  try {
+    res = await fetch(API_BASE + path, Object.assign({}, options, { headers: headers }));
+  } catch (networkErr) {
+    // fetch() itself throws (no internet, DNS failure, CORS block, server
+    // unreachable) — this never had a translated message before, so it
+    // surfaced as a raw browser error or nothing at all.
+    throw new Error("تعذر الاتصال بالخادم — تأكدي من اتصالك بالإنترنت وحاولي مرة أخرى");
+  }
   var body = null;
   try { body = await res.json(); } catch (e) {}
   if (!res.ok) {
-    var msg = (body && (body.message || (body.errors && body.errors.join("، ")))) || "حدث خطأ غير متوقع — يرجى المحاولة مرة أخرى";
+    var msg = (body && (body.message || (body.errors && body.errors.join("، "))));
+    if (!msg) {
+      // No specific message from the server — give an honest, specific
+      // fallback by status code instead of a generic, unclear one.
+      if (res.status === 401) msg = "انتهت صلاحية جلستك — يرجى تسجيل الدخول مرة أخرى";
+      else if (res.status === 403) msg = "ليس لديك صلاحية لتنفيذ هذا الإجراء";
+      else if (res.status === 404) msg = "العنصر المطلوب غير موجود";
+      else if (res.status === 429) msg = "محاولات كثيرة جدًا — يرجى الانتظار قليلاً والمحاولة مرة أخرى";
+      else if (res.status >= 500) msg = "حدث خطأ في الخادم — فريقنا سيتم إشعاره، يرجى المحاولة لاحقًا";
+      else msg = "حدث خطأ غير متوقع — يرجى المحاولة مرة أخرى";
+    }
+    // A dead/expired session should actually log the person out locally
+    // too, not just show a message and leave them stuck on a broken page.
+    if (res.status === 401 && token) {
+      clearAuthTokens();
+      window.isLoggedIn = false;
+      if (typeof updateLogoutButtonVisibility === "function") updateLogoutButtonVisibility();
+    }
     throw new Error(msg);
   }
   return (body && "data" in body) ? body.data : body;
