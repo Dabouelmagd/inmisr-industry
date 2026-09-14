@@ -876,6 +876,7 @@ model AdBooking {
   rejectionReason String?
   suspended       Boolean   @default(false)
   suspendedReason String?
+  adminNote       String?   // e.g. why a gift/complimentary booking was granted
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

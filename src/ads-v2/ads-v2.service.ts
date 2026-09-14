@@ -166,6 +166,41 @@ export class AdsV2Service {
     return booking;
   }
 
+  // ── ADMIN: grant a free/complimentary ad booking (bypasses payment) ──
+  async createGiftBooking(dto: {
+    advertiserId: string; slotId: string; targetSector?: string; targetZone?: string; targetUserType?: string;
+    bannerUrl: string; destinationUrl: string; startDate: string; billingPeriod: string; note?: string;
+  }) {
+    const start = new Date(dto.startDate);
+    if (isNaN(start.getTime())) throw new BadRequestException('تاريخ البدء غير صحيح');
+    const periodDays = BILLING_PERIOD_DAYS[dto.billingPeriod];
+    if (!periodDays) throw new BadRequestException('مدة الحجز غير معروفة');
+    const end = new Date(start.getTime() + periodDays * 86400000);
+
+    if (!dto.bannerUrl || !dto.destinationUrl) {
+      throw new BadRequestException('ملف الإعلان ورابط الهبوط مطلوبان');
+    }
+
+    const { available, slot } = await this.checkAvailability(dto.slotId, start, end);
+    if (!available) {
+      throw new BadRequestException('هذه المساحة محجوزة بالكامل في الفترة المطلوبة — جربي فترة أو مساحة أخرى');
+    }
+
+    const booking = await this.prisma.adBooking.create({
+      data: {
+        advertiserId: dto.advertiserId, slotId: dto.slotId,
+        targetSector: dto.targetSector, targetZone: dto.targetZone, targetUserType: dto.targetUserType,
+        bannerUrl: dto.bannerUrl, destinationUrl: dto.destinationUrl,
+        startDate: start, endDate: end, billingPeriod: dto.billingPeriod,
+        totalPrice: 0, paymentStatus: 'WAIVED', reviewStatus: 'APPROVED',
+        adminNote: dto.note ? `هدية من الإدارة: ${dto.note}` : 'هدية من الإدارة',
+      },
+    });
+
+    this.logger.log(`Gift ad booking created by admin: ${booking.id} (${slot.name}, free)`);
+    return booking;
+  }
+
   async myBookings(advertiserId: string) {
     return this.prisma.adBooking.findMany({
       where: { advertiserId },
@@ -585,6 +620,15 @@ export class AdsV2Controller {
   @ApiOperation({ summary: 'حجز مساحة إعلانية جديدة' })
   createBooking(@Body() dto: any, @Request() req: any) {
     return this.ads.createBooking(req.user.companyId, dto);
+  }
+
+  @Post('admin/gift-booking')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'منح إعلان مجاني/هدية لشركة (أدمن فقط)' })
+  createGiftBooking(@Body() dto: any, @Request() req: any) {
+    this.requireAdmin(req);
+    return this.ads.createGiftBooking(dto);
   }
 
   @Get('bookings/my')
