@@ -75,7 +75,20 @@ export class AdsV2Service {
 
   // ── SLOTS (fixed catalog, seeded once — see prisma/seed-ad-slots.ts) ──
   async listSlots() {
-    return this.prisma.adSlot.findMany({ where: { isActive: true }, orderBy: { basePriceWeekly: 'desc' } });
+    const slots = await this.prisma.adSlot.findMany({ where: { isActive: true }, orderBy: { basePriceWeekly: 'desc' } });
+    const now = new Date();
+    const withOccupancy = await Promise.all(slots.map(async (slot) => {
+      const activeCount = await this.prisma.adBooking.count({
+        where: {
+          slotId: slot.id,
+          reviewStatus: 'APPROVED',
+          startDate: { lte: now },
+          endDate: { gte: now },
+        },
+      });
+      return { ...slot, activeCount, availableCount: Math.max(0, slot.maxConcurrentAds - activeCount) };
+    }));
+    return withOccupancy;
   }
 
   async updateSlot(slotId: string, dto: { name?: string; dimensions?: string; basePriceWeekly?: number; maxConcurrentAds?: number; isActive?: boolean }) {

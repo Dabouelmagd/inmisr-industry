@@ -1839,6 +1839,15 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   </div>
 </div>
 
+<div class="mov" id="slot-calendar-modal">
+  <div class="modal" style="max-width:420px">
+    <button class="mc" onclick="closeM('slot-calendar-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
+    <div style="font-size:16px;font-weight:700;margin-bottom:4px" id="slot-cal-title">تقويم المواعيد</div>
+    <div style="font-size:12px;color:var(--ts);margin-bottom:14px">🟢 متاح · 🔴 محجوز بالكامل — أرقام الأيام المحجوزة جزئيًا موضّحة</div>
+    <div id="slot-cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;font-size:11px"></div>
+  </div>
+</div>
+
 <div class="mov" id="gift-ad-modal">
   <div class="modal" style="max-width:480px">
     <button class="mc" onclick="closeM('gift-ad-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
@@ -4465,7 +4474,9 @@ document.addEventListener("DOMContentLoaded",function(){
           '<div style="font-size:24px;margin-bottom:8px">' + icon + '</div>' +
           '<div style="font-size:14px;font-weight:700">' + s.name + '</div>' +
           '<div style="font-size:13px;color:var(--ts);margin-top:4px">' + s.dimensions + '</div>' +
+          '<div style="font-size:11px;margin-top:6px"><span style="color:#22C55E;font-weight:700">' + s.availableCount + ' متاح</span> <span style="color:var(--ts)">من ' + s.maxConcurrentAds + '</span></div>' +
           '<div style="font-size:15px;font-weight:700;color:var(--red);margin-top:8px">' + s.basePriceWeekly.toLocaleString("ar-EG") + ' ج.م/أسبوع</div>' +
+          '<button class="bl" style="width:100%;font-size:10px;padding:5px;border-radius:6px;margin-top:8px" onclick="event.stopPropagation();openSlotCalendar(\'' + s.id + '\',\'' + s.name.replace(/'/g, "\\'") + '\')">📅 مواعيد متاحة</button>' +
           '</div>';
       }).join("");
     } catch (err) {
@@ -8492,7 +8503,12 @@ async function loadAdsV2Admin() {
           '<label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--ts);cursor:pointer;white-space:nowrap">' +
           '<input type="checkbox" ' + (s.adsenseFallbackEnabled ? "checked" : "") + ' onchange="toggleAdsenseFallback(\'' + s.id + '\', this.checked)"> AdSense احتياطي' +
           '</label></div>' +
-          '<div style="font-size:11px;color:var(--ts);margin-bottom:10px">' + s.dimensions + ' · حد أقصى ' + s.maxConcurrentAds + ' إعلان متزامن</div>' +
+          '<div style="font-size:11px;color:var(--ts);margin-bottom:8px">' + s.dimensions + ' · حد أقصى ' + s.maxConcurrentAds + ' إعلان متزامن</div>' +
+          '<div style="display:flex;gap:6px;margin-bottom:10px">' +
+          '<span class="pill pg" style="font-size:10px">✅ ' + s.availableCount + ' متاح</span>' +
+          '<span class="pill ' + (s.activeCount > 0 ? "pa" : "pb2") + '" style="font-size:10px">📢 ' + s.activeCount + ' نشط الآن</span>' +
+          '</div>' +
+          '<button class="bl" style="width:100%;font-size:11px;padding:6px;border-radius:6px;margin-bottom:10px" onclick="openSlotCalendar(\'' + s.id + '\',\'' + s.name.replace(/'/g, "\\'") + '\')">📅 عرض تقويم الحجوزات</button>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:11px;text-align:center">' +
           '<div style="background:var(--bg3);border-radius:6px;padding:6px"><div style="color:var(--tt)">أسبوعي</div><div style="font-weight:700;color:var(--gold)">' + formatEgp(s.basePriceWeekly) + '</div></div>' +
           '<div style="background:var(--bg3);border-radius:6px;padding:6px"><div style="color:var(--tt)">شهري (-15%)</div><div style="font-weight:700;color:var(--gold)">' + formatEgp(monthly) + '</div></div>' +
@@ -9676,6 +9692,17 @@ document.addEventListener("DOMContentLoaded", function() {
   renderAdSlot("HERO_SPOTLIGHT", "ad-slot-hero-spotlight");
   renderAdSlot("SECTION_DIVIDER", "ad-slot-section-divider");
 
+  // Entry popup: shows shortly after arriving on the platform (once per
+  // browser tab session) — requested in addition to exit-intent, which
+  // stays as a fallback trigger using the same flag so it never shows twice.
+  setTimeout(function() {
+    if (sessionStorage.getItem("adExitIntentShown")) return;
+    sessionStorage.setItem("adExitIntentShown", "1");
+    renderAdSlot("EXIT_INTENT_MODAL", "ad-slot-exit-intent-modal").then(function(shown) {
+      if (shown && typeof openM === "function") openM("ad-exit-intent-modal");
+    });
+  }, 4000);
+
   // Exit-intent: once per browser tab session, when the cursor leaves
   // near the top of the viewport (heading for the tab bar/back button).
   document.addEventListener("mouseout", function(e) {
@@ -9925,7 +9952,48 @@ function goToServiceFromSidebar(group, cardId) {
 }
 window.goToServiceFromSidebar = goToServiceFromSidebar;
 
-// ── GIFT AD (admin grants a free ad booking) ─────────────────────
+// ── SHARED AVAILABILITY CALENDAR (admin + customer) ──────────────
+async function openSlotCalendar(slotId, slotName) {
+  document.getElementById("slot-cal-title").textContent = "📅 " + slotName + " — تقويم المواعيد";
+  var grid = document.getElementById("slot-cal-grid");
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--ts);padding:20px 0">جارٍ التحميل...</div>';
+  if (typeof openM === "function") openM("slot-calendar-modal");
+
+  try {
+    var slots = await apiFetch("/ads-v2/slots");
+    var slot = slots.find(function(s) { return s.id === slotId; });
+    var maxConcurrent = slot ? slot.maxConcurrentAds : 1;
+    var bookings = await apiFetch("/ads-v2/slots/" + slotId + "/calendar?months=2");
+
+    var dayNames = ["أحد", "اثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
+    var html = dayNames.map(function(d) { return '<div style="text-align:center;color:var(--ts);font-weight:700;padding:4px 0">' + d + '</div>'; }).join("");
+
+    var today = new Date();
+    var firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    var startOffset = firstDay.getDay();
+    for (var i = 0; i < startOffset; i++) html += "<div></div>";
+
+    var endRange = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+    for (var d = new Date(firstDay); d <= endRange; d.setDate(d.getDate() + 1)) {
+      var dayCopy = new Date(d);
+      var bookedCount = bookings.filter(function(b) {
+        return new Date(b.startDate) <= dayCopy && new Date(b.endDate) >= dayCopy;
+      }).length;
+      var isPast = dayCopy < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      var full = bookedCount >= maxConcurrent;
+      var color = isPast ? "var(--bg3)" : (full ? "#EF444422" : "#22C55E22");
+      var textColor = isPast ? "var(--tt)" : (full ? "#EF4444" : "#22C55E");
+      html += '<div style="background:' + color + ';border-radius:5px;padding:6px 2px;text-align:center;color:' + textColor + ';font-weight:600">' +
+        dayCopy.getDate() + (bookedCount > 0 && !isPast ? '<div style="font-size:9px">' + bookedCount + '/' + maxConcurrent + '</div>' : '') + '</div>';
+    }
+    grid.innerHTML = html;
+  } catch (err) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--ts);padding:20px 0">⚠️ تعذر تحميل التقويم</div>';
+  }
+}
+window.openSlotCalendar = openSlotCalendar;
+
+
 async function openGiftAdModal() {
   document.getElementById("ga-company").value = "";
   document.getElementById("ga-company-id").value = "";
