@@ -11860,8 +11860,34 @@ window.clearLearnedTranslations = clearLearnedTranslations;
 // inmisr.net, so CORS_ORIGINS on the server must include this site).
 var API_BASE = "https://api.inmisr.net/api/v1";
 
+async function refreshAccessToken() {
+  var refreshToken = getAuthToken("inmisr_refresh_token");
+  if (!refreshToken) return false;
+  // Preserve whichever storage the session was already using (this IS
+  // the actual "تذكرني" choice made at login) rather than guessing.
+  var wasRemembered = !!window.localStorage.getItem("inmisr_access_token");
+  try {
+    var res = await fetch(API_BASE + "/auth/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken: refreshToken }),
+    });
+    if (!res.ok) return false;
+    var body = await res.json().catch(function(){ return null; });
+    var data = body && body.data;
+    if (!data || !data.accessToken) return false;
+    saveAuthTokens(data.accessToken, data.refreshToken, wasRemembered);
+    if (data.user) window.currentUser = data.user;
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+window.refreshAccessToken = refreshAccessToken;
+
 async function apiFetch(path, options) {
   options = options || {};
+  var isRetry = options.__isRetry;
   var token = getAuthToken("inmisr_access_token");
   var headers = Object.assign(
     { "Content-Type": "application/json" },
@@ -11877,6 +11903,19 @@ async function apiFetch(path, options) {
     // surfaced as a raw browser error or nothing at all.
     throw new Error("تعذر الاتصال بالخادم — تأكدي من اتصالك بالإنترنت وحاولي مرة أخرى");
   }
+
+  // A 401 on an authenticated request usually just means the short-lived
+  // access token expired (15 min) — not that the session itself is dead.
+  // Try the real refresh-token exchange once before giving up, so a
+  // "تذكرني" session (or even mid-session use) doesn't get logged out
+  // just because the access token happened to expire.
+  if (res.status === 401 && token && !isRetry) {
+    var refreshed = await refreshAccessToken();
+    if (refreshed) {
+      return apiFetch(path, Object.assign({}, options, { __isRetry: true }));
+    }
+  }
+
   var body = null;
   try { body = await res.json(); } catch (e) {}
   if (!res.ok) {
@@ -11891,8 +11930,9 @@ async function apiFetch(path, options) {
       else if (res.status >= 500) msg = "حدث خطأ في الخادم — فريقنا سيتم إشعاره، يرجى المحاولة لاحقًا";
       else msg = "حدث خطأ غير متوقع — يرجى المحاولة مرة أخرى";
     }
-    // A dead/expired session should actually log the person out locally
-    // too, not just show a message and leave them stuck on a broken page.
+    // Only actually clear the session on a 401 that survived a real
+    // refresh attempt (or had no refresh token to try) — a dead/expired
+    // *session*, not just a stale access token.
     if (res.status === 401 && token) {
       clearAuthTokens();
       window.isLoggedIn = false;
