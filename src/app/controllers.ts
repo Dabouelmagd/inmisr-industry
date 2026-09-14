@@ -18,7 +18,7 @@ import { RfqService, CreateRfqDto, CreateQuoteDto } from '../rfq/rfq.service';
 import { EscrowService, DisputeDto } from '../escrow/escrow.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AntiLeakageService } from '../common/anti-leakage.service';
-import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, ProviderListingService, CompanyAssistantService, CompanyProfileService, QualityService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
+import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, ProviderListingService, CompanyAssistantService, CompanyProfileService, QualityService, CustomIndustrialServiceService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
 
 // ── Auth Guards (simplified) ───────────────────────────────────────
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -592,6 +592,41 @@ export class TrainingController {
 
 // ── Factory Needs Controller ─────────────────────────────────────
 @ApiTags('factory-needs')
+// ── Custom Industrial Service Controller (admin-added service types) ──
+@ApiTags('custom-services')
+@Controller('custom-services')
+export class CustomIndustrialServiceController {
+  constructor(private customServices: CustomIndustrialServiceService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'قائمة الخدمات الصناعية المخصّصة المضافة من الأدمن' })
+  list() {
+    return this.customServices.list();
+  }
+
+  @Post()
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'إضافة خدمة صناعية جديدة (أدمن)' })
+  create(@Body() dto: any, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.customServices.create(dto);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'حذف خدمة صناعية مخصّصة (أدمن)' })
+  remove(@Param('id') id: string, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.customServices.remove(id);
+  }
+}
+
 @Controller('factory-needs')
 export class FactoryNeedController {
   constructor(private factoryNeeds: FactoryNeedService) {}

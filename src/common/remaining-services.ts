@@ -416,6 +416,36 @@ export class TrainingService {
 // FACTORY NEEDS SERVICE — طلبات احتياج المصانع الكبرى للصناعات المغذية
 // ══════════════════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════════════════
+// CUSTOM INDUSTRIAL SERVICE — خدمات صناعية يضيفها الأدمن بنفسه
+// ══════════════════════════════════════════════════════════════════
+
+@Injectable()
+export class CustomIndustrialServiceService {
+  constructor(private prisma: PrismaService) {}
+
+  async list() {
+    return this.prisma.customIndustrialService.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async create(dto: { name: string; description: string; icon?: string }) {
+    if (!dto.name?.trim()) throw new BadRequestException('اسم الخدمة مطلوب');
+    if (!dto.description?.trim()) throw new BadRequestException('وصف الخدمة مطلوب');
+    return this.prisma.customIndustrialService.create({
+      data: { name: dto.name, description: dto.description, icon: dto.icon || '🛠️' },
+    });
+  }
+
+  async remove(id: string) {
+    const svc = await this.prisma.customIndustrialService.findUnique({ where: { id } });
+    if (!svc) throw new NotFoundException('الخدمة غير موجودة');
+    return this.prisma.customIndustrialService.update({ where: { id }, data: { isActive: false } });
+  }
+}
+
 @Injectable()
 export class FactoryNeedService {
   constructor(private prisma: PrismaService, private notifications: NotificationsService) {}

@@ -1002,6 +1002,18 @@ model CompanyAssistant {
   @@map("company_assistants")
 }
 
+model CustomIndustrialService {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  icon        String?  @default("🛠️")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("custom_industrial_services")
+}
+
 model FactoryNeedOffer {
   id                  String   @id @default(uuid())
   factoryNeedId       String

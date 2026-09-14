@@ -1839,6 +1839,17 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   </div>
 </div>
 
+<div class="mov" id="add-custom-service-modal">
+  <div class="modal" style="max-width:420px">
+    <button class="mc" onclick="closeM('add-custom-service-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px">إضافة خدمة صناعية جديدة</div>
+    <div style="margin-bottom:12px"><span class="lbl">أيقونة (إيموجي)</span><input class="inp" id="cs-icon" placeholder="🛠️" value="🛠️"></div>
+    <div style="margin-bottom:12px"><span class="lbl">اسم الخدمة</span><input class="inp" id="cs-name" placeholder="مثال: خدمات الصيانة الصناعية"></div>
+    <div style="margin-bottom:16px"><span class="lbl">وصف الخدمة</span><textarea class="inp" id="cs-desc" rows="3" placeholder="وصف مختصر للخدمة..."></textarea></div>
+    <button class="bc" style="width:100%;padding:11px;font-size:13px" id="cs-submit-btn" onclick="submitAddCustomService()">إضافة الخدمة</button>
+  </div>
+</div>
+
 <div class="mov" id="forgot-password-modal">
   <div class="modal" style="max-width:400px">
     <button class="mc" onclick="closeM('forgot-password-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
@@ -2620,6 +2631,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         <button class="asb" style="font-size:12px;padding:7px 10px" onclick="goToServiceFromSidebar('jobs')">📢 نقص العمالة</button>
         <button class="asb" style="font-size:12px;padding:7px 10px" onclick="goToServiceFromSidebar(null,'svc-card-providers')">🚛 الشحن/التغليف</button>
         <button class="asb" style="font-size:12px;padding:7px 10px" onclick="goToServiceFromSidebar(null,'svc-card-tradeapps')">🛠️ تقديم/تدريب مهني</button>
+        <div id="custom-services-sidebar-slot"></div>
       </div>
       <div class="asc">النظام</div>
       <button class="asb" data-admin="verif"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>التحقق (7)</button>
@@ -2822,7 +2834,10 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
           <span class="pill pa" id="services-summary-pill">0 طلب معلّق</span>
         </div>
 
-        <div style="font-size:13px;font-weight:700;color:var(--ts);margin-bottom:8px">↳ خدمات طلبات الخدمات الصناعية</div>
+        <div style="font-size:13px;font-weight:700;color:var(--ts);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+          <span>↳ خدمات طلبات الخدمات الصناعية</span>
+          <button class="bl" style="font-size:11px;padding:4px 10px;border-radius:14px" onclick="openAddCustomServiceModal()">+ إضافة خدمة</button>
+        </div>
         <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin-bottom:18px;border-bottom:1px solid var(--bd)" id="services-subnav">
           <button class="bl" style="font-size:12px;padding:7px 14px;border-radius:20px;white-space:nowrap;flex-shrink:0" onclick="openServiceFullView('financing')">💳 التمويل الصناعي <span class="pill pb2" id="subnav-financing-badge" style="margin-right:4px">0</span></button>
           <button class="bl" style="font-size:12px;padding:7px 14px;border-radius:20px;white-space:nowrap;flex-shrink:0" onclick="openServiceFullView('inspection')">🧪 الفحص والتفتيش <span class="pill pb2" id="subnav-inspection-badge" style="margin-right:4px">0</span></button>
@@ -2833,7 +2848,10 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
           <button class="bl" style="font-size:12px;padding:7px 14px;border-radius:20px;white-space:nowrap;flex-shrink:0" onclick="openServiceFullView('audit')">🏭 التفتيش الميداني <span class="pill pb2" id="subnav-audit-badge" style="margin-right:4px">0</span></button>
           <button class="bl" style="font-size:12px;padding:7px 14px;border-radius:20px;white-space:nowrap;flex-shrink:0" onclick="openServiceFullView('jobs')">📢 نقص العمالة <span class="pill pb2" id="subnav-jobs-badge" style="margin-right:4px">0</span></button>
           <button class="bl" style="font-size:12px;padding:7px 14px;border-radius:20px;white-space:nowrap;flex-shrink:0" onclick="jumpToServiceCard('svc-card-tradeapps')">🛠️ تقديم/تدريب مهني</button>
+          <span id="custom-services-subnav-slot"></span>
         </div>
+
+        <div id="custom-services-cards-slot"></div>
 
         <div class="card" id="svc-card-financing" style="margin-bottom:16px"><div class="cb"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px"><div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700">💳 طلبات التمويل الصناعي <span class="pill pb2" id="financing-count-badge">0</span></div><div style="display:flex;gap:6px"><button class="bl" style="font-size:11px;padding:5px 10px;border-radius:6px" onclick="toggleServiceSort('financing')">⇅ <span id="financing-sort-label">الأحدث أولاً</span></button><button class="bl" style="font-size:11px;padding:5px 10px;border-radius:6px" onclick="openServiceFullView('financing')">عرض الكل ←</button></div></div><div id="admin-financing-table"></div></div></div>
         <div class="card" id="svc-card-inspection" style="margin-bottom:16px"><div class="cb"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px"><div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700">🧪 طلبات الفحص والتفتيش <span class="pill pb2" id="inspection-count-badge">0</span></div><div style="display:flex;gap:6px"><button class="bl" style="font-size:11px;padding:5px 10px;border-radius:6px" onclick="toggleServiceSort('inspection')">⇅ <span id="inspection-sort-label">الأحدث أولاً</span></button><button class="bl" style="font-size:11px;padding:5px 10px;border-radius:6px" onclick="openServiceFullView('inspection')">عرض الكل ←</button></div></div><div id="admin-inspection-table"></div></div></div>
@@ -9887,6 +9905,85 @@ function goToServiceFromSidebar(group, cardId) {
   }
 }
 window.goToServiceFromSidebar = goToServiceFromSidebar;
+
+// ── CUSTOM INDUSTRIAL SERVICES — admin-added, appear immediately ────
+var CUSTOM_SERVICES_CACHE = [];
+
+async function loadCustomServices() {
+  try {
+    CUSTOM_SERVICES_CACHE = await apiFetch("/custom-services");
+    renderCustomServices();
+  } catch (err) { /* silent — list just stays as the fixed 9 */ }
+}
+window.loadCustomServices = loadCustomServices;
+
+function renderCustomServices() {
+  var subnavSlot = document.getElementById("custom-services-subnav-slot");
+  var sidebarSlot = document.getElementById("custom-services-sidebar-slot");
+  var cardsSlot = document.getElementById("custom-services-cards-slot");
+  if (subnavSlot) {
+    subnavSlot.innerHTML = CUSTOM_SERVICES_CACHE.map(function(s) {
+      return '<button class="bl" style="font-size:12px;padding:7px 14px;border-radius:20px;white-space:nowrap;flex-shrink:0" onclick="jumpToServiceCard(\'custom-svc-' + s.id + '\')">' + s.icon + ' ' + s.name + '</button>';
+    }).join("");
+  }
+  if (sidebarSlot) {
+    sidebarSlot.innerHTML = CUSTOM_SERVICES_CACHE.map(function(s) {
+      return '<button class="asb" style="font-size:12px;padding:7px 10px" onclick="goToServiceFromSidebar(null,\'custom-svc-' + s.id + '\')">' + s.icon + ' ' + s.name + '</button>';
+    }).join("");
+  }
+  if (cardsSlot) {
+    cardsSlot.innerHTML = CUSTOM_SERVICES_CACHE.map(function(s) {
+      return '<div class="card" id="custom-svc-' + s.id + '" style="margin-bottom:16px"><div class="cb">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:14px;font-weight:700">' + s.icon + ' ' + s.name + '</div>' +
+        '<button style="background:rgba(206,17,38,.08);color:#CE1126;border:1px solid rgba(206,17,38,.25);border-radius:6px;padding:4px 10px;cursor:pointer;font-family:inherit;font-size:11px" onclick="removeCustomService(\'' + s.id + '\')">حذف</button></div>' +
+        '<div style="font-size:13px;color:var(--ts);line-height:1.6">' + s.description + '</div></div></div>';
+    }).join("");
+  }
+}
+window.renderCustomServices = renderCustomServices;
+
+function openAddCustomServiceModal() {
+  document.getElementById("cs-icon").value = "🛠️";
+  document.getElementById("cs-name").value = "";
+  document.getElementById("cs-desc").value = "";
+  if (typeof openM === "function") openM("add-custom-service-modal");
+}
+window.openAddCustomServiceModal = openAddCustomServiceModal;
+
+async function submitAddCustomService() {
+  var name = document.getElementById("cs-name").value.trim();
+  var desc = document.getElementById("cs-desc").value.trim();
+  var icon = document.getElementById("cs-icon").value.trim() || "🛠️";
+  if (!name) { toast("⚠️ الرجاء إدخال اسم الخدمة"); return; }
+  if (!desc) { toast("⚠️ الرجاء إدخال وصف الخدمة"); return; }
+  var btn = document.getElementById("cs-submit-btn");
+  btn.disabled = true; btn.textContent = "جارٍ الإضافة...";
+  try {
+    await apiFetch("/custom-services", { method: "POST", body: JSON.stringify({ name: name, description: desc, icon: icon }) });
+    if (typeof closeM === "function") closeM("add-custom-service-modal");
+    toast("✅ تمت إضافة الخدمة — ظاهرة في القائمة الآن");
+    await loadCustomServices();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إضافة الخدمة"));
+  } finally {
+    btn.disabled = false; btn.textContent = "إضافة الخدمة";
+  }
+}
+window.submitAddCustomService = submitAddCustomService;
+
+async function removeCustomService(id) {
+  if (!confirm("تأكيد حذف هذه الخدمة؟")) return;
+  try {
+    await apiFetch("/custom-services/" + id, { method: "DELETE" });
+    toast("تم حذف الخدمة");
+    await loadCustomServices();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر الحذف"));
+  }
+}
+window.removeCustomService = removeCustomService;
+
+document.addEventListener("DOMContentLoaded", loadCustomServices);
 
 function jumpToServiceCard(cardId) {
   var el = document.getElementById(cardId);
