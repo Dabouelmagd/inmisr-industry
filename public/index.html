@@ -9868,14 +9868,23 @@ function goToServiceFromSidebar(group, cardId) {
   if (menu) menu.style.display = "block";
   var chevron = document.getElementById("services-sidebar-chevron");
   if (chevron) chevron.style.transform = "rotate(180deg)";
-  setTimeout(function() {
-    if (group && typeof openServiceFullView === "function") {
-      openServiceFullView(group);
-    } else if (cardId && typeof jumpToServiceCard === "function") {
-      if (typeof closeServiceFullView === "function") closeServiceFullView();
-      jumpToServiceCard(cardId);
-    }
-  }, 80);
+
+  // Ensure the services tab is actually visible before trying to act
+  // inside it — relying purely on timing after the sidebar button's
+  // own click handler was unreliable (the tab sometimes hadn't
+  // switched yet by the time this ran).
+  if (typeof showAdmin === "function") {
+    showAdmin("services", document.getElementById("services-sidebar-btn"));
+  }
+
+  if (group && typeof openServiceFullView === "function") {
+    openServiceFullView(group);
+  } else if (cardId) {
+    if (typeof closeServiceFullView === "function") closeServiceFullView();
+    setTimeout(function() {
+      if (typeof jumpToServiceCard === "function") jumpToServiceCard(cardId);
+    }, 120);
+  }
 }
 window.goToServiceFromSidebar = goToServiceFromSidebar;
 
