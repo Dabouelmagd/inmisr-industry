@@ -135,6 +135,22 @@ export class AuthController {
     return this.auth.login(dto, ip, ua);
   }
 
+  @Post('google')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({ summary: 'تسجيل الدخول بحساب جوجل' })
+  @HttpCode(HttpStatus.OK)
+  googleLogin(@Body() body: { idToken: string }, @Request() req: any) {
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    const ua = req.headers['user-agent'] || 'unknown';
+    return this.auth.googleLogin(body.idToken, ip, ua);
+  }
+
+  @Get('google/config')
+  @ApiOperation({ summary: 'إعدادات تسجيل الدخول بجوجل العامة (Client ID فقط)' })
+  googleConfig() {
+    return { clientId: this.auth.getGoogleClientId() };
+  }
+
   @Post('otp/send')
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @ApiOperation({ summary: 'إرسال كود OTP' })

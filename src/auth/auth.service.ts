@@ -9,6 +9,7 @@ import { PrismaService } from '../common/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
+import { OAuth2Client } from 'google-auth-library';
 
 // Real (public, well-known) approximate coordinates for Egypt's major
 // industrial zones and governorate capitals — used to place a newly
@@ -250,7 +251,53 @@ export class AuthService {
     return { ...tokens, user: this.sanitizeUser(user) };
   }
 
-  // ── OTP ───────────────────────────────────────────────────────
+  getGoogleClientId(): string | null {
+    return this.config.get<string>('GOOGLE_CLIENT_ID') || null;
+  }
+
+  // ── GOOGLE SIGN-IN — verifies the real ID token Google Identity
+  // Services gives the browser; we never trust a client-supplied email.
+  async googleLogin(idToken: string, ip: string, ua: string) {
+    const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
+    if (!clientId) {
+      throw new BadRequestException('تسجيل الدخول بجوجل غير مُفعّل على الخادم بعد');
+    }
+    const client = new OAuth2Client(clientId);
+    let payload: any;
+    try {
+      const ticket = await client.verifyIdToken({ idToken, audience: clientId });
+      payload = ticket.getPayload();
+    } catch (err) {
+      throw new UnauthorizedException('تعذر التحقق من حساب جوجل — حاولي مرة أخرى');
+    }
+    if (!payload || !payload.email || !payload.email_verified) {
+      throw new UnauthorizedException('حساب جوجل هذا غير موثّق البريد الإلكتروني');
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: { email: { equals: payload.email, mode: 'insensitive' } },
+      include: { company: { include: { subscription: true } }, workerProfile: true, assistantOf: true },
+    });
+
+    if (!user) {
+      // Real accounts here need a role + company/worker info we don't have
+      // from Google alone — hand back the verified email so the frontend
+      // can pre-fill registration instead of fabricating an account.
+      return { needsRegistration: true, email: payload.email, fullName: payload.name };
+    }
+
+    if (user.isBanned) throw new ForbiddenException(`الحساب موقوف: ${user.banReason}`);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date(), lastLoginIp: ip, emailVerified: true },
+    });
+
+    const tokens = await this.generateTokens(user, ip, ua);
+    await this.notifications.send(user.id, 'SYSTEM', 'تسجيل دخول جديد', `تسجيل دخول بحساب جوجل من ${ip}`);
+
+    return { ...tokens, user: this.sanitizeUser(user) };
+  }
   async sendOtp(userId: string, purpose: string, email?: string, phone?: string) {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
