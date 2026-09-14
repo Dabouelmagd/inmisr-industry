@@ -3178,6 +3178,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
       <div style="font-size:15px;font-weight:700;margin-bottom:4px">🧩 مستلزمات هذه الصناعة</div>
       <div style="font-size:12px;color:var(--ts);margin-bottom:14px">الخامات والمستلزمات المتوفرة على المنصة لهذا القطاع (مثال: الخيوط، الصبغة، وغيرها)</div>
       <div id="sector-components-list"></div>
+      <div style="font-size:10px;color:var(--tt);margin-top:10px">💡 اضغطي على أي بند للانتقال لموردي هذا القطاع — الفلترة الدقيقة لكل مادة بعينها هتتفعّل تلقائيًا بمجرد ما الموردون يضيفوا منتجاتهم الفعلية</div>
     </div>
 
     <div style="text-align:center;margin:22px 0">
@@ -3801,7 +3802,7 @@ async function openSectorSuppliersPage(sector) {
     });
     if (allInputs.length) {
       compsList.innerHTML = allInputs.map(function(c) {
-        return '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--bd);border-radius:20px;padding:6px 13px;margin:3px;font-size:12px"><span style="color:var(--tp);font-weight:600">' + c.name + '</span><span style="color:var(--ts);font-size:10px">· ' + c.unit + '</span></div>';
+        return '<div onclick="document.getElementById(\'sector-sup-page-grid\').scrollIntoView({behavior:\'smooth\'})" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--bd);border-radius:20px;padding:6px 13px;margin:3px;font-size:12px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor=\'var(--red)\'" onmouseout="this.style.borderColor=\'var(--bd)\'"><span style="color:var(--tp);font-weight:600">' + c.name + '</span><span style="color:var(--ts);font-size:10px">· ' + c.unit + '</span></div>';
       }).join("");
       compBox.style.display = "block";
     }
