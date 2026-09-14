@@ -3173,7 +3173,18 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   <div style="padding:26px 32px;max-width:980px;margin:0 auto">
     <button class="back-arrow-btn" style="display:inline-flex" data-page="home">← الرئيسية</button>
     <div style="margin:14px 0 6px"><div id="sector-sup-page-title" style="font-size:24px;font-weight:700">موردو قطاع</div><div id="sector-sup-page-sub" style="font-size:13px;color:var(--ts);margin-top:6px"></div></div>
-    <div class="g3" id="sector-sup-page-grid" style="margin-top:22px"></div>
+
+    <div id="sector-components-box" style="background:var(--surface);border:1px solid var(--bd);border-radius:14px;padding:20px;margin-top:20px;display:none">
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">🧩 مكونات هذه الصناعة</div>
+      <div style="font-size:12px;color:var(--ts);margin-bottom:14px">الخامات والمكوّنات المطلوبة في مراحل التصنيع لهذا القطاع</div>
+      <div id="sector-components-list"></div>
+    </div>
+
+    <div style="text-align:center;margin:22px 0">
+      <button class="bl" style="padding:9px 22px;border-radius:9px" onclick="document.getElementById('sector-sup-page-grid').scrollIntoView({behavior:'smooth'})">👥 الموردين ↓</button>
+    </div>
+
+    <div class="g3" id="sector-sup-page-grid" style="margin-top:6px"></div>
     <div style="text-align:center;margin-top:24px"><button class="bc" style="padding:11px 28px;border-radius:9px" id="sector-sup-rfq-btn" data-page="rfq">📋 طلب عرض سعر من هذا القطاع</button></div>
   </div>
 </div>
@@ -3755,7 +3766,7 @@ function resolveSectorKey(sector) {
   if (SECTOR_NAME_ALIASES.hasOwnProperty(sector)) return SECTOR_NAME_ALIASES[sector];
   return sector;
 }
-function openSectorSuppliersPage(sector) {
+async function openSectorSuppliersPage(sector) {
   sector = resolveSectorKey(sector);
   var rfqBtn = document.getElementById("sector-sup-rfq-btn");
   if (rfqBtn) {
@@ -3767,23 +3778,66 @@ function openSectorSuppliersPage(sector) {
       }, 150);
     };
   }
-  var raw = SUPS_BY_SECTOR[sector] || [];
-  var list = raw.map(function(row) {
-    var trust = row[3];
-    return {n:row[0], c:row[1], r:row[2], t:trust, l: trust >= 90 ? "نخبة" : (trust >= 85 ? "معتمد" : "موثق")};
-  }).sort(function(a, b) { return b.t - a.t; });
 
   document.getElementById("sector-sup-page-title").textContent = "موردو قطاع " + sector;
-  document.getElementById("sector-sup-page-sub").textContent = list.length ? (list.length + " مورد موثق — مرتبون من الأعلى تقييماً") : "لا يوجد موردون مسجّلون بعد في هذا القطاع — كوني أول من يطلب عرض سعر";
-
+  document.getElementById("sector-sup-page-sub").textContent = "جارٍ التحميل...";
   var grid = document.getElementById("sector-sup-page-grid");
-  grid.innerHTML = list.length ? list.map(function(sp) {
-    var initial = (sp.n || "؟").charAt(0);
-    var badgeClass = BEST_SUP_BADGE_CLASS[sp.l] || "bb";
-    return '<div class="sc" data-page="sup"><div style="display:flex;gap:12px;align-items:center;margin-bottom:12px"><div class="sav">' + initial + '</div><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--tp)">' + sp.n + '</div><div style="font-size:12px;color:var(--ts);margin-top:3px">' + sp.c + ' · ' + sector + '</div></div><span class="bdg ' + badgeClass + '">' + sp.l + '</span></div><div style="display:flex;justify-content:space-between;margin-bottom:10px"><div style="color:#F59E0B;font-size:13px">★★★★★ ' + sp.r + '</div></div><div class="tbar"><div class="tfill" style="width:' + sp.t + '%"></div></div><div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px"><span style="color:var(--ts)">Trust Score</span><span style="color:#C09300;font-weight:700">' + sp.t + '/100</span></div></div>';
-  }).join("") : '<div style="grid-column:1/-1;text-align:center;padding:30px 16px;color:var(--ts);font-size:13px;background:var(--bg2);border-radius:12px">لا يوجد موردون مسجّلون بعد في هذا القطاع</div>';
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px 16px;color:var(--ts);font-size:13px">جارٍ التحميل...</div>';
+  var compBox = document.getElementById("sector-components-box");
+  if (compBox) compBox.style.display = "none";
 
   if (typeof goTo === "function") goTo("sector-suppliers");
+
+  var categories = await getRealCategories();
+  var category = categories.find(function(c) { return c.nameAr === sector; }) ||
+    categories.find(function(c) { return c.nameAr && (c.nameAr.indexOf(sector) > -1 || sector.indexOf(c.nameAr) > -1); });
+
+  // Real industry components (manufacturing stages/inputs) from the category's rfqTemplateJson
+  if (compBox && category && category.rfqTemplateJson && category.rfqTemplateJson.stages) {
+    var compsList = document.getElementById("sector-components-list");
+    var allInputs = [];
+    category.rfqTemplateJson.stages.forEach(function(stage) {
+      (stage.inputs || []).forEach(function(inp) { allInputs.push({ name: inp.name, unit: inp.unit, stage: stage.stage }); });
+    });
+    if (allInputs.length) {
+      compsList.innerHTML = allInputs.map(function(c) {
+        return '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--bd);border-radius:20px;padding:6px 13px;margin:3px;font-size:12px"><span style="color:var(--tp);font-weight:600">' + c.name + '</span><span style="color:var(--ts);font-size:10px">· ' + c.unit + '</span></div>';
+      }).join("");
+      compBox.style.display = "block";
+    }
+  }
+
+  // Real suppliers filtered by this sector
+  try {
+    var result = await apiFetch("/suppliers?limit=30" + (category ? "&sector=" + encodeURIComponent(category.sectorCode) : ""));
+    var list = (result.data || []).map(normalizeRealSupplier);
+    document.getElementById("sector-sup-page-sub").textContent = list.length ? (list.length + " مورد موثق — مرتبون من الأعلى تقييماً") : "لا يوجد موردون مسجّلون بعد في هذا القطاع — كوني أول من يطلب عرض سعر";
+    window.__sectorSupClick = function(idx) {
+      var s = list[idx]; if (!s) return;
+      var m = document.getElementById("supplier-profile-modal");
+      if (!m) return;
+      document.getElementById("sp-avatar").textContent = s.n[0];
+      document.getElementById("sp-name").textContent = s.n;
+      document.getElementById("sp-loc").textContent = s.c + " · " + s.s;
+      document.getElementById("sp-badge").textContent = s.l;
+      document.getElementById("sp-badge").className = "bdg " + s.b;
+      document.getElementById("sp-rating").textContent = "★★★★★ " + s.r;
+      document.getElementById("sp-deals").textContent = s.d + " صفقة مكتملة";
+      document.getElementById("sp-trust-bar").style.width = s.t + "%";
+      document.getElementById("sp-trust-val").textContent = s.t + "/100";
+      document.getElementById("sp-response").textContent = s.rp || "24 ساعة";
+      var rfqBtn = document.getElementById("sp-rfq-btn");
+      if (rfqBtn) rfqBtn.onclick = function(){ m.classList.remove("open"); window.startRfqFromSupplier(s.n, s.s); };
+      if (typeof renderSupplierReviews === "function") renderSupplierReviews(s.id);
+      m.classList.add("open");
+    };
+    grid.innerHTML = list.length ? list.map(function(sp, idx) {
+      var initial = (sp.n || "؟").charAt(0);
+      return '<div class="sc" onclick="__sectorSupClick(' + idx + ')"><div style="display:flex;gap:12px;align-items:center;margin-bottom:12px"><div class="sav">' + initial + '</div><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--tp)">' + sp.n + '</div><div style="font-size:12px;color:var(--ts);margin-top:3px">' + sp.c + ' · ' + sector + '</div></div><span class="bdg ' + sp.b + '">' + sp.l + '</span></div><div style="display:flex;justify-content:space-between;margin-bottom:10px"><div style="color:#F59E0B;font-size:13px">★★★★★ ' + sp.r + '</div></div><div class="tbar"><div class="tfill" style="width:' + sp.t + '%"></div></div><div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px"><span style="color:var(--ts)">Trust Score</span><span style="color:#C09300;font-weight:700">' + sp.t + '/100</span></div></div>';
+    }).join("") : '<div style="grid-column:1/-1;text-align:center;padding:30px 16px;color:var(--ts);font-size:13px;background:var(--bg2);border-radius:12px">لا يوجد موردون مسجّلون بعد في هذا القطاع</div>';
+  } catch (err) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px 16px;color:var(--ts);font-size:13px">⚠️ تعذر تحميل الموردين</div>';
+  }
 }
 window.openSectorSuppliersPage = openSectorSuppliersPage;
 document.addEventListener("DOMContentLoaded", function() {
@@ -8557,7 +8611,7 @@ async function renderAdSlot(locationKey, containerId, opts) {
 
   if (eligible.length) {
     container.style.display = "";
-    container.style.minHeight = "160px"; // taller ad area — was collapsing to the image's natural height
+    container.style.minHeight = "200px"; // taller ad area (enlarged per request) — was collapsing to the image's natural height
     renderAdSlideshow(container, eligible, today);
     return true;
   }
@@ -8603,8 +8657,8 @@ function renderAdSlideshow(container, ads, today) {
     var clickUrl = API_BASE + "/ads-v2/click/" + ad.campaignId + variantQs;
     var dots = ads.length > 1 ? '<div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);display:flex;gap:5px">' +
       ads.map(function(_, di) { return '<span style="width:6px;height:6px;border-radius:50%;background:' + (di === i ? "#fff" : "rgba(255,255,255,.4)") + '"></span>'; }).join("") + '</div>' : "";
-    container.innerHTML = '<a href="' + clickUrl + '" target="_blank" rel="noopener sponsored" style="display:block;position:relative;min-height:160px">' +
-      '<img src="' + ad.bannerUrl + '" alt="' + (ad.advertiserName || "إعلان") + '" style="width:100%;height:100%;min-height:160px;object-fit:cover;display:block;border-radius:8px">' +
+    container.innerHTML = '<a href="' + clickUrl + '" target="_blank" rel="noopener sponsored" style="display:block;position:relative;min-height:200px">' +
+      '<img src="' + ad.bannerUrl + '" alt="' + (ad.advertiserName || "إعلان") + '" style="width:100%;height:100%;min-height:200px;object-fit:cover;display:block;border-radius:8px">' +
       '<span style="position:absolute;top:4px;left:4px;background:rgba(0,0,0,.6);color:#fff;font-size:9px;padding:2px 7px;border-radius:5px">إعلان</span>' +
       dots + '</a>';
     fetch(API_BASE + "/ads-v2/impression/" + ad.campaignId + variantQs, { method: "POST" }).catch(function(){});
