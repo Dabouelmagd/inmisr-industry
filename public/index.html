@@ -3175,8 +3175,8 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
     <div style="margin:14px 0 6px"><div id="sector-sup-page-title" style="font-size:24px;font-weight:700">موردو قطاع</div><div id="sector-sup-page-sub" style="font-size:13px;color:var(--ts);margin-top:6px"></div></div>
 
     <div id="sector-components-box" style="background:var(--surface);border:1px solid var(--bd);border-radius:14px;padding:20px;margin-top:20px;display:none">
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px">🧩 مكونات هذه الصناعة</div>
-      <div style="font-size:12px;color:var(--ts);margin-bottom:14px">الخامات والمكوّنات المطلوبة في مراحل التصنيع لهذا القطاع</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">🧩 مستلزمات هذه الصناعة</div>
+      <div style="font-size:12px;color:var(--ts);margin-bottom:14px">الخامات والمستلزمات المتوفرة على المنصة لهذا القطاع (مثال: الخيوط، الصبغة، وغيرها)</div>
       <div id="sector-components-list"></div>
     </div>
 
@@ -5994,7 +5994,7 @@ var REAL_CATEGORIES_CACHE = null;
 async function getRealCategories() {
   if (REAL_CATEGORIES_CACHE) return REAL_CATEGORIES_CACHE;
   try {
-    var cats = await apiFetch("/categories");
+    var cats = await apiFetch("/categories?template=true");
     REAL_CATEGORIES_CACHE = cats;
     return cats;
   } catch (err) {
