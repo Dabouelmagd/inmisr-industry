@@ -1003,6 +1003,17 @@ model CompanyAssistant {
   @@map("company_assistants")
 }
 
+model AdBillingTier {
+  period          String   @id // WEEKLY / MONTHLY / QUARTERLY / SEMI_ANNUAL / ANNUAL
+  label           String   // "شهري", "ربع سنوي", ...
+  discountPercent Int      @default(0)
+  periodDays      Int
+  isLimitedTime   Boolean  @default(false)
+  updatedAt       DateTime @updatedAt
+
+  @@map("ad_billing_tiers")
+}
+
 model CustomIndustrialService {
   id          String   @id @default(uuid())
   name        String

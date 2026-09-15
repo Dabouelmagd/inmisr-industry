@@ -2794,6 +2794,11 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
       <div style="background:#10B98122;border:2px dashed #10B981;border-radius:6px;padding:8px;text-align:center;font-size:10px;color:#10B981;font-weight:700">💬 EXIT_INTENT_MODAL — نافذة منبثقة عند محاولة المغادرة (مرة/جلسة)</div>
     </div>
 
+    <div style="font-size:14px;font-weight:700;margin-bottom:10px">⚙️ خصومات مدة الحجز (قابلة للتعديل)</div>
+    <div id="billing-tiers-editor" style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:24px">
+      <div style="font-size:12px;color:var(--ts);padding:14px 0;text-align:center">جارٍ التحميل...</div>
+    </div>
+
     <div style="font-size:14px;font-weight:700;margin-bottom:10px">كتالوج المساحات والأسعار</div>
     <div id="adsv2-slots-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px"></div>
 
@@ -4505,6 +4510,8 @@ onDomReady(function(){
   async function renderAdreqTypesGrid() {
     var grid = document.getElementById("adreq-types-grid");
     if (!grid) return;
+    if (!BILLING_TIERS_CACHE.length) await loadBillingTiers();
+    populateDurationSelect("ad-duration", "MONTHLY");
     // Safety timeout: if the fetch below hangs for any reason (network
     // stall, a promise that never settles), show a visible error instead
     // of leaving "جارٍ التحميل..." on screen forever with no way to tell
@@ -8531,6 +8538,46 @@ var ADSV2_SLOT_LABELS = {
   EXIT_INTENT_MODAL: "إعلان النوافذ المنبثقة الحصري"
 };
 
+function renderBillingTiersEditor() {
+  var box = document.getElementById("billing-tiers-editor");
+  if (!box) return;
+  if (!BILLING_TIERS_CACHE.length) {
+    box.innerHTML = '<div style="font-size:12px;color:var(--ts);padding:14px 0;text-align:center">⚠️ تعذر تحميل خصومات المدة</div>';
+    return;
+  }
+  box.innerHTML = '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">' +
+    BILLING_TIERS_CACHE.map(function(t) {
+      return '<div style="background:var(--bg4);border-radius:8px;padding:10px;text-align:center">' +
+        '<div style="font-size:12px;font-weight:700;margin-bottom:6px">' + t.label + '</div>' +
+        '<div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:6px">' +
+        '<input type="number" min="0" max="90" value="' + t.discountPercent + '" id="bt-discount-' + t.period + '" style="width:52px;text-align:center;background:var(--bg3);border:1px solid var(--bd);border-radius:6px;padding:4px;color:var(--tp);font-size:12px">' +
+        '<span style="font-size:11px;color:var(--ts)">%</span></div>' +
+        '<label style="display:flex;align-items:center;justify-content:center;gap:4px;font-size:10px;color:var(--ts);cursor:pointer;margin-bottom:8px">' +
+        '<input type="checkbox" id="bt-limited-' + t.period + '" ' + (t.isLimitedTime ? "checked" : "") + ' style="width:11px;height:11px">لفترة محدودة</label>' +
+        '<button class="bl" style="width:100%;font-size:10px;padding:5px;border-radius:6px" onclick="saveBillingTier(\'' + t.period + '\')">حفظ</button>' +
+        '</div>';
+    }).join("") + '</div>';
+}
+window.renderBillingTiersEditor = renderBillingTiersEditor;
+
+async function saveBillingTier(period) {
+  var discountPercent = Number(document.getElementById("bt-discount-" + period).value);
+  var isLimitedTime = document.getElementById("bt-limited-" + period).checked;
+  try {
+    await apiFetch("/promo-placements/admin/billing-tiers/" + period, {
+      method: "PATCH",
+      body: JSON.stringify({ discountPercent: discountPercent, isLimitedTime: isLimitedTime }),
+    });
+    toast("✅ تم تحديث خصم " + period);
+    await loadBillingTiers();
+    renderBillingTiersEditor();
+    if (typeof loadAdsV2Admin === "function") loadAdsV2Admin();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر الحفظ"));
+  }
+}
+window.saveBillingTier = saveBillingTier;
+
 async function loadAdsV2Admin() {
   try {
     var stats = await apiFetch("/promo-placements/admin/dashboard");
@@ -8543,17 +8590,26 @@ async function loadAdsV2Admin() {
   }
 
   try {
+    await loadBillingTiers(); // always refresh in the admin panel — could've been edited elsewhere
+    renderBillingTiersEditor();
+  } catch (err) { /* silent — editor shows its own error state */ }
+
+  try {
+    if (!BILLING_TIERS_CACHE.length) await loadBillingTiers();
     var slots = await apiFetch("/promo-placements/slots");
     var grid = document.getElementById("adsv2-slots-grid");
     if (grid) {
       grid.innerHTML = slots.map(function(s) {
-        var monthly = Math.round(s.basePriceWeekly * 4 * 0.85);
-        var quarterly = Math.round(s.basePriceWeekly * 12 * 0.70);
-        var semiAnnual = Math.round(s.basePriceWeekly * 26 * 0.60);
-        var annual = Math.round(s.basePriceWeekly * 52 * 0.50);
         var priceTile = function(label, amount) {
           return '<div style="background:var(--bg3);border-radius:6px;padding:6px;cursor:pointer;transition:background .15s" onmouseover="this.style.background=\'var(--bg4)\'" onmouseout="this.style.background=\'var(--bg3)\'" onclick="openAdBookingModal(\'' + s.id + '\')" title="اضغطي لحجز هذه المساحة مباشرة"><div style="color:var(--tt)">' + label + '</div><div style="font-weight:700;color:var(--gold)">' + formatEgp(amount) + '</div></div>';
         };
+        var tiles = BILLING_TIERS_CACHE.map(function(t) {
+          var amount = Math.round(s.basePriceWeekly * (t.periodDays / 7) * (1 - t.discountPercent / 100));
+          var label = t.label + (t.discountPercent > 0 ? " (-" + t.discountPercent + "%)" : "");
+          return priceTile(label, amount);
+        });
+        var firstThree = tiles.slice(0, 3).join("");
+        var rest = tiles.slice(3).join("");
         return '<div class="card"><div class="cb">' +
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">' +
           '<div style="font-size:13px;font-weight:700">' + s.name + '</div>' +
@@ -8568,13 +8624,10 @@ async function loadAdsV2Admin() {
           '<button class="bl" style="width:100%;font-size:11px;padding:6px;border-radius:6px;margin-bottom:10px" onclick="openSlotCalendar(\'' + s.id + '\',\'' + s.name.replace(/'/g, "\\'") + '\')">📅 عرض تقويم الحجوزات</button>' +
           '<div style="font-size:10px;color:var(--tt);margin-bottom:6px">اضغطي على أي سعر للحجز المباشر ↓</div>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:11px;text-align:center;margin-bottom:6px">' +
-          priceTile("أسبوعي", s.basePriceWeekly) +
-          priceTile("شهري (-15%)", monthly) +
-          priceTile("ربع سنوي (-30%)", quarterly) +
+          firstThree +
           '</div>' +
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;text-align:center">' +
-          priceTile("6 أشهر (-40%)", semiAnnual) +
-          priceTile("سنوي (-50%)", annual) +
+          '<div style="display:grid;grid-template-columns:repeat(' + Math.max(1, tiles.length - 3) + ',1fr);gap:6px;font-size:11px;text-align:center">' +
+          rest +
           '</div></div></div>';
       }).join("");
     }
@@ -9086,18 +9139,24 @@ async function loadRealAdPricing() {
   var box = document.getElementById("real-ad-pricing-grid");
   if (!box) return;
   try {
+    if (!BILLING_TIERS_CACHE.length) await loadBillingTiers();
+    var monthlyTier = BILLING_TIERS_CACHE.find(function(t){ return t.period === "MONTHLY"; }) || { periodDays: 28, discountPercent: 0 };
     var slots = await apiFetch("/promo-placements/slots");
     box.innerHTML = slots.map(function(s) {
       var icon = AD_SLOT_ICONS[s.locationKey] || "📣";
       var desc = AD_SLOT_DESC[s.locationKey] || s.dimensions;
-      var monthly = Math.round(s.basePriceWeekly * AD_BILLING_MULT.MONTHLY);
+      var monthly = Math.round(s.basePriceWeekly * (monthlyTier.periodDays / 7) * (1 - monthlyTier.discountPercent / 100));
       return '<div class="card"><div class="cb">' +
         '<div style="font-size:24px;margin-bottom:8px">' + icon + '</div>' +
         '<div style="font-size:13px;font-weight:700;margin-bottom:4px">' + s.name + '</div>' +
         '<div style="font-size:12px;color:var(--ts);margin-bottom:8px">' + s.dimensions + ' · ' + desc + '</div>' +
         '<div style="font-size:18px;font-weight:700;color:var(--red)">' + formatEgp(monthly) + ' <span style="font-size:12px;color:var(--ts);font-weight:400">شهريًا (من ' + formatEgp(s.basePriceWeekly) + '/أسبوع)</span></div>' +
         '</div></div>';
-    }).join("") + '<div class="card" style="border:1px solid var(--gold)"><div class="cb" style="text-align:center;display:flex;flex-direction:column;justify-content:center;height:100%"><div style="font-size:24px;margin-bottom:8px">💬</div><div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--gold)">خصومات الاشتراك الطويل</div><div style="font-size:12px;color:var(--ts);line-height:1.7">خصم 15% شهري · خصم 30% ربع سنوي · خصم 40% كل 6 أشهر · خصم 50% سنويًا (كل خصم مقارنةً بحجز نفس المدة أسبوعًا بأسبوع)</div></div></div>';
+    }).join("") + '<div class="card" style="border:1px solid var(--gold)"><div class="cb" style="text-align:center;display:flex;flex-direction:column;justify-content:center;height:100%"><div style="font-size:24px;margin-bottom:8px">💬</div><div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--gold)">خصومات الاشتراك الطويل</div><div style="font-size:12px;color:var(--ts);line-height:1.7">' +
+      BILLING_TIERS_CACHE.filter(function(t){ return t.discountPercent > 0; }).map(function(t) {
+        return "خصم " + t.discountPercent + "% " + t.label + (t.isLimitedTime ? " (لفترة محدودة)" : "");
+      }).join(" · ") +
+      ' (كل خصم مقارنةً بحجز نفس المدة أسبوعًا بأسبوع)</div></div></div>';
   } catch (err) {
     box.innerHTML = '<div style="grid-column:1/-1;text-align:center;font-size:13px;color:var(--ts);padding:20px 0">⚠️ تعذر تحميل الأسعار — يرجى المحاولة لاحقًا</div>';
   }
@@ -9595,12 +9654,49 @@ async function raiseOrderDisputeReal(orderId) {
 window.raiseOrderDisputeReal = raiseOrderDisputeReal;
 
 // ── ADVERTISER SELF-SERVE BOOKING ──────────────────────────────────
+// Real, admin-editable discount tiers — fetched once from the live
+// /promo-placements/billing-tiers endpoint (backed by AdBillingTier in
+// the DB), not hardcoded. ADSV2_BILLING_DAYS/MULT are derived from it
+// and kept for any code that still reads them directly.
+var BILLING_TIERS_CACHE = [];
 var ADSV2_BILLING_DAYS = { WEEKLY: 7, MONTHLY: 28, QUARTERLY: 84, SEMI_ANNUAL: 182, ANNUAL: 364 };
-var ADSV2_BILLING_MULT = { WEEKLY: 1, MONTHLY: 4 * 0.85, QUARTERLY: 12 * 0.70, SEMI_ANNUAL: 26 * 0.60, ANNUAL: 52 * 0.50 };
+var ADSV2_BILLING_MULT = { WEEKLY: 1, MONTHLY: 4 * 0.90, QUARTERLY: 12 * 0.80, SEMI_ANNUAL: 26 * 0.70, ANNUAL: 52 * 0.60 };
+
+async function loadBillingTiers() {
+  try {
+    BILLING_TIERS_CACHE = await apiFetch("/promo-placements/billing-tiers");
+    ADSV2_BILLING_DAYS = {}; ADSV2_BILLING_MULT = {};
+    BILLING_TIERS_CACHE.forEach(function(t) {
+      ADSV2_BILLING_DAYS[t.period] = t.periodDays;
+      ADSV2_BILLING_MULT[t.period] = (t.periodDays / 7) * (1 - t.discountPercent / 100);
+    });
+  } catch (err) { /* keep the fallback defaults above */ }
+  return BILLING_TIERS_CACHE;
+}
+window.loadBillingTiers = loadBillingTiers;
+
+// Fills any <select> duration dropdown with the real, current tiers —
+// one shared function instead of duplicating static <option> lists
+// (and their discount percentages) across every ad-booking form.
+function populateDurationSelect(selectId, defaultPeriod) {
+  var sel = document.getElementById(selectId);
+  if (!sel || !BILLING_TIERS_CACHE.length) return;
+  sel.innerHTML = BILLING_TIERS_CACHE.map(function(t) {
+    var discountText = t.discountPercent > 0 ? " (خصم " + t.discountPercent + "%" + (t.isLimitedTime ? " — لفترة محدودة" : "") + ")" : "";
+    var selected = t.period === (defaultPeriod || "MONTHLY") ? " selected" : "";
+    return '<option value="' + t.period + '"' + selected + '>' + t.label + discountText + '</option>';
+  }).join("");
+}
+window.populateDurationSelect = populateDurationSelect;
+
+onDomReady(loadBillingTiers);
+
 var ADSV2_SLOTS_CACHE = [];
 
 async function openAdBookingModal(preselectSlotId) {
   if (!requireLoginForService(function(){ openAdBookingModal(preselectSlotId); })) return;
+  if (!BILLING_TIERS_CACHE.length) await loadBillingTiers();
+  populateDurationSelect("adb-period", "MONTHLY");
 
   var slotSel = document.getElementById("adb-slot");
   slotSel.innerHTML = '<option value="">جارٍ التحميل...</option>';
@@ -10065,6 +10161,8 @@ async function openPaidAdModal() {
   document.getElementById("pa-external-company").checked = false;
   document.getElementById("pa-destination").value = "";
   document.getElementById("pa-start-date").value = "";
+  if (!BILLING_TIERS_CACHE.length) await loadBillingTiers();
+  populateDurationSelect("pa-duration", "MONTHLY");
   var slotSel = document.getElementById("pa-slot");
   slotSel.innerHTML = '<option value="">جارٍ التحميل...</option>';
   try {
@@ -10177,6 +10275,8 @@ async function openGiftAdModal() {
   document.getElementById("ga-destination").value = "";
   document.getElementById("ga-note").value = "";
   document.getElementById("ga-start-date").value = "";
+  if (!BILLING_TIERS_CACHE.length) await loadBillingTiers();
+  populateDurationSelect("ga-duration", "MONTHLY");
   var slotSel = document.getElementById("ga-slot");
   slotSel.innerHTML = '<option value="">جارٍ التحميل...</option>';
   try {

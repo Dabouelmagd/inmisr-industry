@@ -7,7 +7,7 @@
 // بحرية vs مساحات المنصة الثابتة عالية القيمة).
 
 import {
-  Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger,
+  Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger, OnModuleInit,
 } from '@nestjs/common';
 import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, Res,
@@ -21,24 +21,27 @@ import { PrismaService } from '../common/prisma.service';
 import { AdminService } from '../admin/admin.service';
 import { JwtGuard } from '../auth/jwt.guard';
 
-const BILLING_MULTIPLIERS: Record<string, number> = {
-  WEEKLY: 1,
-  MONTHLY: 4 * 0.85,   // 15% off vs 4 straight weeks — the platform default
-  QUARTERLY: 12 * 0.70, // 30% off vs 12 straight weeks + top-of-sector pinning
-  SEMI_ANNUAL: 26 * 0.60, // 40% off vs 26 straight weeks (6 months)
-  ANNUAL: 52 * 0.50, // 50% off vs 52 straight weeks (1 year) — the deepest discount tier
+// Defaults — seeded into the DB on first use; from then on the DB (edited
+// via the admin billing-tiers endpoints) is the source of truth. Kept here
+// only as the seed values and a safety fallback if the DB read fails.
+const DEFAULT_BILLING_TIERS: Record<string, { label: string; discountPercent: number; periodDays: number }> = {
+  WEEKLY:      { label: 'أسبوعي',    discountPercent: 0,  periodDays: 7 },
+  MONTHLY:     { label: 'شهري',      discountPercent: 10, periodDays: 28 },
+  QUARTERLY:   { label: 'ربع سنوي',  discountPercent: 20, periodDays: 84 },
+  SEMI_ANNUAL: { label: '6 أشهر',    discountPercent: 30, periodDays: 182 },
+  ANNUAL:      { label: 'سنوي',      discountPercent: 40, periodDays: 364 },
 };
 
-// The number of days a booking actually occupies the slot for, per period —
-// must correspond exactly to what BILLING_MULTIPLIERS charges for, or a
-// WEEKLY-priced booking could occupy the slot far longer than one week.
-const BILLING_PERIOD_DAYS: Record<string, number> = {
-  WEEKLY: 7,
-  MONTHLY: 28,
-  QUARTERLY: 84,
-  SEMI_ANNUAL: 182,
-  ANNUAL: 364,
-};
+function tierMultiplier(periodDays: number, discountPercent: number): number {
+  return (periodDays / 7) * (1 - discountPercent / 100);
+}
+
+let BILLING_MULTIPLIERS: Record<string, number> = Object.fromEntries(
+  Object.entries(DEFAULT_BILLING_TIERS).map(([k, v]) => [k, tierMultiplier(v.periodDays, v.discountPercent)]),
+);
+let BILLING_PERIOD_DAYS: Record<string, number> = Object.fromEntries(
+  Object.entries(DEFAULT_BILLING_TIERS).map(([k, v]) => [k, v.periodDays]),
+);
 
 // Anomaly-detection thresholds (per the spec: spike >8-10% CTR is
 // fraud-suspicious; <0.2% CTR after 2000+ impressions is underperforming).
@@ -74,11 +77,56 @@ function alreadySeen(key: string, windowMs: number): boolean {
 }
 
 @Injectable()
-export class AdsV2Service {
+export class AdsV2Service implements OnModuleInit {
   private readonly logger = new Logger('AdsV2Service');
   constructor(private prisma: PrismaService) {}
 
+  async onModuleInit() {
+    try { await this.getBillingTiers(); } catch (e) { this.logger.warn('Could not preload ad billing tiers — falling back to defaults until first request'); }
+  }
+
   // ── SLOTS (fixed catalog, seeded once — see prisma/seed-ad-slots.ts) ──
+  // ── AD BILLING TIERS — admin-editable discount structure ────────
+  async getBillingTiers() {
+    let tiers = await this.prisma.adBillingTier.findMany({ orderBy: { periodDays: 'asc' } });
+    if (tiers.length === 0) {
+      // First run — seed the defaults into the DB so the admin can edit
+      // them from here on, instead of the hardcoded values.
+      await this.prisma.adBillingTier.createMany({
+        data: Object.entries(DEFAULT_BILLING_TIERS).map(([period, v]) => ({ period, ...v })),
+      });
+      tiers = await this.prisma.adBillingTier.findMany({ orderBy: { periodDays: 'asc' } });
+    }
+    this.refreshBillingCache(tiers);
+    return tiers;
+  }
+
+  private refreshBillingCache(tiers: { period: string; periodDays: number; discountPercent: number }[]) {
+    const mult: Record<string, number> = {};
+    const days: Record<string, number> = {};
+    for (const t of tiers) {
+      mult[t.period] = tierMultiplier(t.periodDays, t.discountPercent);
+      days[t.period] = t.periodDays;
+    }
+    BILLING_MULTIPLIERS = mult;
+    BILLING_PERIOD_DAYS = days;
+  }
+
+  async updateBillingTier(period: string, dto: { discountPercent?: number; isLimitedTime?: boolean }) {
+    if (dto.discountPercent != null && (dto.discountPercent < 0 || dto.discountPercent > 90)) {
+      throw new BadRequestException('نسبة الخصم لازم تكون بين 0 و90%');
+    }
+    const existing = await this.prisma.adBillingTier.findUnique({ where: { period } });
+    if (!existing) throw new NotFoundException('فترة التسعير غير موجودة');
+    const updated = await this.prisma.adBillingTier.update({
+      where: { period },
+      data: { discountPercent: dto.discountPercent, isLimitedTime: dto.isLimitedTime },
+    });
+    const all = await this.prisma.adBillingTier.findMany();
+    this.refreshBillingCache(all);
+    return updated;
+  }
+
   async listSlots() {
     const slots = await this.prisma.adSlot.findMany({ where: { isActive: true }, orderBy: { basePriceWeekly: 'desc' } });
     const now = new Date();
@@ -185,6 +233,16 @@ export class AdsV2Service {
   }
 
   // ── ADMIN: grant a free/complimentary ad booking (bypasses payment) ──
+  // Auto-approves a booking right after creation — used only by the
+  // admin-driven flows (gift/paid bookings), where the admin creating
+  // it IS the review, not a bypass of it.
+  async approveBookingDirect(bookingId: string) {
+    return this.prisma.adBooking.update({
+      where: { id: bookingId },
+      data: { reviewStatus: 'APPROVED' },
+    });
+  }
+
   async createGiftBooking(dto: {
     advertiserId: string; slotId: string; targetSector?: string; targetZone?: string; targetUserType?: string;
     bannerUrl: string; destinationUrl: string; startDate: string; billingPeriod: string; note?: string;
@@ -254,7 +312,8 @@ export class AdsV2Service {
 
     let bookings = await this.prisma.adBooking.findMany({
       where: {
-        slotId: slot.id, reviewStatus: 'APPROVED', paymentStatus: 'PAID', suspended: false,
+        slotId: slot.id, reviewStatus: 'APPROVED', suspended: false,
+        paymentStatus: { in: ['PAID', 'WAIVED'] }, // WAIVED = admin-granted gift ad, equally legitimate to serve
         startDate: { lte: now }, endDate: { gte: now },
       },
       include: {
@@ -573,6 +632,21 @@ export class AdsV2Controller {
     return this.ads.listSlots();
   }
 
+  @Get('billing-tiers')
+  @ApiOperation({ summary: 'هيكل خصومات مدة الحجز (أسبوعي/شهري/...) — حقيقي وقابل للتعديل' })
+  getBillingTiers() {
+    return this.ads.getBillingTiers();
+  }
+
+  @Patch('admin/billing-tiers/:period')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تعديل نسبة خصم فترة حجز معينة (أدمن)' })
+  updateBillingTier(@Param('period') period: string, @Body() dto: any, @Request() req: any) {
+    this.requireAdmin(req);
+    return this.ads.updateBillingTier(period, dto);
+  }
+
   @Get('slots/:slotId/calendar')
   @ApiOperation({ summary: 'تقويم توافر مساحة إعلانية' })
   getCalendar(@Param('slotId') slotId: string, @Query('months') months: string) {
@@ -665,7 +739,11 @@ export class AdsV2Controller {
       advertiserId = company.id;
     }
     if (!advertiserId) throw new BadRequestException('يجب تحديد الشركة أو بيانات شركة جديدة');
-    return this.ads.createBooking(advertiserId, dto);
+    const booking = await this.ads.createBooking(advertiserId, dto);
+    // Admin is creating and vetting this directly (same reasoning as
+    // createGiftBooking) — it shouldn't sit in the same pending-review
+    // queue as a random company's self-serve booking.
+    return this.ads.approveBookingDirect(booking.id);
   }
 
   @Get('bookings/my')
