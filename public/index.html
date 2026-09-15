@@ -2492,46 +2492,26 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
       </div></div>
     </div>
   <div id="dash-mfg-ops" style="padding:0 32px 28px;max-width:1180px">
-    <div style="font-size:18px;font-weight:700;margin-bottom:4px">🏭 لوحة عمليات التصنيع</div>
-    <div style="font-size:12px;color:var(--ts);margin-bottom:16px">متابعة يومية لطاقة إنتاج مصنعك وحالة ترخيصك الصناعي — اعرفي الطاقة الفاضية لتسويقها أو خط متعطل محتاج تدخل، وتابعي تاريخ تجديد الترخيص</div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:4px">🏭 مستلزمات ومنتجات صناعية</div>
+    <div style="font-size:12px;color:var(--ts);margin-bottom:16px" id="mfg-ops-subtitle">جارٍ التحميل...</div>
 
-    <div class="g4" style="margin:0 0 18px">
-      <div class="kc" style="border-right:3px solid var(--red)"><div class="kl">معدل استغلال خطوط الإنتاج</div><div class="kv">78<span style="font-size:14px;color:var(--ts)">%</span></div></div>
-      <div class="kc" style="border-right:3px solid var(--gold)"><div class="kl">طلبات شراء نشطة</div><div class="kv">12</div></div>
-      <div class="kc" style="border-right:3px solid #22C55E"><div class="kl">حالة الترخيص الصناعي</div><div class="kv" style="font-size:17px;color:#22C55E">سارٍ ✓</div></div>
-      <div class="kc" style="border-right:3px solid #CE1126"><div class="kl">تنبيهات نقص توريد</div><div class="kv" style="color:#CE1126">3</div></div>
+    <div id="mfg-buyer-view" style="display:none">
+      <div class="card"><div class="cb">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div style="font-size:15px;font-weight:700">📋 مستلزماتي المطلوبة للشراء</div>
+          <button class="bl" style="font-size:11px;padding:4px 10px;border-radius:6px" data-page="factory">+ إضافة احتياج</button>
+        </div>
+        <div id="mfg-buyer-needs-list"><div style="font-size:13px;color:var(--ts);padding:14px 0;text-align:center">جارٍ التحميل...</div></div>
+      </div></div>
     </div>
 
-    <div class="g2">
+    <div id="mfg-supplier-view" style="display:none">
       <div class="card"><div class="cb">
-        <div style="font-size:15px;font-weight:700;margin-bottom:4px">خطوط الإنتاج — معدل الاستغلال</div>
-        <div style="font-size:11px;color:var(--ts);margin-bottom:14px">اعرفي أي خط عنده طاقة فاضية تقدري تسوّقيها لمصنع تانية (من صفحة بوابة المصانع الكبرى)، أو خط منخفض الكفاءة محتاج صيانة</div>
-        <div style="margin-bottom:14px">
-          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><span>خط التجميع 1</span><span style="font-weight:700;color:var(--gold)">82%</span></div>
-          <div class="tbar"><div class="tfill" style="width:82%"></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div style="font-size:15px;font-weight:700">📦 منتجاتي المتاحة للبيع</div>
+          <button class="bl" style="font-size:11px;padding:4px 10px;border-radius:6px" onclick="openSubmitProduct()">+ إضافة منتج</button>
         </div>
-        <div style="margin-bottom:14px">
-          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><span>خط الصب والتشكيل</span><span style="font-weight:700;color:var(--gold)">71%</span></div>
-          <div class="tbar"><div class="tfill" style="width:71%"></div></div>
-        </div>
-        <div style="margin-bottom:14px">
-          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><span>خط التعبئة النهائي</span><span style="font-weight:700;color:var(--gold)">88%</span></div>
-          <div class="tbar"><div class="tfill" style="width:88%"></div></div>
-        </div>
-        <div>
-          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><span>خط الفحص والجودة</span><span style="font-weight:700;color:var(--gold)">64%</span></div>
-          <div class="tbar"><div class="tfill" style="width:64%"></div></div>
-        </div>
-      </div></div>
-
-      <div class="card"><div class="cb">
-        <div style="font-size:15px;font-weight:700;margin-bottom:4px">تكامل السجل الصناعي والتراخيص</div>
-        <div style="font-size:11px;color:var(--ts);margin-bottom:14px">ترخيصك الصناعي لازم يكون ساري دايمًا — تابعي تاريخ التجديد قبل ما يحصل أي مشكلة قانونية</div>
-        <div class="row"><span style="color:var(--ts)">رقم الترخيص الصناعي</span><span style="font-weight:700">IND-2025-08841</span></div>
-        <div class="row"><span style="color:var(--ts)">الجهة المُصدرة</span><span style="font-weight:700">الهيئة العامة للتنمية الصناعية</span></div>
-        <div class="row"><span style="color:var(--ts)">تاريخ التجديد القادم</span><span style="font-weight:700;color:var(--gold)">14 مارس 2026</span></div>
-        <div class="row"><span style="color:var(--ts)">حالة المطابقة</span><span class="pill pg">مطابق ✓</span></div>
-        <button class="bl" style="width:100%;margin-top:14px;padding:9px;font-size:13px" onclick="toast('تم إرسال طلب تجديد الترخيص للهيئة العامة للتنمية الصناعية')">تجديد الترخيص</button>
+        <div id="mfg-supplier-products-list"><div style="font-size:13px;color:var(--ts);padding:14px 0;text-align:center">جارٍ التحميل...</div></div>
       </div></div>
     </div>
   </div>
@@ -4218,6 +4198,7 @@ function goTo(pg, fromBack){
       if (myServicesSection) myServicesSection.style.display = showMyServices ? "block" : "none";
       if (myServicesNavBtn) myServicesNavBtn.style.display = showMyServices ? "" : "none";
       if (mfgOpsSection) mfgOpsSection.style.display = showMyServices ? "block" : "none";
+      if (showMyServices && typeof loadMfgOpsPanel === "function") loadMfgOpsPanel(role);
       if (mfgOpsNavBtn) mfgOpsNavBtn.style.display = showMyServices ? "" : "none";
       if (bizTeamSection) bizTeamSection.style.display = showMyServices ? "block" : "none";
       if (bizTeamNavBtn) bizTeamNavBtn.style.display = showMyServices ? "" : "none";
@@ -9679,6 +9660,47 @@ async function loadDashLoyaltyWidget() {
   }
 }
 window.loadDashLoyaltyWidget = loadDashLoyaltyWidget;
+
+async function loadMfgOpsPanel(role) {
+  var subtitleEl = document.getElementById("mfg-ops-subtitle");
+  var buyerView = document.getElementById("mfg-buyer-view");
+  var supplierView = document.getElementById("mfg-supplier-view");
+  if (!buyerView || !supplierView) return;
+
+  if (role === "company") {
+    buyerView.style.display = "block";
+    supplierView.style.display = "none";
+    if (subtitleEl) subtitleEl.textContent = "احتياجاتك الصناعية المسجّلة — لتسهيل وصول الموردين المناسبين لها";
+    var listEl = document.getElementById("mfg-buyer-needs-list");
+    try {
+      var needs = await apiFetch("/factory-needs/my");
+      listEl.innerHTML = needs.length ? needs.map(function(n) {
+        var statusMap = { PENDING: ["قيد المراجعة", "pa"], APPROVED: ["منشور ✓", "pg"], REJECTED: ["مرفوض", "pr"] };
+        var st = statusMap[n.status] || [n.status, "pa"];
+        return '<div class="row"><div><div style="font-weight:700;font-size:13px">' + n.needType + '</div><div style="font-size:12px;color:var(--ts);margin-top:3px">' + n.description + (n.quantity ? " · " + n.quantity : "") + '</div></div><span class="pill ' + st[1] + '">' + st[0] + '</span></div>';
+      }).join("") : '<div style="font-size:13px;color:var(--ts);padding:14px 0;text-align:center">لم تسجّلي أي احتياج بعد</div>';
+    } catch (err) {
+      listEl.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:14px 0;text-align:center">⚠️ تعذر تحميل الاحتياجات</div>';
+    }
+  } else if (role === "supplier") {
+    buyerView.style.display = "none";
+    supplierView.style.display = "block";
+    if (subtitleEl) subtitleEl.textContent = "منتجاتك المعروضة للبيع حاليًا على المنصة";
+    var pListEl = document.getElementById("mfg-supplier-products-list");
+    try {
+      var companyId = (window.currentUser && window.currentUser.companyId) || "";
+      var result = await apiFetch("/products?companyId=" + companyId + "&limit=50");
+      var products = (result && result.data) || result || [];
+      pListEl.innerHTML = products.length ? products.map(function(p) {
+        var priceText = p.priceMin ? formatEgp(p.priceMin) + (p.priceMax && p.priceMax !== p.priceMin ? " – " + formatEgp(p.priceMax) : "") + " / " + p.unit : "السعر عند الطلب";
+        return '<div class="row"><div><div style="font-weight:700;font-size:13px">' + p.nameAr + '</div><div style="font-size:12px;color:var(--ts);margin-top:3px">' + priceText + '</div></div><span class="pill ' + (p.isActive ? "pg" : "pa") + '">' + (p.isActive ? "نشط ✓" : "غير نشط") + '</span></div>';
+      }).join("") : '<div style="font-size:13px;color:var(--ts);padding:14px 0;text-align:center">لم تضيفي أي منتج بعد</div>';
+    } catch (err) {
+      pListEl.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:14px 0;text-align:center">⚠️ تعذر تحميل المنتجات</div>';
+    }
+  }
+}
+window.loadMfgOpsPanel = loadMfgOpsPanel;
 
 async function loadCompanyProfile() {
   if (!window.isLoggedIn || !window.currentUser || !window.currentUser.companyId) return;
