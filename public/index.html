@@ -424,8 +424,11 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   </div>
 </div>
     <div class="aw"><button class="ab" onclick="openOwnerLogin()"><div class="ap"></div><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></button><div class="at">سوبر أدمن — داتا لايف</div></div>
-    <button class="bl" onclick="openLoginModal()">تسجيل دخول</button>
-    <button class="bc" data-page="reg">تسجيل</button>
+    <div id="nav-welcome" style="display:none;align-items:center;gap:8px;padding:0 6px">
+      <span style="font-size:13px;color:var(--tp)">أهلًا، <strong id="nav-welcome-name"></strong></span>
+    </div>
+    <button class="bl" id="nav-login-btn" onclick="openLoginModal()">تسجيل دخول</button>
+    <button class="bc" id="nav-register-btn" data-page="reg">تسجيل</button>
   </div>
 </nav>
 <div id="ad-slot-top-ticker" style="display:none;padding:6px 20px;background:var(--bg2);border-bottom:1px solid var(--bd)"></div>
@@ -8162,6 +8165,8 @@ async function loadWorkerProfile() {
     if (nameEl) nameEl.textContent = profile.fullName || "—";
     if (phoneEl) phoneEl.textContent = profile.phone || "—";
     if (govEl) govEl.textContent = profile.governorate || "غير محدد";
+    var navNameEl = document.getElementById("nav-welcome-name");
+    if (navNameEl && profile.fullName) navNameEl.textContent = profile.fullName;
   } catch (err) {
     if (nameHeaderEl) nameHeaderEl.textContent = "—";
     if (nameEl) nameEl.textContent = "—";
@@ -9892,6 +9897,8 @@ async function loadCompanyProfile() {
     COMPANY_PROFILE_CACHE = await apiFetch("/companies/me");
     renderCompanyProfileView(COMPANY_PROFILE_CACHE);
     renderSupplierDashKpis(COMPANY_PROFILE_CACHE);
+    var navNameEl = document.getElementById("nav-welcome-name");
+    if (navNameEl && COMPANY_PROFILE_CACHE.nameAr) navNameEl.textContent = COMPANY_PROFILE_CACHE.nameAr;
   } catch (err) { /* silent — cards just keep loading state */ }
 }
 window.loadCompanyProfile = loadCompanyProfile;
@@ -11311,6 +11318,8 @@ async function handleGoogleCredential(response) {
     window.loggedInRole = uiRole;
     window.currentUser = data.user;
     updateLogoutButtonVisibility();
+    if (uiRole === "worker" && typeof loadWorkerProfile === "function") loadWorkerProfile();
+    if ((uiRole === "company" || uiRole === "supplier") && typeof loadCompanyProfile === "function") loadCompanyProfile();
 
     if (typeof runPendingActionAfterLogin === "function" && runPendingActionAfterLogin()) {
       toast("تم تسجيل الدخول ✓ — جارٍ استكمال طلبك...");
@@ -11432,6 +11441,20 @@ function updateLogoutButtonVisibility() {
   if (btn) btn.style.display = window.isLoggedIn ? "" : "none";
   var dashBtn = document.getElementById("nav-dash-btn");
   if (dashBtn) dashBtn.style.display = window.isLoggedIn ? "" : "none";
+
+  var loginBtn = document.getElementById("nav-login-btn");
+  var registerBtn = document.getElementById("nav-register-btn");
+  var welcomeEl = document.getElementById("nav-welcome");
+  if (loginBtn) loginBtn.style.display = window.isLoggedIn ? "none" : "";
+  if (registerBtn) registerBtn.style.display = window.isLoggedIn ? "none" : "";
+  if (welcomeEl) {
+    welcomeEl.style.display = window.isLoggedIn ? "flex" : "none";
+    if (window.isLoggedIn) {
+      var displayName = (window.currentUser && (window.currentUser.nameAr || window.currentUser.fullName)) || (window.currentUser && window.currentUser.email) || "";
+      var nameEl = document.getElementById("nav-welcome-name");
+      if (nameEl) nameEl.textContent = displayName;
+    }
+  }
 }
 window.updateLogoutButtonVisibility = updateLogoutButtonVisibility;
 
@@ -11454,6 +11477,8 @@ async function restoreSession() {
     window.loggedInRole = uiRole;
     window.currentUser = u;
     updateLogoutButtonVisibility();
+    if (uiRole === "worker" && typeof loadWorkerProfile === "function") loadWorkerProfile();
+    if ((uiRole === "company" || uiRole === "supplier") && typeof loadCompanyProfile === "function") loadCompanyProfile();
   } catch (err) {
     clearAuthTokens(); // token expired/invalid — don't keep a dead session lying around
   }
@@ -11494,6 +11519,8 @@ window.submitLogin = async function() {
     window.loggedInRole = uiRole;
     window.currentUser = data.user;
     updateLogoutButtonVisibility();
+    if (uiRole === "worker" && typeof loadWorkerProfile === "function") loadWorkerProfile();
+    if ((uiRole === "company" || uiRole === "supplier") && typeof loadCompanyProfile === "function") loadCompanyProfile();
 
     if (typeof runPendingActionAfterLogin === "function" && runPendingActionAfterLogin()) {
       toast("تم تسجيل الدخول ✓ — جارٍ استكمال طلبك...");
