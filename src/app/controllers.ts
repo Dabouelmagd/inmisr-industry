@@ -18,7 +18,7 @@ import { RfqService, CreateRfqDto, CreateQuoteDto } from '../rfq/rfq.service';
 import { EscrowService, DisputeDto } from '../escrow/escrow.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AntiLeakageService } from '../common/anti-leakage.service';
-import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, ProviderListingService, CompanyAssistantService, CompanyProfileService, QualityService, CustomIndustrialServiceService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
+import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, ProviderListingService, CompanyAssistantService, CompanyProfileService, QualityService, CustomIndustrialServiceService, SupplyChainService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
 
 // ── Auth Guards (simplified) ───────────────────────────────────────
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -695,6 +695,61 @@ export class FactoryNeedController {
 
 // ── Reverse Logistics Controller ─────────────────────────────────
 @ApiTags('reverse-logistics')
+// ── Supply Chain Control Tower Controller ──────────────────────────
+@ApiTags('supply-chain')
+@Controller('supply-chain')
+export class SupplyChainController {
+  constructor(private supplyChain: SupplyChainService) {}
+
+  private requireAdmin(req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+  }
+
+  @Get('dashboard')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'مؤشرات برج المراقبة الحقيقية' })
+  dashboard() {
+    return this.supplyChain.getControlTowerDashboard();
+  }
+
+  @Get('active-shipments')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'الشحنات النشطة الحقيقية حاليًا' })
+  activeShipments() {
+    return this.supplyChain.listActiveShipments();
+  }
+
+  @Get('customs-status')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'حالة الإفراج الجمركي للشحنات النشطة' })
+  customsStatus() {
+    return this.supplyChain.listCustomsStatuses();
+  }
+
+  @Get(':orderId')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تتبع شحنة طلب معيّن' })
+  getTracking(@Param('orderId') orderId: string, @Request() req: any) {
+    const isAdmin = req.user.role === 'SUPER_ADMIN' || req.user.role === 'ADMIN';
+    return this.supplyChain.getOrderTracking(orderId, req.user.companyId, isAdmin);
+  }
+
+  @Patch(':orderId')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تحديث مرحلة/حالة جمركية لشحنة (المورد أو الأدمن)' })
+  updateTracking(@Param('orderId') orderId: string, @Body() dto: any, @Request() req: any) {
+    const isAdmin = req.user.role === 'SUPER_ADMIN' || req.user.role === 'ADMIN';
+    return this.supplyChain.updateShipmentTracking(orderId, req.user.companyId, req.user.sub, isAdmin, dto);
+  }
+}
+
 @Controller('reverse-logistics')
 export class ReverseLogisticsController {
   constructor(private reverse: ReverseLogisticsService) {}

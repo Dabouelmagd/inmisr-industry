@@ -1871,6 +1871,33 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   </div>
 </div>
 
+<div class="mov" id="update-shipment-modal">
+  <div class="modal" style="max-width:420px">
+    <button class="mc" onclick="closeM('update-shipment-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px">🛰️ تحديث حالة الشحنة</div>
+    <div style="margin-bottom:12px"><span class="lbl">مرحلة الشحنة الحالية</span>
+      <select class="sel" id="us-stage">
+        <option value="SUPPLIER_PICKUP">المورد المغذي</option>
+        <option value="QUALITY_CHECK">الفحص والجودة</option>
+        <option value="CUSTOMS_CLEARANCE">الإفراج الجمركي</option>
+        <option value="IN_TRANSIT">النقل</option>
+        <option value="DELIVERED">استلام المصنع</option>
+      </select>
+    </div>
+    <div style="margin-bottom:12px"><span class="lbl">حالة الإفراج الجمركي</span>
+      <select class="sel" id="us-customs">
+        <option value="NOT_APPLICABLE">لا ينطبق</option>
+        <option value="PENDING_REVIEW">قيد المراجعة</option>
+        <option value="CLEARED">تم الإفراج</option>
+        <option value="NEEDS_DOCUMENTS">يحتاج مستندات إضافية</option>
+      </select>
+    </div>
+    <div style="margin-bottom:12px"><span class="lbl">ملاحظة جمركية (اختياري)</span><input class="inp" id="us-customs-note" placeholder="مثال: خيوط بوليستر"></div>
+    <div style="margin-bottom:16px"><span class="lbl">تاريخ التسليم المتوقع</span><input class="inp" type="date" id="us-eta"></div>
+    <button class="bc" style="width:100%;padding:11px;font-size:13px" id="us-submit-btn" onclick="submitUpdateShipment()">حفظ التحديث</button>
+  </div>
+</div>
+
 <div class="mov" id="edit-booking-modal">
   <div class="modal" style="max-width:440px">
     <button class="mc" onclick="closeM('edit-booking-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
@@ -2277,40 +2304,18 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
 
     <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:16px 18px;margin:16px 0 22px"><div style="font-size:13px;font-weight:700;margin-bottom:8px">💡 ماذا تقدّم هذه الصفحة؟</div><div style="font-size:13px;color:var(--ts);line-height:1.7;margin-bottom:12px">برج مراقبة رقمي يمنحك رؤية كاملة لحركة الخامات من المورد المغذي حتى استلام المصنع، مع حالة الإفراج الجمركي وإدارة المرتجعات.</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:9px"><div style="display:flex;align-items:flex-start;gap:7px;font-size:13px;line-height:1.6"><span style="flex-shrink:0">🛰️</span><span>تتبع لحظي لمراحل الشحنة (المورد ← الفحص ← الجمارك ← النقل ← الاستلام)</span></div><div style="display:flex;align-items:flex-start;gap:7px;font-size:13px;line-height:1.6"><span style="flex-shrink:0">🛂</span><span>حالة الإفراج الجمركي لكل شحنة في جدول واحد واضح</span></div><div style="display:flex;align-items:flex-start;gap:7px;font-size:13px;line-height:1.6"><span style="flex-shrink:0">🔄</span><span>تقديم طلب لوجيستيات عكسية (استرجاع / مرتجعات) بخطوة واحدة</span></div><div style="display:flex;align-items:flex-start;gap:7px;font-size:13px;line-height:1.6"><span style="flex-shrink:0">📈</span><span>مؤشرات أداء سريعة: نسبة الرؤية، الشحنات النشطة، التأخيرات</span></div></div></div>
     <div class="g4" style="margin-bottom:22px">
-      <div class="kc" style="border-right:3px solid #22C55E"><div class="kl">نسبة الرؤية الكاملة E2E</div><div class="kv">95<span style="font-size:14px;color:var(--ts)">%</span></div></div>
-      <div class="kc" style="border-right:3px solid var(--gold)"><div class="kl">شحنات نشطة الآن</div><div class="kv">27</div></div>
-      <div class="kc" style="border-right:3px solid #CE1126"><div class="kl">تنبيهات تأخير</div><div class="kv" style="color:#CE1126">2</div></div>
-      <div class="kc" style="border-right:3px solid #185FA5"><div class="kl">متوسط دورة التوريد</div><div class="kv" style="font-size:18px">6.4 يوم</div></div>
+      <div class="kc" style="border-right:3px solid #22C55E"><div class="kl">نسبة الرؤية الكاملة E2E</div><div class="kv" id="sc-kpi-visibility">—<span style="font-size:14px;color:var(--ts)">%</span></div></div>
+      <div class="kc" style="border-right:3px solid var(--gold)"><div class="kl">شحنات نشطة الآن</div><div class="kv" id="sc-kpi-active">—</div></div>
+      <div class="kc" style="border-right:3px solid #CE1126"><div class="kl">تنبيهات تأخير</div><div class="kv" id="sc-kpi-delays" style="color:#CE1126">—</div></div>
+      <div class="kc" style="border-right:3px solid #185FA5"><div class="kl">متوسط دورة التوريد</div><div class="kv" id="sc-kpi-cycle" style="font-size:18px">—</div></div>
     </div>
 
-    <div class="card" style="margin-bottom:18px"><div class="cb">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-        <div style="font-size:15px;font-weight:700">شحنة نشطة — #SC-2025-3381</div>
-        <span style="font-size:12px;color:var(--ts)">من: مصانع الدلتا للنسيج (المحلة) ← إلى: مصنع المستقبل للبناء (٦ أكتوبر)</span>
-      </div>
-      <div style="display:flex;align-items:center;margin:18px 0">
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:#22C55E;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">✓</div><div style="font-size:9px;color:#22C55E;text-align:center">المورد المغذي</div></div>
-        <div style="flex:.5;height:2px;background:#22C55E;margin-bottom:18px"></div>
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:#22C55E;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">✓</div><div style="font-size:9px;color:#22C55E;text-align:center">الفحص والجودة</div></div>
-        <div style="flex:.5;height:2px;background:#22C55E;margin-bottom:18px"></div>
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">3</div><div style="font-size:9px;color:var(--red);text-align:center">الإفراج الجمركي</div></div>
-        <div style="flex:.5;height:2px;background:var(--bd);margin-bottom:18px"></div>
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:var(--bg4);border:1px solid var(--bd);color:var(--tt);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">4</div><div style="font-size:9px;color:var(--tt);text-align:center">النقل</div></div>
-        <div style="flex:.5;height:2px;background:var(--bd);margin-bottom:18px"></div>
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:var(--bg4);border:1px solid var(--bd);color:var(--tt);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">5</div><div style="font-size:9px;color:var(--tt);text-align:center">استلام المصنع</div></div>
-      </div>
-      <div style="background:var(--bg3);border-radius:8px;padding:10px;font-size:12px;color:var(--ts)">
-        📍 الحالة الحالية: <strong style="color:var(--tp)">قيد الإفراج الجمركي المسبق</strong> — متوقع الإفراج خلال <strong style="color:var(--gold)">6 ساعات</strong>
-      </div>
-    </div></div>
+    <div id="sc-active-shipments-list"></div>
 
     <div class="g2">
       <div class="card"><div class="cb">
         <div style="font-size:15px;font-weight:700;margin-bottom:14px">حالة الإفراج الجمركي للشحنات</div>
-        <div class="row"><span>#SC-2025-3381 — خيوط بوليستر</span><span class="pill pa">قيد المراجعة</span></div>
-        <div class="row"><span>#SC-2025-3375 — قطاعات ألومنيوم</span><span class="pill pg">تم الإفراج ✓</span></div>
-        <div class="row"><span>#SC-2025-3362 — سبائك حديد</span><span class="pill pg">تم الإفراج ✓</span></div>
-        <div class="row"><span>#SC-2025-3349 — مواد كيميائية وسيطة</span><span class="pill pr">يحتاج مستندات إضافية</span></div>
+        <div id="sc-customs-list"><div style="font-size:13px;color:var(--ts);padding:10px 0">جارٍ التحميل...</div></div>
       </div></div>
 
       <div class="card"><div class="cb">
@@ -4178,6 +4183,9 @@ function goTo(pg, fromBack){
   }
   if (pg === "orders" && typeof loadMyOrders === "function") {
     loadMyOrders();
+  }
+  if (pg === "supplychain" && typeof loadSupplyChainControlTower === "function") {
+    loadSupplyChainControlTower();
   }
   if (pg === "loyalty" && typeof renderLoyaltyPage === "function") {
     renderLoyaltyPage();
@@ -8042,6 +8050,122 @@ function renderTrainingList() {
 }
 
 // ── REVERSE LOGISTICS ────────────────────────────────────────────
+var US_ORDER_ID = null;
+function openUpdateShipmentModal(orderId) {
+  US_ORDER_ID = orderId;
+  document.getElementById("us-stage").value = "SUPPLIER_PICKUP";
+  document.getElementById("us-customs").value = "NOT_APPLICABLE";
+  document.getElementById("us-customs-note").value = "";
+  document.getElementById("us-eta").value = "";
+  if (typeof openM === "function") openM("update-shipment-modal");
+}
+window.openUpdateShipmentModal = openUpdateShipmentModal;
+
+async function submitUpdateShipment() {
+  if (!US_ORDER_ID) return;
+  var btn = document.getElementById("us-submit-btn");
+  btn.disabled = true; btn.textContent = "جارٍ الحفظ...";
+  try {
+    var etaVal = document.getElementById("us-eta").value;
+    await apiFetch("/supply-chain/" + US_ORDER_ID, {
+      method: "PATCH",
+      body: JSON.stringify({
+        currentStage: document.getElementById("us-stage").value,
+        customsStatus: document.getElementById("us-customs").value,
+        customsNote: document.getElementById("us-customs-note").value.trim() || undefined,
+        estimatedDelivery: etaVal ? new Date(etaVal).toISOString() : undefined,
+      }),
+    });
+    if (typeof closeM === "function") closeM("update-shipment-modal");
+    toast("✅ تم تحديث حالة الشحنة بنجاح");
+    loadSupplyChainControlTower();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر حفظ التحديث"));
+  } finally {
+    btn.disabled = false; btn.textContent = "حفظ التحديث";
+  }
+}
+window.submitUpdateShipment = submitUpdateShipment;
+
+// ── SUPPLY CHAIN CONTROL TOWER — real data ──────────────────────
+var SC_STAGE_LABELS = {
+  SUPPLIER_PICKUP: "المورد المغذي", QUALITY_CHECK: "الفحص والجودة",
+  CUSTOMS_CLEARANCE: "الإفراج الجمركي", IN_TRANSIT: "النقل", DELIVERED: "استلام المصنع",
+};
+var SC_STAGE_ORDER = ["SUPPLIER_PICKUP", "QUALITY_CHECK", "CUSTOMS_CLEARANCE", "IN_TRANSIT", "DELIVERED"];
+var SC_CUSTOMS_LABELS = {
+  PENDING_REVIEW: { text: "قيد المراجعة", cls: "pa" },
+  CLEARED: { text: "تم الإفراج ✓", cls: "pg" },
+  NEEDS_DOCUMENTS: { text: "يحتاج مستندات إضافية", cls: "pr" },
+};
+
+async function loadSupplyChainControlTower() {
+  try {
+    var dash = await apiFetch("/supply-chain/dashboard");
+    document.getElementById("sc-kpi-visibility").innerHTML = dash.visibilityPct + '<span style="font-size:14px;color:var(--ts)">%</span>';
+    document.getElementById("sc-kpi-active").textContent = dash.activeShipments;
+    document.getElementById("sc-kpi-delays").textContent = dash.delayAlerts;
+    document.getElementById("sc-kpi-cycle").textContent = dash.avgCycleDays !== null ? dash.avgCycleDays + " يوم" : "لا توجد بيانات كافية";
+  } catch (err) {
+    ["sc-kpi-visibility", "sc-kpi-active", "sc-kpi-delays", "sc-kpi-cycle"].forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.textContent = "—";
+    });
+  }
+
+  try {
+    var shipments = await apiFetch("/supply-chain/active-shipments");
+    var box = document.getElementById("sc-active-shipments-list");
+    if (!shipments.length) {
+      box.innerHTML = '<div class="card" style="margin-bottom:18px"><div class="cb" style="text-align:center;padding:24px;color:var(--ts);font-size:13px">لا توجد شحنات نشطة (طلبات بحالة "تم الشحن") حاليًا</div></div>';
+    } else {
+      box.innerHTML = shipments.map(function(s) {
+        var stageIdx = s.currentStage ? SC_STAGE_ORDER.indexOf(s.currentStage) : -1;
+        var steps = SC_STAGE_ORDER.map(function(stage, i) {
+          var done = stageIdx >= 0 && i < stageIdx;
+          var current = i === stageIdx;
+          var bg = done ? "#22C55E" : current ? "var(--red)" : "var(--bg4)";
+          var border = (done || current) ? "" : "border:1px solid var(--bd);";
+          var color = (done || current) ? "#fff" : "var(--tt)";
+          var label = done ? "✓" : (i + 1);
+          var textColor = done ? "#22C55E" : current ? "var(--red)" : "var(--tt)";
+          return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:30px;height:30px;border-radius:50%;background:' + bg + ';' + border + 'color:' + color + ';display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">' + label + '</div><div style="font-size:9px;color:' + textColor + ';text-align:center">' + SC_STAGE_LABELS[stage] + '</div></div>' +
+            (i < SC_STAGE_ORDER.length - 1 ? '<div style="flex:.5;height:2px;background:' + (done ? "#22C55E" : "var(--bd)") + ';margin-bottom:18px"></div>' : "");
+        }).join("");
+        var etaText = s.estimatedDelivery ? new Date(s.estimatedDelivery).toLocaleDateString("ar-EG") : "غير محدد بعد";
+        return '<div class="card" style="margin-bottom:18px"><div class="cb">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">' +
+          '<div style="font-size:15px;font-weight:700">شحنة نشطة — طلب #' + s.orderId.slice(0, 8) + '</div>' +
+          '<span style="font-size:12px;color:var(--ts)">من: ' + (s.supplierName || "—") + (s.supplierCity ? " (" + s.supplierCity + ")" : "") + ' ← إلى: ' + (s.buyerName || "—") + (s.buyerCity ? " (" + s.buyerCity + ")" : "") + '</span>' +
+          '</div>' +
+          (s.hasTracking
+            ? '<div style="display:flex;align-items:center;margin:18px 0">' + steps + '</div>' +
+              '<div style="background:var(--bg3);border-radius:8px;padding:10px;font-size:12px;color:var(--ts);margin-bottom:10px">📍 الحالة الحالية: <strong style="color:var(--tp)">' + (SC_STAGE_LABELS[s.currentStage] || "—") + '</strong> — التسليم المتوقع: <strong style="color:var(--gold)">' + etaText + '</strong></div>'
+            : '<div style="background:var(--bg3);border-radius:8px;padding:12px;font-size:12px;color:var(--ts);text-align:center;margin-bottom:10px">⚠️ لم يتم تسجيل بيانات تتبع لهذه الشحنة بعد من المورد</div>') +
+          '<button class="bl" style="width:100%;padding:8px;font-size:12px;border-radius:6px" onclick="openUpdateShipmentModal(\'' + s.orderId + '\')">🛰️ تحديث حالة الشحنة</button>' +
+          '</div></div>';
+      }).join("");
+    }
+  } catch (err) {
+    document.getElementById("sc-active-shipments-list").innerHTML = '<div style="font-size:13px;color:var(--ts);padding:10px 0">⚠️ تعذر تحميل الشحنات النشطة</div>';
+  }
+
+  try {
+    var customs = await apiFetch("/supply-chain/customs-status");
+    var cbox = document.getElementById("sc-customs-list");
+    if (!customs.length) {
+      cbox.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:10px 0">لا توجد شحنات لها حالة جمركية مسجّلة حاليًا</div>';
+    } else {
+      cbox.innerHTML = customs.map(function(c) {
+        var info = SC_CUSTOMS_LABELS[c.customsStatus] || { text: c.customsStatus, cls: "pa" };
+        return '<div class="row"><span>طلب #' + c.orderId.slice(0, 8) + (c.customsNote ? " — " + c.customsNote : "") + '</span><span class="pill ' + info.cls + '">' + info.text + '</span></div>';
+      }).join("");
+    }
+  } catch (err) {
+    document.getElementById("sc-customs-list").innerHTML = '<div style="font-size:13px;color:var(--ts);padding:10px 0">⚠️ تعذر تحميل حالة الإفراج الجمركي</div>';
+  }
+}
+window.loadSupplyChainControlTower = loadSupplyChainControlTower;
+
 async function submitReverseLogistics() {
   if (!requireLoginForService(submitReverseLogistics)) return;
   var productEl = document.getElementById("rev-req-product");

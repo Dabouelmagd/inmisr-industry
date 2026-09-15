@@ -445,6 +445,21 @@ model RfqQuote {
 }
 
 // ─── ORDERS & ESCROW ──────────────────────────────────────────────
+model ShipmentTracking {
+  id              String    @id @default(uuid())
+  orderId         String    @unique
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  currentStage    String    @default("SUPPLIER_PICKUP") // SUPPLIER_PICKUP / QUALITY_CHECK / CUSTOMS_CLEARANCE / IN_TRANSIT / DELIVERED
+  customsStatus   String    @default("NOT_APPLICABLE")  // NOT_APPLICABLE / PENDING_REVIEW / CLEARED / NEEDS_DOCUMENTS
+  customsNote     String?
+  estimatedDelivery DateTime?
+  updatedByUserId String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("shipment_tracking")
+}
+
 model Order {
   id              String      @id @default(uuid())
   rfqId           String?     @unique
@@ -465,6 +480,7 @@ model Order {
   deliveredAt     DateTime?
   completedAt     DateTime?
   escrow          Escrow?
+  shipmentTracking ShipmentTracking?
   messages        Message[]
   documents       OrderDocument[]
   review          Review?

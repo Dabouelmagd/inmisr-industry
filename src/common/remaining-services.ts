@@ -537,6 +537,124 @@ export class FactoryNeedService {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
+// SUPPLY CHAIN CONTROL TOWER — تتبع شحنات حقيقي مبني على الطلبات
+// (Orders) الفعلية. لا يوجد تكامل حقيقي مع جهات جمركية أو GPS —
+// المراحل وحالة الجمارك بيانات يحدّثها المورد أو الأدمن يدويًا،
+// وده نفس النمط المستخدم في أغلب منصات B2B من غير تكامل لوجيستي عميق.
+// ══════════════════════════════════════════════════════════════════
+
+const SHIPMENT_STAGES = ['SUPPLIER_PICKUP', 'QUALITY_CHECK', 'CUSTOMS_CLEARANCE', 'IN_TRANSIT', 'DELIVERED'];
+
+@Injectable()
+export class SupplyChainService {
+  constructor(private prisma: PrismaService) {}
+
+  async getControlTowerDashboard() {
+    const activeShipments = await this.prisma.order.count({ where: { status: 'SHIPPED' } });
+
+    const activeShipmentOrders = await this.prisma.order.findMany({
+      where: { status: 'SHIPPED' },
+      select: { id: true, shipmentTracking: { select: { id: true, estimatedDelivery: true } } },
+    });
+    const withTracking = activeShipmentOrders.filter(o => o.shipmentTracking).length;
+    const visibilityPct = activeShipments > 0 ? Math.round((withTracking / activeShipments) * 100) : 0;
+
+    const now = new Date();
+    const delayAlerts = activeShipmentOrders.filter(
+      o => o.shipmentTracking?.estimatedDelivery && o.shipmentTracking.estimatedDelivery < now,
+    ).length;
+
+    const completed = await this.prisma.order.findMany({
+      where: { confirmedAt: { not: null }, deliveredAt: { not: null } },
+      select: { confirmedAt: true, deliveredAt: true },
+      take: 200,
+      orderBy: { deliveredAt: 'desc' },
+    });
+    const avgCycleDays = completed.length
+      ? +(completed.reduce((sum, o) => sum + (o.deliveredAt!.getTime() - o.confirmedAt!.getTime()) / 86400000, 0) / completed.length).toFixed(1)
+      : null;
+
+    return { activeShipments, visibilityPct, delayAlerts, avgCycleDays, sampleSize: completed.length };
+  }
+
+  async listActiveShipments() {
+    const orders = await this.prisma.order.findMany({
+      where: { status: 'SHIPPED' },
+      include: {
+        buyer: { select: { nameAr: true, city: true } },
+        supplier: { select: { nameAr: true, city: true } },
+        shipmentTracking: true,
+      },
+      orderBy: { confirmedAt: 'desc' },
+      take: 30,
+    });
+    return orders.map(o => ({
+      orderId: o.id, amount: o.amount,
+      buyerName: o.buyer?.nameAr, buyerCity: o.buyer?.city,
+      supplierName: o.supplier?.nameAr, supplierCity: o.supplier?.city,
+      currentStage: o.shipmentTracking?.currentStage || null,
+      customsStatus: o.shipmentTracking?.customsStatus || null,
+      customsNote: o.shipmentTracking?.customsNote || null,
+      estimatedDelivery: o.shipmentTracking?.estimatedDelivery || null,
+      hasTracking: !!o.shipmentTracking,
+    }));
+  }
+
+  async getOrderTracking(orderId: string, requesterCompanyId: string, isAdmin: boolean) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { shipmentTracking: true, buyer: { select: { nameAr: true } }, supplier: { select: { nameAr: true } } },
+    });
+    if (!order) throw new NotFoundException('الطلب غير موجود');
+    if (!isAdmin && order.buyerCompanyId !== requesterCompanyId && order.supplierCompanyId !== requesterCompanyId) {
+      throw new ForbiddenException('ليس لديك صلاحية لعرض هذا الطلب');
+    }
+    return order;
+  }
+
+  async updateShipmentTracking(
+    orderId: string, requesterCompanyId: string, requesterUserId: string, isAdmin: boolean,
+    dto: { currentStage?: string; customsStatus?: string; customsNote?: string; estimatedDelivery?: string },
+  ) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('الطلب غير موجود');
+    if (!isAdmin && order.supplierCompanyId !== requesterCompanyId) {
+      throw new ForbiddenException('تحديث حالة الشحنة متاح للمورد أو فريق الإدارة فقط');
+    }
+    if (dto.currentStage && !SHIPMENT_STAGES.includes(dto.currentStage)) {
+      throw new BadRequestException('مرحلة الشحنة غير معروفة');
+    }
+    const data: any = {
+      currentStage: dto.currentStage, customsStatus: dto.customsStatus, customsNote: dto.customsNote,
+      updatedByUserId: requesterUserId,
+    };
+    if (dto.estimatedDelivery) {
+      const d = new Date(dto.estimatedDelivery);
+      if (isNaN(d.getTime())) throw new BadRequestException('تاريخ التسليم المتوقع غير صحيح');
+      data.estimatedDelivery = d;
+    }
+    return this.prisma.shipmentTracking.upsert({
+      where: { orderId },
+      create: { orderId, ...data },
+      update: data,
+    });
+  }
+
+  async listCustomsStatuses() {
+    const tracking = await this.prisma.shipmentTracking.findMany({
+      where: { customsStatus: { not: 'NOT_APPLICABLE' } },
+      include: { order: { select: { id: true, status: true } } },
+      orderBy: { updatedAt: 'desc' },
+      take: 20,
+    });
+    return tracking
+      .filter(t => t.order.status === 'SHIPPED') // only currently-in-transit shipments are relevant here
+      .map(t => ({ orderId: t.orderId, customsStatus: t.customsStatus, customsNote: t.customsNote }));
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // REVERSE LOGISTICS SERVICE — طلبات استرجاع / مرتجعات الخامات
 // ══════════════════════════════════════════════════════════════════
 
