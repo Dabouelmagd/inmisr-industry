@@ -9872,26 +9872,36 @@ onDomReady(function() {
   renderAdSlot("HERO_SPOTLIGHT", "ad-slot-hero-spotlight");
   renderAdSlot("SECTION_DIVIDER", "ad-slot-section-divider");
 
-  // Entry popup: shows shortly after arriving on the platform (once per
-  // browser tab session) — requested in addition to exit-intent, which
-  // stays as a fallback trigger using the same flag so it never shows twice.
-  setTimeout(function() {
-    if (sessionStorage.getItem("adExitIntentShown")) return;
-    sessionStorage.setItem("adExitIntentShown", "1");
-    renderAdSlot("EXIT_INTENT_MODAL", "ad-slot-exit-intent-modal").then(function(shown) {
-      if (shown && typeof openM === "function") openM("ad-exit-intent-modal");
-    });
-  }, 4000);
+  // Popup ad (entry + exit-intent) temporarily disabled — no real ad or
+  // AdSense fallback is configured for EXIT_INTENT_MODAL yet, and the
+  // automatic popup created confusion while debugging other ad issues.
+  // Flip this to true once a real ad is booked for this slot; all the
+  // underlying logic (renderAdSlot, the modal, the slot itself) is left
+  // fully intact below, this flag is the only thing gating it.
+  var AD_POPUP_ENABLED = false;
 
-  // Exit-intent: once per browser tab session, when the cursor leaves
-  // near the top of the viewport (heading for the tab bar/back button).
-  document.addEventListener("mouseout", function(e) {
-    if (e.clientY > 10 || sessionStorage.getItem("adExitIntentShown")) return;
-    sessionStorage.setItem("adExitIntentShown", "1");
-    renderAdSlot("EXIT_INTENT_MODAL", "ad-slot-exit-intent-modal").then(function(shown) {
-      if (shown && typeof openM === "function") openM("ad-exit-intent-modal");
+  if (AD_POPUP_ENABLED) {
+    // Entry popup: shows shortly after arriving on the platform (once per
+    // browser tab session) — requested in addition to exit-intent, which
+    // stays as a fallback trigger using the same flag so it never shows twice.
+    setTimeout(function() {
+      if (sessionStorage.getItem("adExitIntentShown")) return;
+      sessionStorage.setItem("adExitIntentShown", "1");
+      renderAdSlot("EXIT_INTENT_MODAL", "ad-slot-exit-intent-modal").then(function(shown) {
+        if (shown && typeof openM === "function") openM("ad-exit-intent-modal");
+      });
+    }, 4000);
+
+    // Exit-intent: once per browser tab session, when the cursor leaves
+    // near the top of the viewport (heading for the tab bar/back button).
+    document.addEventListener("mouseout", function(e) {
+      if (e.clientY > 10 || sessionStorage.getItem("adExitIntentShown")) return;
+      sessionStorage.setItem("adExitIntentShown", "1");
+      renderAdSlot("EXIT_INTENT_MODAL", "ad-slot-exit-intent-modal").then(function(shown) {
+        if (shown && typeof openM === "function") openM("ad-exit-intent-modal");
+      });
     });
-  });
+  }
 });
 
 // ── FINANCING (admin side, real backend) ──────────────────────────
