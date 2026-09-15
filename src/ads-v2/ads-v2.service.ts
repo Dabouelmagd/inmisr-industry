@@ -18,6 +18,7 @@ import { diskStorage } from 'multer';
 import { join, extname } from 'path';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { PrismaService } from '../common/prisma.service';
+import { AdminService } from '../admin/admin.service';
 import { JwtGuard } from '../auth/jwt.guard';
 
 const BILLING_MULTIPLIERS: Record<string, number> = {
@@ -553,7 +554,7 @@ export class AdsV2Service {
 @ApiTags('ads-v2')
 @Controller('promo-placements')
 export class AdsV2Controller {
-  constructor(private ads: AdsV2Service) {}
+  constructor(private ads: AdsV2Service, private admin: AdminService) {}
 
   private requireAdmin(req: any) {
     if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
@@ -642,6 +643,24 @@ export class AdsV2Controller {
   createGiftBooking(@Body() dto: any, @Request() req: any) {
     this.requireAdmin(req);
     return this.ads.createGiftBooking(dto);
+  }
+
+  @Post('admin/paid-booking')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'إضافة حجز إعلان مدفوع نيابةً عن شركة (أدمن) — يدعم شركة غير مسجّلة' })
+  async createPaidBookingAsAdmin(@Body() dto: any, @Request() req: any) {
+    this.requireAdmin(req);
+    let advertiserId = dto.advertiserId;
+    if (dto.createExternalCompany) {
+      const company = await this.admin.createExternalCompany(
+        dto.createExternalCompany.nameAr,
+        dto.createExternalCompany.type || 'SUPPLIER',
+      );
+      advertiserId = company.id;
+    }
+    if (!advertiserId) throw new BadRequestException('يجب تحديد الشركة أو بيانات شركة جديدة');
+    return this.ads.createBooking(advertiserId, dto);
   }
 
   @Get('bookings/my')

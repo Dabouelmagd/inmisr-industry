@@ -1848,6 +1848,30 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   </div>
 </div>
 
+<div class="mov" id="paid-ad-modal">
+  <div class="modal" style="max-width:480px">
+    <button class="mc" onclick="closeM('paid-ad-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px">💰 إضافة إعلان مدفوع (نيابةً عن شركة)</div>
+    <div style="margin-bottom:12px"><span class="lbl">الشركة المعلنة (ابحثي بالاسم)</span><input class="inp" id="pa-company" placeholder="اكتبي اسم الشركة..." oninput="searchPaidAdCompany(this.value)" autocomplete="off">
+      <input type="hidden" id="pa-company-id">
+      <div id="pa-company-results" style="position:relative"></div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ts);margin-top:8px;cursor:pointer"><input type="checkbox" id="pa-external-company" onchange="togglePaidAdExternalCompany(this.checked)" style="width:13px;height:13px">الشركة غير مسجّلة عندنا (سيُنشأ لها حساب تلقائيًا)</label>
+    </div>
+    <div style="margin-bottom:12px"><span class="lbl">المساحة الإعلانية</span><select class="sel" id="pa-slot"><option value="">جارٍ التحميل...</option></select></div>
+    <div class="g2" style="gap:14px;margin-bottom:12px">
+      <div><span class="lbl">تاريخ البدء</span><input class="inp" type="date" id="pa-start-date"></div>
+      <div><span class="lbl">المدة</span><select class="sel" id="pa-duration"><option value="WEEKLY">أسبوع</option><option value="MONTHLY" selected>شهر (خصم 15%)</option><option value="QUARTERLY">ربع سنة (خصم 30%)</option></select></div>
+    </div>
+    <div style="margin-bottom:12px"><span class="lbl">رابط الصفحة عند الضغط على الإعلان</span><input class="inp" id="pa-destination" placeholder="https://" dir="ltr"></div>
+    <div style="margin-bottom:16px">
+      <span class="lbl">صورة الإعلان</span>
+      <input class="inp" type="file" id="pa-banner-file" accept="image/png,image/jpeg,image/webp" style="padding:8px">
+    </div>
+    <div style="background:rgba(45,106,31,.08);border:1px solid rgba(45,106,31,.3);border-radius:9px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--ts)">💡 السعر النهائي بيُحسب تلقائيًا حسب سعر المساحة والمدة المختارة — نفس تسعير النظام الحقيقي</div>
+    <button class="bc" style="width:100%;padding:11px;font-size:13px" id="pa-submit-btn" onclick="submitPaidAd()">إضافة الحجز المدفوع</button>
+  </div>
+</div>
+
 <div class="mov" id="gift-ad-modal">
   <div class="modal" style="max-width:480px">
     <button class="mc" onclick="closeM('gift-ad-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
@@ -2726,6 +2750,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px">
     <div><div style="font-size:20px;font-weight:700">إدارة الإعلانات</div><div style="font-size:13px;color:var(--ts);margin-top:4px">نظام الحجز الحقيقي، معاينة قبل النشر، الحجوزات، وفصل طلبات الموردين عن إعلانات الأونر</div></div>
     <button class="bc" style="border-radius:8px;padding:8px 16px;font-size:13px" onclick="openGiftAdModal()">🎁 منح إعلان مجاني</button>
+    <button class="bl" style="border-radius:8px;padding:8px 16px;font-size:13px" onclick="openPaidAdModal()">💰 إضافة إعلان مدفوع</button>
   </div>
 
   <div class="g4" style="margin-bottom:18px">
@@ -10017,6 +10042,117 @@ async function openSlotCalendar(slotId, slotName) {
   }
 }
 window.openSlotCalendar = openSlotCalendar;
+
+// ── PAID AD (admin books a real, priced ad on behalf of a company) ──
+async function openPaidAdModal() {
+  document.getElementById("pa-company").value = "";
+  document.getElementById("pa-company").placeholder = "اكتبي اسم الشركة...";
+  document.getElementById("pa-company-id").value = "";
+  document.getElementById("pa-company-results").innerHTML = "";
+  document.getElementById("pa-external-company").checked = false;
+  document.getElementById("pa-destination").value = "";
+  document.getElementById("pa-start-date").value = "";
+  var slotSel = document.getElementById("pa-slot");
+  slotSel.innerHTML = '<option value="">جارٍ التحميل...</option>';
+  try {
+    var slots = await apiFetch("/promo-placements/slots");
+    slotSel.innerHTML = slots.map(function(s) {
+      return '<option value="' + s.id + '">' + s.name + ' — ' + s.basePriceWeekly.toLocaleString("ar-EG") + ' ج.م/أسبوع</option>';
+    }).join("");
+  } catch (err) {
+    slotSel.innerHTML = '<option value="">⚠️ تعذر تحميل المساحات</option>';
+  }
+  if (typeof openM === "function") openM("paid-ad-modal");
+}
+window.openPaidAdModal = openPaidAdModal;
+
+function togglePaidAdExternalCompany(checked) {
+  var companyInput = document.getElementById("pa-company");
+  var resultsBox = document.getElementById("pa-company-results");
+  if (checked) {
+    document.getElementById("pa-company-id").value = "";
+    resultsBox.innerHTML = "";
+    companyInput.placeholder = "اكتبي اسم الشركة (سيُنشأ لها حساب تلقائيًا)...";
+  } else {
+    companyInput.placeholder = "اكتبي اسم الشركة...";
+  }
+}
+window.togglePaidAdExternalCompany = togglePaidAdExternalCompany;
+
+var paidAdSearchTimer = null;
+window.searchPaidAdCompany = function(q) {
+  document.getElementById("pa-company-id").value = "";
+  clearTimeout(paidAdSearchTimer);
+  var box = document.getElementById("pa-company-results");
+  if (!q || q.trim().length < 2) { box.innerHTML = ""; return; }
+  paidAdSearchTimer = setTimeout(async function() {
+    try {
+      var results = await apiFetch("/admin/companies/search?q=" + encodeURIComponent(q));
+      if (!results.length) { box.innerHTML = '<div style="font-size:11px;color:var(--ts);padding:6px 0">لا توجد نتائج</div>'; return; }
+      box.innerHTML = '<div style="position:absolute;top:2px;right:0;left:0;background:var(--surface2);border:1px solid var(--bd2);border-radius:8px;z-index:10;max-height:150px;overflow-y:auto">' +
+        results.map(function(c) {
+          return '<div style="padding:8px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--bd)" onclick="selectPaidAdCompany(\'' + c.id + '\',\'' + c.nameAr.replace(/'/g, "\\'") + '\')">' + c.nameAr + ' <span style="color:var(--ts);font-size:10px">(' + c.type + ')</span></div>';
+        }).join("") + '</div>';
+    } catch (err) { box.innerHTML = ""; }
+  }, 350);
+};
+
+window.selectPaidAdCompany = function(id, name) {
+  document.getElementById("pa-company-id").value = id;
+  document.getElementById("pa-company").value = name;
+  document.getElementById("pa-company-results").innerHTML = "";
+};
+
+window.submitPaidAd = async function() {
+  var companyId = document.getElementById("pa-company-id").value;
+  var companyName = document.getElementById("pa-company").value.trim();
+  var isExternal = document.getElementById("pa-external-company").checked;
+  var slotId = document.getElementById("pa-slot").value;
+  var destination = document.getElementById("pa-destination").value.trim();
+  var startDateVal = document.getElementById("pa-start-date").value;
+  var billingPeriod = document.getElementById("pa-duration").value;
+  var bannerFile = document.getElementById("pa-banner-file").files[0];
+
+  if (!isExternal && !companyId) { toast("⚠️ الرجاء البحث عن الشركة واختيارها من القائمة، أو تفعيل خيار \"الشركة غير مسجّلة عندنا\""); return; }
+  if (isExternal && !companyName) { toast("⚠️ الرجاء كتابة اسم الشركة"); return; }
+  if (!slotId) { toast("⚠️ الرجاء اختيار المساحة الإعلانية"); return; }
+  if (!destination) { toast("⚠️ الرجاء إدخال رابط الصفحة المستهدفة"); return; }
+  if (!bannerFile) { toast("⚠️ الرجاء رفع صورة الإعلان"); return; }
+
+  var btn = document.getElementById("pa-submit-btn");
+  btn.disabled = true; btn.textContent = "جارٍ الإضافة...";
+  try {
+    var formData = new FormData();
+    formData.append("banner", bannerFile);
+    var token = getAuthToken("inmisr_access_token");
+    var uploadRes = await fetch(API_BASE + "/promo-placements/upload-banner", {
+      method: "POST", headers: token ? { "Authorization": "Bearer " + token } : {}, body: formData
+    });
+    var uploadBody = await uploadRes.json().catch(function(){ return null; });
+    if (!uploadRes.ok) throw new Error((uploadBody && uploadBody.message) || "تعذر رفع صورة الإعلان");
+
+    var payload = {
+      slotId: slotId,
+      bannerUrl: uploadBody.data.bannerUrl, destinationUrl: destination,
+      startDate: startDateVal ? new Date(startDateVal).toISOString() : new Date().toISOString(),
+      billingPeriod: billingPeriod,
+    };
+    if (isExternal) {
+      payload.createExternalCompany = { nameAr: companyName, type: "SUPPLIER" };
+    } else {
+      payload.advertiserId = companyId;
+    }
+
+    var result = await apiFetch("/promo-placements/admin/paid-booking", { method: "POST", body: JSON.stringify(payload) });
+    if (typeof closeM === "function") closeM("paid-ad-modal");
+    toast("✅ تم إضافة الحجز المدفوع بنجاح — السعر: " + result.totalPrice.toLocaleString("ar-EG") + " ج.م");
+    if (typeof loadAdsV2Admin === "function") loadAdsV2Admin();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إضافة الحجز"));
+  } finally {
+    btn.disabled = false; btn.textContent = "إضافة الحجز المدفوع";
+  }
+};
 
 
 async function openGiftAdModal() {
