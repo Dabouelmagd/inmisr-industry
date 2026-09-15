@@ -8814,7 +8814,15 @@ async function renderAdSlot(locationKey, containerId, opts) {
   // No native ad matched this slot right now — waterfall to AdSense if enabled.
   if (result.adsenseFallback && result.adsenseFallback.clientId) {
     container.style.display = "";
-    container.innerHTML = '<ins class="adsbygoogle" style="display:block" data-ad-client="' + result.adsenseFallback.clientId + '" data-ad-slot="' + (result.adsenseFallback.slotId || "") + '" data-ad-format="auto" data-full-width-responsive="true"></ins>';
+    var insEl = document.createElement("ins");
+    insEl.className = "adsbygoogle";
+    insEl.style.display = "block";
+    insEl.setAttribute("data-ad-client", result.adsenseFallback.clientId);
+    insEl.setAttribute("data-ad-slot", result.adsenseFallback.slotId || "");
+    insEl.setAttribute("data-ad-format", "auto");
+    insEl.setAttribute("data-full-width-responsive", "true");
+    container.innerHTML = "";
+    container.appendChild(insEl);
     if (!window.__adsenseScriptLoaded) {
       window.__adsenseScriptLoaded = true;
       var s = document.createElement("script");
@@ -8824,6 +8832,19 @@ async function renderAdSlot(locationKey, containerId, opts) {
       document.head.appendChild(s);
     }
     try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) { /* AdSense not ready yet — safe to ignore */ }
+    // AdSense reserves layout space for the ad slot immediately, even
+    // before it knows whether it can actually fill it (e.g. a brand-new
+    // account still pending Google's review, as here) — that reserved-
+    // but-empty space is exactly the large dark box reported. AdSense
+    // marks the <ins> with data-ad-status once it resolves ('filled' or
+    // 'unfilled'); poll briefly and collapse the container on failure
+    // instead of leaving dead reserved space on the page.
+    setTimeout(function() {
+      var status = insEl.getAttribute("data-ad-status");
+      if (status === "unfilled" || insEl.offsetHeight === 0) {
+        container.style.display = "none";
+      }
+    }, 3000);
     return true;
   } else {
     // Nothing to show and no fallback configured — collapse the container
