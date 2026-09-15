@@ -39,6 +39,13 @@ export class AdminController {
     return this.admin.searchCompanies(q, type);
   }
 
+  @Post('companies/external')
+  @ApiOperation({ summary: 'إنشاء حساب شركة خارجية غير مسجّلة (لمنح هدية مثل إعلان مجاني، أدمن)' })
+  createExternalCompany(@Body() dto: { nameAr: string; type?: 'SUPPLIER' | 'BUYER' }, @Request() req: any) {
+    this.requireAdmin(req);
+    return this.admin.createExternalCompany(dto.nameAr, dto.type);
+  }
+
   @Get('suppliers')
   @ApiOperation({ summary: 'كل الموردين المسجّلين — بيانات كاملة تشمل العنوان والتليفون (أدمن فقط)' })
   listSuppliers(@Query() query: any, @Request() req: any) {

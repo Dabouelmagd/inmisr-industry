@@ -1,8 +1,10 @@
 // ─── admin/admin.service.ts ───────────────────────────────────────
-import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { InvoiceService } from '../finance/invoice.service';
+import * as bcrypt from 'bcryptjs';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AdminService {
@@ -454,6 +456,39 @@ export class AdminService {
   }
 
   // ── COMPANY SEARCH (for admin pickers, e.g. attaching a directly-added product) ──
+  // Creates a minimal placeholder account (user + company) for an
+  // external/unregistered business — used only so admin-granted
+  // extras (like a gift ad) don't require the beneficiary to have
+  // registered on the platform first. The company can never log in
+  // with this account (random unusable password) unless they later
+  // go through the real forgot-password flow to claim it.
+  async createExternalCompany(nameAr: string, type: 'SUPPLIER' | 'BUYER' = 'SUPPLIER') {
+    if (!nameAr?.trim()) throw new BadRequestException('اسم الشركة مطلوب');
+    const placeholderEmail = `external-${uuidv4()}@placeholder.inmisr.net`;
+    const randomPasswordHash = await bcrypt.hash(uuidv4(), 10);
+
+    const user = await this.prisma.user.create({
+      data: {
+        email: placeholderEmail,
+        passwordHash: randomPasswordHash,
+        role: type,
+        isActive: true,
+      },
+    });
+
+    const company = await this.prisma.company.create({
+      data: {
+        userId: user.id,
+        nameAr: nameAr.trim(),
+        type,
+        verifiedLevel: 'NONE',
+      },
+    });
+
+    this.logger.log(`External placeholder company created by admin: ${company.id} (${nameAr})`);
+    return company;
+  }
+
   async searchCompanies(q: string, type?: string) {
     if (!q || q.trim().length < 2) return [];
     return this.prisma.company.findMany({

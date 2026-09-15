@@ -1855,6 +1855,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
     <div style="margin-bottom:12px"><span class="lbl">الشركة المستفيدة (ابحثي بالاسم)</span><input class="inp" id="ga-company" placeholder="اكتبي اسم الشركة..." oninput="searchGiftAdCompany(this.value)" autocomplete="off">
       <input type="hidden" id="ga-company-id">
       <div id="ga-company-results" style="position:relative"></div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ts);margin-top:8px;cursor:pointer"><input type="checkbox" id="ga-external-company" onchange="toggleGiftAdExternalCompany(this.checked)" style="width:13px;height:13px">الشركة غير مسجّلة عندنا (سيُنشأ لها حساب تلقائيًا)</label>
     </div>
     <div style="margin-bottom:12px"><span class="lbl">المساحة الإعلانية</span><select class="sel" id="ga-slot"><option value="">جارٍ التحميل...</option></select></div>
     <div class="g2" style="gap:14px;margin-bottom:12px">
@@ -10020,8 +10021,10 @@ window.openSlotCalendar = openSlotCalendar;
 
 async function openGiftAdModal() {
   document.getElementById("ga-company").value = "";
+  document.getElementById("ga-company").placeholder = "اكتبي اسم الشركة...";
   document.getElementById("ga-company-id").value = "";
   document.getElementById("ga-company-results").innerHTML = "";
+  document.getElementById("ga-external-company").checked = false;
   document.getElementById("ga-destination").value = "";
   document.getElementById("ga-note").value = "";
   document.getElementById("ga-start-date").value = "";
@@ -10063,8 +10066,23 @@ window.selectGiftAdCompany = function(id, name) {
   document.getElementById("ga-company-results").innerHTML = "";
 };
 
+function toggleGiftAdExternalCompany(checked) {
+  var companyInput = document.getElementById("ga-company");
+  var resultsBox = document.getElementById("ga-company-results");
+  if (checked) {
+    document.getElementById("ga-company-id").value = "";
+    resultsBox.innerHTML = "";
+    companyInput.placeholder = "اكتبي اسم الشركة (سيُنشأ لها حساب تلقائيًا)...";
+  } else {
+    companyInput.placeholder = "اكتبي اسم الشركة...";
+  }
+}
+window.toggleGiftAdExternalCompany = toggleGiftAdExternalCompany;
+
 window.submitGiftAd = async function() {
   var companyId = document.getElementById("ga-company-id").value;
+  var companyName = document.getElementById("ga-company").value.trim();
+  var isExternal = document.getElementById("ga-external-company").checked;
   var slotId = document.getElementById("ga-slot").value;
   var destination = document.getElementById("ga-destination").value.trim();
   var startDateVal = document.getElementById("ga-start-date").value;
@@ -10072,7 +10090,8 @@ window.submitGiftAd = async function() {
   var note = document.getElementById("ga-note").value.trim();
   var bannerFile = document.getElementById("ga-banner-file").files[0];
 
-  if (!companyId) { toast("⚠️ الرجاء البحث عن الشركة واختيارها من القائمة"); return; }
+  if (!isExternal && !companyId) { toast("⚠️ الرجاء البحث عن الشركة واختيارها من القائمة، أو تفعيل خيار \"الشركة غير مسجّلة عندنا\""); return; }
+  if (isExternal && !companyName) { toast("⚠️ الرجاء كتابة اسم الشركة"); return; }
   if (!slotId) { toast("⚠️ الرجاء اختيار المساحة الإعلانية"); return; }
   if (!destination) { toast("⚠️ الرجاء إدخال رابط الصفحة المستهدفة"); return; }
   if (!bannerFile) { toast("⚠️ الرجاء رفع صورة الإعلان"); return; }
@@ -10080,6 +10099,14 @@ window.submitGiftAd = async function() {
   var btn = document.getElementById("ga-submit-btn");
   btn.disabled = true; btn.textContent = "جارٍ المنح...";
   try {
+    if (isExternal) {
+      var newCompany = await apiFetch("/admin/companies/external", {
+        method: "POST",
+        body: JSON.stringify({ nameAr: companyName, type: "SUPPLIER" }),
+      });
+      companyId = newCompany.id;
+    }
+
     var formData = new FormData();
     formData.append("banner", bannerFile);
     var token = getAuthToken("inmisr_access_token");
