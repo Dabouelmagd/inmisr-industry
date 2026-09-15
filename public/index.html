@@ -3643,8 +3643,8 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   <div class="modal" style="max-width:440px">
     <button class="mclose" onclick="document.getElementById('login-modal').classList.remove('open')">×</button>
     <div style="text-align:center;margin-bottom:20px">
-      <div style="font-size:18px;font-weight:700;margin-bottom:5px">تسجيل الدخول</div>
-      <div style="font-size:13px;color:var(--ts)">ادخلي على لوحة التحكم الخاصة بحسابك</div>
+      <div id="login-modal-title" style="font-size:18px;font-weight:700;margin-bottom:5px">تسجيل الدخول</div>
+      <div id="login-modal-sub" style="font-size:13px;color:var(--ts)">ادخلي على لوحة التحكم الخاصة بحسابك</div>
     </div>
 
     <div id="login-type-sel" style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
@@ -11204,6 +11204,12 @@ window.openLoginModal = function() {
   document.getElementById("login-form-fields").style.display = "none";
   document.getElementById("login-email").value = "";
   document.getElementById("login-password").value = "";
+  var typeSel = document.getElementById("login-type-sel");
+  if (typeSel) typeSel.style.display = "flex";
+  var titleEl = document.getElementById("login-modal-title");
+  var subEl = document.getElementById("login-modal-sub");
+  if (titleEl) titleEl.textContent = "تسجيل الدخول";
+  if (subEl) subEl.textContent = "ادخلي على لوحة التحكم الخاصة بحسابك";
   document.getElementById("login-modal").classList.add("open");
 };
 
@@ -11213,6 +11219,16 @@ window.openOwnerLogin = function() {
   ["supplier","company","owner","worker"].forEach(function(t){ document.getElementById("login-btn-"+t).classList.remove("sel"); });
   document.getElementById("login-email").value = "";
   document.getElementById("login-password").value = "";
+  // Owner login is reached only through the dedicated shield icon, never
+  // through the general login flow — hide the role tabs entirely instead
+  // of just pre-selecting "owner" among visible ones, so there's no way
+  // to accidentally end up on a different role's tab from here.
+  var typeSel = document.getElementById("login-type-sel");
+  if (typeSel) typeSel.style.display = "none";
+  var titleEl = document.getElementById("login-modal-title");
+  var subEl = document.getElementById("login-modal-sub");
+  if (titleEl) titleEl.textContent = "🛡️ دخول الإدارة";
+  if (subEl) subEl.textContent = "هذا الدخول مخصص لفريق إدارة المنصة فقط";
   document.getElementById("login-modal").classList.add("open");
   selectLoginType("owner");
 };
