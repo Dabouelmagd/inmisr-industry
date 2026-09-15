@@ -623,7 +623,8 @@ export class AdsV2Controller {
   }))
   @ApiOperation({ summary: 'رفع صورة الإعلان (بانر)' })
   uploadBanner(@UploadedFile() file: any, @Request() req: any) {
-    if (!req.user.companyId) throw new ForbiddenException('يجب تسجيل حساب شركة أولاً');
+    const isAdmin = req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN';
+    if (!req.user.companyId && !isAdmin) throw new ForbiddenException('يجب تسجيل حساب شركة أولاً');
     if (!file) throw new BadRequestException('لم يتم إرفاق أي ملف');
     return { bannerUrl: `/uploads/ad-banners/${file.filename}` };
   }
