@@ -538,6 +538,60 @@ export class FactoryNeedService {
 
 // ══════════════════════════════════════════════════════════════════
 // ══════════════════════════════════════════════════════════════════
+// MARKET GAP ANALYSIS — فرص استثمارية حقيقية من بيانات RFQ والموردين
+// الفعلية. لا يوجد نمذجة مالية حقيقية (لا بيانات استثمار/ROI حقيقية
+// متاحة) — المؤشرات المعروضة كلها إشارات طلب/عرض حقيقية وقابلة
+// للتحقق: عدد طلبات عروض الأسعار الحقيقية، عدد الردود الحقيقية،
+// عدد الموردين المسجّلين فعليًا في القطاع.
+// ══════════════════════════════════════════════════════════════════
+
+@Injectable()
+export class MarketGapService {
+  constructor(private prisma: PrismaService) {}
+
+  async getOpportunities() {
+    const categories = await this.prisma.category.findMany({
+      where: { isActive: true },
+      select: { id: true, nameAr: true, sectorCode: true, iconEmoji: true },
+    });
+
+    const results: any[] = [];
+    for (const cat of categories) {
+      const rfqs = await this.prisma.rfqRequest.findMany({
+        where: { categoryId: cat.id, status: { in: ['PUBLISHED', 'QUOTES_RECEIVED', 'NEGOTIATING', 'ACCEPTED'] } },
+        select: { id: true, deliveryCity: true },
+      });
+      if (rfqs.length < 2) continue; // not enough real signal to call it a pattern
+
+      const rfqIds = rfqs.map(r => r.id);
+      const quoteCount = await this.prisma.rfqQuote.count({ where: { rfqId: { in: rfqIds } } });
+      const supplierCount = await this.prisma.companyCategory.count({ where: { categoryId: cat.id } });
+
+      const avgQuotesPerRfq = quoteCount / rfqs.length;
+      // Real signal, not a financial projection: more real demand (rfqCount)
+      // combined with fewer real responses per request and fewer registered
+      // suppliers = a bigger real, verifiable supply gap.
+      const gapScore = (rfqs.length * 10) / ((avgQuotesPerRfq + 1) * (supplierCount + 1));
+
+      const cityCounts: Record<string, number> = {};
+      for (const r of rfqs) { if (r.deliveryCity) cityCounts[r.deliveryCity] = (cityCounts[r.deliveryCity] || 0) + 1; }
+      const topCity = Object.entries(cityCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+
+      results.push({
+        categoryId: cat.id, categoryName: cat.nameAr, icon: cat.iconEmoji || '🏭',
+        rfqCount: rfqs.length, quoteCount, supplierCount,
+        avgQuotesPerRfq: +avgQuotesPerRfq.toFixed(1),
+        gapScore: +gapScore.toFixed(1),
+        topCity,
+      });
+    }
+
+    results.sort((a, b) => b.gapScore - a.gapScore);
+    return results.slice(0, 6);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // DASHBOARD ACTIVITY — نشاط أخير حقيقي مبني على تحديثات الطلبات
 // الفعلية والتقييمات، بدل قائمة ثابتة من بيانات تجريبية.
 // ══════════════════════════════════════════════════════════════════

@@ -18,7 +18,7 @@ import { RfqService, CreateRfqDto, CreateQuoteDto } from '../rfq/rfq.service';
 import { EscrowService, DisputeDto } from '../escrow/escrow.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AntiLeakageService } from '../common/anti-leakage.service';
-import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, ProviderListingService, CompanyAssistantService, CompanyProfileService, QualityService, CustomIndustrialServiceService, SupplyChainService, DashboardActivityService, WorkerService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
+import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, ProviderListingService, CompanyAssistantService, CompanyProfileService, QualityService, CustomIndustrialServiceService, SupplyChainService, DashboardActivityService, WorkerService, MarketGapService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
 
 // ── Auth Guards (simplified) ───────────────────────────────────────
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -695,6 +695,19 @@ export class FactoryNeedController {
 
 // ── Reverse Logistics Controller ─────────────────────────────────
 @ApiTags('reverse-logistics')
+// ── Market Gap Analysis Controller ─────────────────────────────────
+@ApiTags('market-gap')
+@Controller('market-gap')
+export class MarketGapController {
+  constructor(private marketGap: MarketGapService) {}
+
+  @Get('opportunities')
+  @ApiOperation({ summary: 'فرص استثمارية حقيقية من تحليل فجوات العرض والطلب' })
+  getOpportunities() {
+    return this.marketGap.getOpportunities();
+  }
+}
+
 // ── Worker Profile Controller ────────────────────────────────────
 @ApiTags('workers')
 @Controller('workers/me')
