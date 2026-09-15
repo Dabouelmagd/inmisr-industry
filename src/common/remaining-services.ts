@@ -1728,3 +1728,18 @@ export class MessagesService {
     return { message: 'تم تعليم الرسائل كمقروءة' };
   }
 }
+
+// ══════════════════════════════════════════════════════════════════
+// WORKER PROFILE — بيانات الباحث عن عمل/العامل الحقيقية
+// ══════════════════════════════════════════════════════════════════
+
+@Injectable()
+export class WorkerService {
+  constructor(private prisma: PrismaService) {}
+
+  async getMine(userId: string) {
+    const profile = await this.prisma.workerProfile.findUnique({ where: { userId } });
+    if (!profile) throw new NotFoundException('لا يوجد ملف باحث عن عمل مرتبط بحسابك');
+    return profile;
+  }
+}

@@ -18,7 +18,7 @@ import { RfqService, CreateRfqDto, CreateQuoteDto } from '../rfq/rfq.service';
 import { EscrowService, DisputeDto } from '../escrow/escrow.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AntiLeakageService } from '../common/anti-leakage.service';
-import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, ProviderListingService, CompanyAssistantService, CompanyProfileService, QualityService, CustomIndustrialServiceService, SupplyChainService, DashboardActivityService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
+import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, ProviderListingService, CompanyAssistantService, CompanyProfileService, QualityService, CustomIndustrialServiceService, SupplyChainService, DashboardActivityService, WorkerService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
 
 // ── Auth Guards (simplified) ───────────────────────────────────────
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -695,6 +695,21 @@ export class FactoryNeedController {
 
 // ── Reverse Logistics Controller ─────────────────────────────────
 @ApiTags('reverse-logistics')
+// ── Worker Profile Controller ────────────────────────────────────
+@ApiTags('workers')
+@Controller('workers/me')
+@UseGuards(JwtGuard)
+@ApiBearerAuth()
+export class WorkerController {
+  constructor(private worker: WorkerService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'بياناتي (باحث عن عمل)' })
+  getMine(@Request() req: any) {
+    return this.worker.getMine(req.user.sub);
+  }
+}
+
 // ── Dashboard Activity Controller ──────────────────────────────────
 @ApiTags('dashboard')
 @Controller('dashboard')

@@ -2448,7 +2448,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
     <div id="dash-header-worker" style="display:none">
       <button class="back-arrow-btn" style="display:inline-flex" onclick="goBack()">← رجوع للصفحة السابقة</button>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:10px">
-        <div><div style="font-size:22px;font-weight:700">لوحة تحكم الباحث عن عمل</div><div style="font-size:13px;color:var(--ts);margin-top:5px">أحمد كريم · <span class="pill pb2">باحث عن عمل</span></div></div>
+        <div><div style="font-size:22px;font-weight:700">لوحة تحكم الباحث عن عمل</div><div style="font-size:13px;color:var(--ts);margin-top:5px"><span id="worker-header-name">جارٍ التحميل...</span> · <span class="pill pb2">باحث عن عمل</span></div></div>
         <div style="display:flex;gap:8px"><button class="bc" style="border-radius:8px" data-page="training">🛠️ تصفح الحرف والوظائف</button></div>
       </div>
       <div class="g4" id="dash-ov-worker" style="margin-bottom:22px">
@@ -2486,9 +2486,9 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
 
       <div class="card" id="dash-profile-worker" style="margin-top:14px"><div class="cb">
         <div style="font-size:13px;font-weight:700;margin-bottom:10px">بياناتي</div>
-        <div class="row"><span style="color:var(--ts)">الاسم</span><span style="font-weight:700">أحمد كريم</span></div>
-        <div class="row"><span style="color:var(--ts)">رقم التليفون</span><span style="font-weight:700" dir="ltr">01012345678</span></div>
-        <div class="row"><span style="color:var(--ts)">المحافظة</span><span style="font-weight:700">القاهرة</span></div>
+        <div class="row"><span style="color:var(--ts)">الاسم</span><span style="font-weight:700" id="worker-profile-name">—</span></div>
+        <div class="row"><span style="color:var(--ts)">رقم التليفون</span><span style="font-weight:700" dir="ltr" id="worker-profile-phone">—</span></div>
+        <div class="row"><span style="color:var(--ts)">المحافظة</span><span style="font-weight:700" id="worker-profile-gov">—</span></div>
       </div></div>
     </div>
   <div id="dash-mfg-ops" style="padding:0 32px 28px;max-width:1180px">
@@ -4202,6 +4202,7 @@ function goTo(pg, fromBack){
       companyPanel.style.display = (role === "company") ? "block" : "none";
       if (workerPanel) workerPanel.style.display = (role === "worker") ? "block" : "none";
       if (role === "worker" && typeof loadMyTradeApplications === "function") loadMyTradeApplications();
+      if (role === "worker" && typeof loadWorkerProfile === "function") loadWorkerProfile();
       if (role === "supplier" && typeof loadSupplierRfqs === "function") loadSupplierRfqs();
       if (role === "supplier" && typeof loadMyCustomers === "function") loadMyCustomers();
       if ((role === "supplier" || role === "company") && typeof loadCompanyProfile === "function") loadCompanyProfile();
@@ -7983,6 +7984,27 @@ function renderTradeApplicationsAdmin() {
   }).join("") : '<div style="font-size:13px;color:var(--ts);padding:14px 0">لا توجد طلبات التحاق أو تقديم وظائف حتى الآن</div>';
 }
 window.renderTradeApplicationsAdmin = renderTradeApplicationsAdmin;
+
+async function loadWorkerProfile() {
+  if (!window.isLoggedIn || window.loggedInRole !== "worker") return;
+  var nameHeaderEl = document.getElementById("worker-header-name");
+  var nameEl = document.getElementById("worker-profile-name");
+  var phoneEl = document.getElementById("worker-profile-phone");
+  var govEl = document.getElementById("worker-profile-gov");
+  try {
+    var profile = await apiFetch("/workers/me");
+    if (nameHeaderEl) nameHeaderEl.textContent = profile.fullName || "—";
+    if (nameEl) nameEl.textContent = profile.fullName || "—";
+    if (phoneEl) phoneEl.textContent = profile.phone || "—";
+    if (govEl) govEl.textContent = profile.governorate || "غير محدد";
+  } catch (err) {
+    if (nameHeaderEl) nameHeaderEl.textContent = "—";
+    if (nameEl) nameEl.textContent = "—";
+    if (phoneEl) phoneEl.textContent = "—";
+    if (govEl) govEl.textContent = "—";
+  }
+}
+window.loadWorkerProfile = loadWorkerProfile;
 
 function renderWorkerDashboard() {
   var tradeApps = TRADE_APPLICATIONS.filter(function(a){ return a.type === "trade"; });
