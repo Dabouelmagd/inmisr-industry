@@ -582,8 +582,8 @@ export class SupplyChainService {
     const orders = await this.prisma.order.findMany({
       where: { status: 'SHIPPED' },
       include: {
-        buyer: { select: { nameAr: true, city: true } },
-        supplier: { select: { nameAr: true, city: true } },
+        buyer: { select: { nameAr: true, location: { select: { city: true } } } },
+        supplier: { select: { nameAr: true, location: { select: { city: true } } } },
         shipmentTracking: true,
       },
       orderBy: { confirmedAt: 'desc' },
@@ -591,8 +591,8 @@ export class SupplyChainService {
     });
     return orders.map(o => ({
       orderId: o.id, amount: o.amount,
-      buyerName: o.buyer?.nameAr, buyerCity: o.buyer?.city,
-      supplierName: o.supplier?.nameAr, supplierCity: o.supplier?.city,
+      buyerName: o.buyer?.nameAr, buyerCity: o.buyer?.location?.city,
+      supplierName: o.supplier?.nameAr, supplierCity: o.supplier?.location?.city,
       currentStage: o.shipmentTracking?.currentStage || null,
       customsStatus: o.shipmentTracking?.customsStatus || null,
       customsNote: o.shipmentTracking?.customsNote || null,
