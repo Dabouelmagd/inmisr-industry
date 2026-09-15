@@ -1898,49 +1898,6 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   </div>
 </div>
 
-<div class="mov" id="dash-financing-modal">
-  <div class="modal" style="max-width:420px">
-    <button class="mc" onclick="closeM('dash-financing-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
-    <div style="font-size:16px;font-weight:700;margin-bottom:16px">💳 طلب تمويل صناعي</div>
-    <div class="g2" style="gap:14px;margin-bottom:12px">
-      <div><span class="lbl">المبلغ المطلوب (ج.م)</span><input class="inp" type="number" id="dmq-fin-amount" placeholder="500000" oninput="calcDashFinancing()"></div>
-      <div><span class="lbl">مدة السداد (شهور)</span><input class="inp" type="number" id="dmq-fin-months" placeholder="24" oninput="calcDashFinancing()"></div>
-    </div>
-    <div style="margin-bottom:12px"><span class="lbl">الغرض من التمويل</span><input class="inp" id="dmq-fin-purpose" placeholder="مثال: شراء آلات جديدة"></div>
-    <div style="margin-bottom:16px"><span class="lbl">الشريك التمويلي المفضّل</span><select class="sel" id="dmq-fin-bank" onchange="calcDashFinancing()"><option value="14">CIB — 14% سنويًا</option><option value="11">بنك التنمية الصناعية — 11% سنويًا</option><option value="16">QNB الأهلي — 16% سنويًا</option></select></div>
-    <div id="dmq-fin-result" style="display:none;background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:16px">
-      <div class="row" style="border-bottom:1px solid var(--bd)"><span style="color:var(--ts);font-size:12px">القسط الشهري</span><span style="font-weight:700;color:var(--gold)" id="dmq-fin-monthly">—</span></div>
-      <div class="row" style="border-bottom:1px solid var(--bd)"><span style="color:var(--ts);font-size:12px">إجمالي الفوائد</span><span style="font-weight:700" id="dmq-fin-interest">—</span></div>
-      <div class="row"><span style="color:var(--ts);font-size:12px">إجمالي المسدد</span><span style="font-weight:700" id="dmq-fin-total">—</span></div>
-    </div>
-    <button class="bc" style="width:100%;padding:11px;font-size:13px" id="dmq-fin-submit-btn" onclick="submitDashFinancingRequest()">إرسال طلب التمويل</button>
-  </div>
-</div>
-
-<div class="mov" id="dash-inspection-modal">
-  <div class="modal" style="max-width:420px">
-    <button class="mc" onclick="closeM('dash-inspection-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
-    <div style="font-size:16px;font-weight:700;margin-bottom:16px">🧪 طلب فحص وجودة</div>
-    <div style="margin-bottom:12px"><span class="lbl">نوع الفحص</span><select class="sel" id="dmq-ins-type"><option>تحليل كيميائي ومعملي</option><option>فحص ما قبل الشحن</option><option>شهادة ISO / مطابقة</option><option>اختبارات ضغط وسقوط ورطوبة</option></select></div>
-    <div style="margin-bottom:12px"><span class="lbl">اسم المنتج أو الخامة</span><input class="inp" id="dmq-ins-product" placeholder="مثال: حديد تسليح 16مم"></div>
-    <div class="g2" style="gap:14px;margin-bottom:16px">
-      <div><span class="lbl">الكمية (اختياري)</span><input class="inp" id="dmq-ins-qty" placeholder="50 طن"></div>
-      <div><span class="lbl">الموعد المفضّل</span><input class="inp" type="date" id="dmq-ins-date"></div>
-    </div>
-    <button class="bc" style="width:100%;padding:11px;font-size:13px" id="dmq-ins-submit-btn" onclick="submitDashInspectionRequest()">حجز طلب الفحص</button>
-  </div>
-</div>
-
-<div class="mov" id="dash-training-modal">
-  <div class="modal" style="max-width:420px">
-    <button class="mc" onclick="closeM('dash-training-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
-    <div style="font-size:16px;font-weight:700;margin-bottom:16px">🎓 التسجيل في دورة تدريبية</div>
-    <div style="margin-bottom:16px"><span class="lbl">اسم الدورة</span><input class="inp" id="dmq-tr-course" placeholder="مثال: أساسيات جودة اللحام الصناعي"></div>
-    <div style="font-size:12px;color:var(--ts);margin-bottom:16px">💡 لتصفح كل الدورات المتاحة بتفاصيلها، زوري صفحة "التدريب ورفع الكفاءة" — الفورم ده للتسجيل السريع فقط</div>
-    <button class="bc" style="width:100%;padding:11px;font-size:13px" id="dmq-tr-submit-btn" onclick="submitDashTrainingEnrollment()">تسجيل في الدورة</button>
-  </div>
-</div>
-
 <div class="mov" id="edit-booking-modal">
   <div class="modal" style="max-width:440px">
     <button class="mc" onclick="closeM('edit-booking-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
@@ -2434,7 +2391,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         <div style="display:flex;flex-direction:column;gap:12px">
           <div class="lc" id="dash-loyalty-company"><div style="font-size:13px;color:var(--ts)">نقاط الولاء</div><div class="lp" id="dash-loy-points">—</div><div class="lt" id="dash-loy-tier">جارٍ التحميل...</div><div style="height:5px;background:var(--bg4);border-radius:2px;margin:14px 0"><div style="height:100%;width:0%;background:linear-gradient(90deg,#C09300,#FFD700);border-radius:2px" id="dash-loy-bar"></div></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tt)"><span id="dash-loy-current-tier"></span><span id="dash-loy-next-tier"></span></div></div>
           <div class="card" id="dash-quick-company"><div class="cb"><div style="font-size:13px;font-weight:700;margin-bottom:10px">إجراءات سريعة</div><div style="display:flex;flex-direction:column;gap:7px"><button class="bc" style="width:100%;padding:9px;border-radius:8px" data-page="rfq">📋 طلب عرض سعر</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" data-page="sup">🔍 تصفح الموردين</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" id="open-chat2">💬 المحادثات (3)</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" data-page="pricing">💎 ترقية الباقة</button></div></div></div>
-          <div class="card" id="dash-services-company"><div class="cb"><div style="font-size:13px;font-weight:700;margin-bottom:10px">الخدمات الصناعية</div><div style="display:flex;flex-direction:column;gap:7px"><button class="bl" style="width:100%;padding:9px;border-radius:8px" onclick="openDashServiceModal('financing')">💳 التمويل الصناعي</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" onclick="openDashServiceModal('inspection')">🧪 الفحص والجودة</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" onclick="openDashServiceModal('training')">🎓 التدريب ورفع الكفاءة</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" data-page="supplychain">🛰️ سلسلة التوريد</button></div></div></div>
+          <div class="card" id="dash-services-company"><div class="cb"><div style="font-size:13px;font-weight:700;margin-bottom:10px">الخدمات الصناعية</div><div style="display:flex;flex-direction:column;gap:7px"><button class="bl" style="width:100%;padding:9px;border-radius:8px" onclick="goToServiceTab('financing')">💳 التمويل الصناعي</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" onclick="goToServiceTab('inspection')">🧪 الفحص والجودة</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" onclick="goToServiceTab('training')">🎓 التدريب ورفع الكفاءة</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" data-page="supplychain">🛰️ سلسلة التوريد</button></div></div></div>
           <div class="card" id="dash-profile-company"><div class="cb"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:13px;font-weight:700">بيانات الشركة</div><button class="bl" style="font-size:11px;padding:4px 10px;border-radius:6px" onclick="openCompanyProfileEdit()">✏️ تعديل</button></div>
             <div id="company-profile-view-company"><div style="font-size:12px;color:var(--ts);padding:10px 0">جارٍ التحميل...</div></div>
           </div></div>
@@ -2477,9 +2434,9 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
           </div></div></div>
           <div class="card" id="dash-services-supplier"><div class="cb"><div style="font-size:13px;font-weight:700;margin-bottom:10px">الخدمات الصناعية</div><div style="display:flex;flex-direction:column;gap:7px">
             <button class="bl" style="width:100%;padding:9px;border-radius:8px" data-page="factory">🏭 بوابة المصانع الكبرى</button>
-            <button class="bl" style="width:100%;padding:9px;border-radius:8px" onclick="openDashServiceModal('financing')">💳 التمويل الصناعي</button>
-            <button class="bl" style="width:100%;padding:9px;border-radius:8px" onclick="openDashServiceModal('inspection')">🧪 الفحص والجودة</button>
-            <button class="bl" style="width:100%;padding:9px;border-radius:8px" onclick="openDashServiceModal('training')">🎓 التدريب ورفع الكفاءة</button>
+            <button class="bl" style="width:100%;padding:9px;border-radius:8px" onclick="goToServiceTab('financing')">💳 التمويل الصناعي</button>
+            <button class="bl" style="width:100%;padding:9px;border-radius:8px" onclick="goToServiceTab('inspection')">🧪 الفحص والجودة</button>
+            <button class="bl" style="width:100%;padding:9px;border-radius:8px" onclick="goToServiceTab('training')">🎓 التدريب ورفع الكفاءة</button>
           </div></div></div>
           <div class="card" id="dash-profile-supplier"><div class="cb"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:13px;font-weight:700">بيانات المنشأة</div><button class="bl" style="font-size:11px;padding:4px 10px;border-radius:6px" onclick="openCompanyProfileEdit()">✏️ تعديل</button></div>
             <div id="company-profile-view-supplier"><div style="font-size:12px;color:var(--ts);padding:10px 0">جارٍ التحميل...</div></div>
@@ -2606,59 +2563,93 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   </div>
   <div id="dash-myservices" style="padding:0 32px 28px;max-width:1180px">
     <div style="font-size:18px;font-weight:700;margin-bottom:4px">طلباتي من الخدمات الصناعية</div>
-    <div style="font-size:13px;color:var(--ts);margin-bottom:16px">كل البيانات الخاصة بمنشأتك من الخدمات الصناعية في مكان واحد — الطلبات العامة وتقديمها تكون من صفحاتها على الموقع</div>
+    <div style="font-size:13px;color:var(--ts);margin-bottom:16px">كل خدمة تحت تبويبها — اطلبي وتابعي طلباتك من غير ما تخرجي من لوحة التحكم</div>
 
-    <div class="g2" style="gap:14px;margin-bottom:14px">
-      <div class="card"><div class="cb">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div style="font-size:14px;font-weight:700">💳 طلبات التمويل</div>
-          <button class="bl" style="font-size:11px;padding:4px 10px;border-radius:6px" onclick="openDashServiceModal('financing')">طلب جديد +</button>
+    <div class="tabs" id="myservices-tabs" style="margin-bottom:16px">
+      <button class="tab on" onclick="switchMyServicesTab(this,'financing')">💳 التمويل</button>
+      <button class="tab" onclick="switchMyServicesTab(this,'inspection')">🧪 الفحص والتفتيش</button>
+      <button class="tab" onclick="switchMyServicesTab(this,'training')">🎓 التدريب</button>
+      <button class="tab" onclick="switchMyServicesTab(this,'factory')">🏭 الاحتياجات الصناعية</button>
+      <button class="tab" onclick="switchMyServicesTab(this,'reverse')">🔄 اللوجيستيات العكسية</button>
+    </div>
+
+    <div id="ms-tab-financing">
+      <div class="card" style="margin-bottom:14px"><div class="cb">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">طلب تمويل جديد</div>
+        <div class="g2" style="gap:14px;margin-bottom:12px">
+          <div><span class="lbl">المبلغ المطلوب (ج.م)</span><input class="inp" type="number" id="dmq-fin-amount" placeholder="500000" oninput="calcDashFinancing()"></div>
+          <div><span class="lbl">مدة السداد (شهور)</span><input class="inp" type="number" id="dmq-fin-months" placeholder="24" oninput="calcDashFinancing()"></div>
         </div>
-        <div id="fin-requests-list"><div style="font-size:13px;color:var(--ts)">لا توجد طلبات تمويل حتى الآن</div></div>
+        <div class="g2" style="gap:14px;margin-bottom:12px">
+          <div><span class="lbl">الغرض من التمويل</span><input class="inp" id="dmq-fin-purpose" placeholder="مثال: شراء آلات جديدة"></div>
+          <div><span class="lbl">الشريك التمويلي المفضّل</span><select class="sel" id="dmq-fin-bank" onchange="calcDashFinancing()"><option value="14">CIB — 14% سنويًا</option><option value="11">بنك التنمية الصناعية — 11% سنويًا</option><option value="16">QNB الأهلي — 16% سنويًا</option></select></div>
+        </div>
+        <div id="dmq-fin-result" style="display:none;background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:14px">
+          <div class="row" style="border-bottom:1px solid var(--bd)"><span style="color:var(--ts);font-size:12px">القسط الشهري</span><span style="font-weight:700;color:var(--gold)" id="dmq-fin-monthly">—</span></div>
+          <div class="row" style="border-bottom:1px solid var(--bd)"><span style="color:var(--ts);font-size:12px">إجمالي الفوائد</span><span style="font-weight:700" id="dmq-fin-interest">—</span></div>
+          <div class="row"><span style="color:var(--ts);font-size:12px">إجمالي المسدد</span><span style="font-weight:700" id="dmq-fin-total">—</span></div>
+        </div>
+        <button class="bc" style="width:100%;padding:10px;font-size:13px" id="dmq-fin-submit-btn" onclick="submitDashFinancingRequest()">إرسال طلب التمويل</button>
       </div></div>
-
       <div class="card"><div class="cb">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div style="font-size:14px;font-weight:700">🧪 طلبات الفحص</div>
-          <button class="bl" style="font-size:11px;padding:4px 10px;border-radius:6px" onclick="openDashServiceModal('inspection')">طلب جديد +</button>
-        </div>
-        <div id="inspection-requests-list"></div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">💳 طلبات التمويل السابقة</div>
+        <div id="fin-requests-list"><div style="font-size:13px;color:var(--ts)">لا توجد طلبات تمويل حتى الآن</div></div>
       </div></div>
     </div>
 
-    <div class="g2" style="gap:14px;margin-bottom:14px">
-      <div class="card"><div class="cb">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div style="font-size:14px;font-weight:700">🏭 طلبات التفتيش</div>
-          <button class="bl" style="font-size:11px;padding:4px 10px;border-radius:6px" onclick="openDashServiceModal('inspection')">طلب جديد +</button>
+    <div id="ms-tab-inspection" style="display:none">
+      <div class="card" style="margin-bottom:14px"><div class="cb">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">طلب فحص/تفتيش جديد</div>
+        <div style="margin-bottom:12px"><span class="lbl">نوع الفحص</span><select class="sel" id="dmq-ins-type"><option>تحليل كيميائي ومعملي</option><option>فحص ما قبل الشحن</option><option>شهادة ISO / مطابقة</option><option>اختبارات ضغط وسقوط ورطوبة</option></select></div>
+        <div class="g2" style="gap:14px;margin-bottom:12px">
+          <div><span class="lbl">اسم المنتج أو الخامة</span><input class="inp" id="dmq-ins-product" placeholder="مثال: حديد تسليح 16مم"></div>
+          <div><span class="lbl">الكمية (اختياري)</span><input class="inp" id="dmq-ins-qty" placeholder="50 طن"></div>
         </div>
-        <div id="audit-requests-list"></div>
+        <div style="margin-bottom:14px"><span class="lbl">الموعد المفضّل</span><input class="inp" type="date" id="dmq-ins-date"></div>
+        <button class="bc" style="width:100%;padding:10px;font-size:13px" id="dmq-ins-submit-btn" onclick="submitDashInspectionRequest()">حجز طلب الفحص</button>
       </div></div>
+      <div class="g2" style="gap:14px">
+        <div class="card"><div class="cb"><div style="font-size:14px;font-weight:700;margin-bottom:12px">🧪 طلبات الفحص</div><div id="inspection-requests-list"></div></div></div>
+        <div class="card"><div class="cb"><div style="font-size:14px;font-weight:700;margin-bottom:12px">🏭 طلبات التفتيش</div><div id="audit-requests-list"></div></div></div>
+      </div>
+    </div>
 
+    <div id="ms-tab-training" style="display:none">
+      <div class="card" style="margin-bottom:14px"><div class="cb">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">التسجيل في دورة تدريبية</div>
+        <div style="margin-bottom:12px"><span class="lbl">اسم الدورة</span><input class="inp" id="dmq-tr-course" placeholder="مثال: أساسيات جودة اللحام الصناعي"></div>
+        <div style="font-size:12px;color:var(--ts);margin-bottom:14px">💡 لتصفح كل الدورات المتاحة بتفاصيلها، زوري صفحة "التدريب ورفع الكفاءة" من القائمة العلوية</div>
+        <button class="bc" style="width:100%;padding:10px;font-size:13px" id="dmq-tr-submit-btn" onclick="submitDashTrainingEnrollment()">تسجيل في الدورة</button>
+      </div></div>
       <div class="card"><div class="cb">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div style="font-size:14px;font-weight:700">🎓 تسجيلاتي في الدورات</div>
-          <button class="bl" style="font-size:11px;padding:4px 10px;border-radius:6px" onclick="openDashServiceModal('training')">دورة جديدة +</button>
-        </div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">🎓 تسجيلاتي في الدورات</div>
         <div id="training-enrollments-list" style="font-size:13px;color:var(--ts)">لا توجد تسجيلات حتى الآن</div>
       </div></div>
     </div>
 
-    <div class="card" style="margin-bottom:14px"><div class="cb">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:14px;font-weight:700">🔄 طلبات اللوجيستيات العكسية</div>
-        <button class="bl" style="font-size:11px;padding:4px 10px;border-radius:6px" data-page="supplychain">طلب جديد +</button>
-      </div>
-      <div id="reverse-requests-list"><div style="font-size:13px;color:var(--ts)">لا توجد طلبات استرجاع حتى الآن</div></div>
-    </div></div>
+    <div id="ms-tab-factory" style="display:none">
+      <div class="card" style="margin-bottom:14px"><div class="cb">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">نشر احتياج صناعي جديد</div>
+        <div style="margin-bottom:12px"><span class="lbl">نوع الاحتياج</span><input class="inp" id="dmq-need-type" placeholder="مثال: خامات بلاستيكية"></div>
+        <div class="g2" style="gap:14px;margin-bottom:14px">
+          <div><span class="lbl">الوصف</span><input class="inp" id="dmq-need-desc" placeholder="تفاصيل الاحتياج"></div>
+          <div><span class="lbl">الكمية (اختياري)</span><input class="inp" id="dmq-need-qty" placeholder="مثال: 5 طن شهريًا"></div>
+        </div>
+        <button class="bc" style="width:100%;padding:10px;font-size:13px" id="dmq-need-submit-btn" onclick="submitDashFactoryNeed()">نشر الاحتياج</button>
+      </div></div>
+      <div class="card"><div class="cb">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">🏭 احتياجاتي المنشورة</div>
+        <div id="factory-needs-mylist"></div>
+      </div></div>
+    </div>
 
-    <div class="card" style="margin-bottom:14px"><div class="cb">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:14px;font-weight:700">🏭 طلباتي من احتياجات النشر للصناعات المغذية</div>
-        <button class="bl" style="font-size:11px;padding:4px 10px;border-radius:6px" data-page="factory">طلب جديد +</button>
-      </div>
-      <div id="factory-needs-mylist"></div>
-    </div></div>
+    <div id="ms-tab-reverse" style="display:none">
+      <div class="card"><div class="cb">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">🔄 طلبات اللوجيستيات العكسية</div>
+        <div style="font-size:12px;color:var(--ts);margin-bottom:12px">لتقديم طلب استرجاع/مرتجعات جديد، من صفحة "سلسلة التوريد" في القائمة العلوية</div>
+        <div id="reverse-requests-list"><div style="font-size:13px;color:var(--ts)">لا توجد طلبات استرجاع حتى الآن</div></div>
+      </div></div>
+    </div>
 
     <div class="card" style="margin-bottom:14px"><div class="cb">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -7717,7 +7708,9 @@ async function submitDashFinancingRequest() {
       toast("⚠️ " + result.message + " (لديك حالياً " + result.currentOrders + " من أصل " + result.required + ")");
       return;
     }
-    if (typeof closeM === "function") closeM("dash-financing-modal");
+    document.getElementById("dmq-fin-amount").value = "";
+    document.getElementById("dmq-fin-purpose").value = "";
+    document.getElementById("dmq-fin-result").style.display = "none";
     toast((result && result.message) || "تم إرسال طلب التمويل — سيتم مراجعته قريبًا");
     if (typeof renderFinancingMiniList === "function") renderFinancingMiniList();
   } catch (err) {
@@ -7743,7 +7736,8 @@ async function submitDashInspectionRequest() {
         preferredDate: document.getElementById("dmq-ins-date").value || undefined,
       }),
     });
-    if (typeof closeM === "function") closeM("dash-inspection-modal");
+    document.getElementById("dmq-ins-product").value = "";
+    document.getElementById("dmq-ins-qty").value = "";
     toast("تم حجز طلب الفحص — سيتواصل معك المعمل المعتمد لتأكيد الموعد");
     if (typeof loadMyInspectionRequests === "function") loadMyInspectionRequests();
   } catch (err) {
@@ -7761,7 +7755,7 @@ async function submitDashTrainingEnrollment() {
   btn.disabled = true; btn.textContent = "جارٍ التسجيل...";
   try {
     await apiFetch("/training/enroll", { method: "POST", body: JSON.stringify({ courseName: courseName }) });
-    if (typeof closeM === "function") closeM("dash-training-modal");
+    document.getElementById("dmq-tr-course").value = "";
     toast("تم تسجيلك في دورة " + courseName + " — سيصلك تأكيد على بريدك الإلكتروني");
     if (typeof loadMyTrainingEnrollments === "function") loadMyTrainingEnrollments();
   } catch (err) {
@@ -7772,12 +7766,53 @@ async function submitDashTrainingEnrollment() {
 }
 window.submitDashTrainingEnrollment = submitDashTrainingEnrollment;
 
-function openDashServiceModal(service) {
-  var modalIds = { financing: "dash-financing-modal", inspection: "dash-inspection-modal", training: "dash-training-modal" };
-  var id = modalIds[service];
-  if (id && typeof openM === "function") openM(id);
+async function submitDashFactoryNeed() {
+  var needType = document.getElementById("dmq-need-type").value.trim();
+  var description = document.getElementById("dmq-need-desc").value.trim();
+  if (!needType) { toast("الرجاء إدخال نوع الاحتياج"); return; }
+  if (!description) { toast("الرجاء إدخال وصف الاحتياج"); return; }
+  var btn = document.getElementById("dmq-need-submit-btn");
+  btn.disabled = true; btn.textContent = "جارٍ النشر...";
+  try {
+    await apiFetch("/factory-needs", {
+      method: "POST",
+      body: JSON.stringify({
+        needType: needType, description: description,
+        quantity: document.getElementById("dmq-need-qty").value.trim() || undefined,
+      }),
+    });
+    document.getElementById("dmq-need-type").value = "";
+    document.getElementById("dmq-need-desc").value = "";
+    document.getElementById("dmq-need-qty").value = "";
+    toast("تم نشر الاحتياج — سيتواصل معك الموردون المناسبون");
+    if (typeof loadMyFactoryNeeds === "function") loadMyFactoryNeeds();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر نشر الاحتياج"));
+  } finally {
+    btn.disabled = false; btn.textContent = "نشر الاحتياج";
+  }
 }
-window.openDashServiceModal = openDashServiceModal;
+window.submitDashFactoryNeed = submitDashFactoryNeed;
+
+function switchMyServicesTab(btn, tabName) {
+  document.querySelectorAll("#myservices-tabs .tab").forEach(function(t) { t.classList.remove("on"); });
+  btn.classList.add("on");
+  ["financing", "inspection", "training", "factory", "reverse"].forEach(function(name) {
+    var panel = document.getElementById("ms-tab-" + name);
+    if (panel) panel.style.display = (name === tabName) ? "block" : "none";
+  });
+}
+window.switchMyServicesTab = switchMyServicesTab;
+
+function goToServiceTab(tabName) {
+  var navBtn = document.querySelector('[data-dashsec="myservices"]');
+  if (typeof scrollToDashSection === "function") scrollToDashSection("myservices", navBtn);
+  setTimeout(function() {
+    var tabBtn = document.querySelector('#myservices-tabs .tab[onclick*="\'' + tabName + '\'"]');
+    if (tabBtn) switchMyServicesTab(tabBtn, tabName);
+  }, 80);
+}
+window.goToServiceTab = goToServiceTab;
 
 async function submitFinancingRequest() {
   if (!requireLoginForService(submitFinancingRequest)) return;
