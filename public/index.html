@@ -1872,6 +1872,25 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   </div>
 </div>
 
+<div class="mov" id="edit-booking-modal">
+  <div class="modal" style="max-width:440px">
+    <button class="mc" onclick="closeM('edit-booking-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
+    <div style="font-size:16px;font-weight:700;margin-bottom:4px">✏️ تعديل الحجز</div>
+    <div style="font-size:12px;color:var(--ts);margin-bottom:16px"><span id="eb-advertiser-name"></span> — <span id="eb-slot-name"></span></div>
+    <div class="g2" style="gap:14px;margin-bottom:12px">
+      <div><span class="lbl">تاريخ البدء</span><input class="inp" type="date" id="eb-start-date"></div>
+      <div><span class="lbl">المدة</span><select class="sel" id="eb-duration"></select></div>
+    </div>
+    <div style="margin-bottom:12px"><span class="lbl">رابط الصفحة عند الضغط على الإعلان</span><input class="inp" id="eb-destination" placeholder="https://" dir="ltr"></div>
+    <div style="margin-bottom:16px">
+      <span class="lbl">صورة الإعلان الحالية — اختاري صورة جديدة لاستبدالها (اختياري)</span>
+      <div id="eb-banner-preview" style="margin-bottom:8px;display:none"><img style="max-width:100%;max-height:120px;border-radius:8px;border:1px solid var(--bd)"></div>
+      <input class="inp" type="file" id="eb-banner-file" accept="image/png,image/jpeg,image/webp" style="padding:8px">
+    </div>
+    <button class="bc" style="width:100%;padding:11px;font-size:13px" id="eb-submit-btn" onclick="submitEditBooking()">حفظ التعديلات</button>
+  </div>
+</div>
+
 <div class="mov" id="gift-ad-modal">
   <div class="modal" style="max-width:480px">
     <button class="mc" onclick="closeM('gift-ad-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
@@ -8698,10 +8717,11 @@ async function loadAdsV2Inventory() {
     var reviewLabel = { PENDING_REVIEW: "قيد المراجعة", APPROVED: "مقبول", REJECTED: "مرفوض", CANCELLED: "ملغي" };
     var reviewCls = { PENDING_REVIEW: "pa", APPROVED: "pg", REJECTED: "pr", CANCELLED: "pr" };
     var payLabel = { UNPAID: "غير مدفوع", PAID: "مدفوع ✓", REFUNDED: "مسترد", WAIVED: "هدية 🎁" };
-    box.innerHTML = '<div class="tw"><table class="tbl"><thead><tr><th>المعلن</th><th>المساحة</th><th>المدة</th><th>ظهور/نقرات</th><th>CTR</th><th>القيمة</th><th>الدفع</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>' +
+    box.innerHTML = '<div class="tw"><table class="tbl"><thead><tr><th>المعلن</th><th>المساحة</th><th>المدة</th><th>أُنشئ في</th><th>ظهور/نقرات</th><th>CTR</th><th>القيمة</th><th>الدفع</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>' +
       list.map(function(b) {
         var start = new Date(b.startDate).toLocaleDateString("ar-EG");
         var end = new Date(b.endDate).toLocaleDateString("ar-EG");
+        var createdAt = new Date(b.createdAt).toLocaleString("ar-EG", { dateStyle: "short", timeStyle: "short" });
         var actions = "";
         if (b.reviewStatus === "PENDING_REVIEW") {
           actions += '<button class="bc" style="font-size:11px;padding:3px 8px;border-radius:5px" onclick="adsV2Review(\'' + b.id + '\',true)">قبول</button> ' +
@@ -8711,12 +8731,15 @@ async function loadAdsV2Inventory() {
           actions += '<button class="bl" style="font-size:11px;padding:3px 8px;border-radius:5px" onclick="adsV2MarkPaid(\'' + b.id + '\')">تسجيل كمدفوع</button> ';
         }
         if (b.reviewStatus === "APPROVED") {
-          actions += '<button style="background:rgba(206,17,38,.08);color:#CE1126;border:1px solid rgba(206,17,38,.2);border-radius:5px;padding:3px 8px;cursor:pointer;font-family:inherit;font-size:11px" onclick="adsV2Cancel(\'' + b.id + '\')">إلغاء</button>';
+          actions += '<button style="background:rgba(206,17,38,.08);color:#CE1126;border:1px solid rgba(206,17,38,.2);border-radius:5px;padding:3px 8px;cursor:pointer;font-family:inherit;font-size:11px" onclick="adsV2Cancel(\'' + b.id + '\')">إلغاء</button> ';
         }
+        actions += '<button class="bl" style="font-size:11px;padding:3px 8px;border-radius:5px" onclick="openEditBookingModal(\'' + b.id + '\')">✏️ تعديل</button> ' +
+          '<button style="background:rgba(206,17,38,.08);color:#CE1126;border:1px solid rgba(206,17,38,.2);border-radius:5px;padding:3px 8px;cursor:pointer;font-family:inherit;font-size:11px" onclick="adsV2Delete(\'' + b.id + '\')">🗑️ حذف</button>';
         return '<tr>' +
           '<td><strong>' + (b.advertiserName || "—") + '</strong></td>' +
           '<td>' + (ADSV2_SLOT_LABELS[b.slotName] || b.slotName) + '</td>' +
           '<td style="color:var(--ts);white-space:nowrap">' + start + ' → ' + end + '</td>' +
+          '<td style="color:var(--ts);white-space:nowrap;font-size:11px">' + createdAt + '</td>' +
           '<td>' + b.impressions + ' / ' + b.clicks + '</td>' +
           '<td>' + b.ctr + '%</td>' +
           '<td style="color:var(--gold);font-weight:600">' + formatEgp(b.totalPrice) + '</td>' +
@@ -8725,6 +8748,7 @@ async function loadAdsV2Inventory() {
           '<td style="white-space:nowrap">' + actions + '</td>' +
           '</tr>';
       }).join("") + '</tbody></table></div>';
+    ADSV2_INVENTORY_CACHE = list;
   } catch (err) {
     box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:16px 0;text-align:center">⚠️ تعذر تحميل جدول الحجوزات: ' + (err.message || "") + '</div>';
   }
@@ -8766,6 +8790,77 @@ async function adsV2Cancel(id) {
   }
 }
 window.adsV2Cancel = adsV2Cancel;
+
+async function adsV2Delete(id) {
+  if (!confirm("تأكيد حذف هذا الحجز نهائيًا من قاعدة البيانات؟ لا يمكن التراجع عن هذا الإجراء.")) return;
+  try {
+    await apiFetch("/promo-placements/admin/" + id, { method: "DELETE" });
+    toast("تم حذف الحجز نهائيًا");
+    loadAdsV2Admin();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تنفيذ الإجراء"));
+  }
+}
+window.adsV2Delete = adsV2Delete;
+
+var ADSV2_INVENTORY_CACHE = [];
+var EDIT_BOOKING_ID = null;
+
+function openEditBookingModal(id) {
+  var booking = ADSV2_INVENTORY_CACHE.find(function(b) { return b.id === id; });
+  if (!booking) { toast("⚠️ تعذر إيجاد بيانات الحجز"); return; }
+  EDIT_BOOKING_ID = id;
+  document.getElementById("eb-slot-name").textContent = ADSV2_SLOT_LABELS[booking.slotName] || booking.slotName;
+  document.getElementById("eb-advertiser-name").textContent = booking.advertiserName || "—";
+  populateDurationSelect("eb-duration", booking.billingPeriod);
+  document.getElementById("eb-start-date").value = new Date(booking.startDate).toISOString().slice(0, 10);
+  document.getElementById("eb-destination").value = booking.destinationUrl || "";
+  document.getElementById("eb-banner-file").value = "";
+  var preview = document.getElementById("eb-banner-preview");
+  preview.style.display = "block";
+  preview.querySelector("img").src = resolveUploadUrl(booking.bannerUrl);
+  if (typeof openM === "function") openM("edit-booking-modal");
+}
+window.openEditBookingModal = openEditBookingModal;
+
+async function submitEditBooking() {
+  if (!EDIT_BOOKING_ID) return;
+  var startDateVal = document.getElementById("eb-start-date").value;
+  var billingPeriod = document.getElementById("eb-duration").value;
+  var destination = document.getElementById("eb-destination").value.trim();
+  var bannerFile = document.getElementById("eb-banner-file").files[0];
+
+  if (!destination) { toast("⚠️ الرجاء إدخال رابط الصفحة المستهدفة"); return; }
+
+  var btn = document.getElementById("eb-submit-btn");
+  btn.disabled = true; btn.textContent = "جارٍ الحفظ...";
+  try {
+    var payload = {
+      startDate: startDateVal ? new Date(startDateVal).toISOString() : undefined,
+      billingPeriod: billingPeriod, destinationUrl: destination,
+    };
+    if (bannerFile) {
+      var formData = new FormData();
+      formData.append("banner", bannerFile);
+      var token = getAuthToken("inmisr_access_token");
+      var uploadRes = await fetch(API_BASE + "/promo-placements/upload-banner", {
+        method: "POST", headers: token ? { "Authorization": "Bearer " + token } : {}, body: formData
+      });
+      var uploadBody = await uploadRes.json().catch(function(){ return null; });
+      if (!uploadRes.ok) throw new Error((uploadBody && uploadBody.message) || "تعذر رفع صورة الإعلان");
+      payload.bannerUrl = uploadBody.data.bannerUrl;
+    }
+    await apiFetch("/promo-placements/admin/" + EDIT_BOOKING_ID, { method: "PATCH", body: JSON.stringify(payload) });
+    if (typeof closeM === "function") closeM("edit-booking-modal");
+    toast("✅ تم تعديل الحجز بنجاح");
+    loadAdsV2Admin();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر حفظ التعديلات"));
+  } finally {
+    btn.disabled = false; btn.textContent = "حفظ التعديلات";
+  }
+}
+window.submitEditBooking = submitEditBooking;
 
 // ── CLIENT-SIDE AD RENDERING: native-first, AdSense fallback, frequency cap ──
 // Usage: renderAdSlot('HERO_SPOTLIGHT', 'my-container-div-id', {sector: 'الحديد'});

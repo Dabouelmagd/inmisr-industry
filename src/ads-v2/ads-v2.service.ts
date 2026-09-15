@@ -561,8 +561,9 @@ export class AdsV2Service implements OnModuleInit {
       const impressions = b.metrics.reduce((s, m) => s + m.impressions, 0);
       const clicks = b.metrics.reduce((s, m) => s + m.clicks, 0);
       return {
-        id: b.id, advertiserName: b.advertiser?.nameAr, slotName: b.slot?.name,
-        startDate: b.startDate, endDate: b.endDate,
+        id: b.id, advertiserName: b.advertiser?.nameAr, slotId: b.slotId, slotName: b.slot?.name,
+        startDate: b.startDate, endDate: b.endDate, createdAt: b.createdAt,
+        bannerUrl: b.bannerUrl, destinationUrl: b.destinationUrl, billingPeriod: b.billingPeriod,
         impressions, clicks,
         ctr: impressions > 0 ? +((clicks / impressions) * 100).toFixed(2) : 0,
         totalPrice: b.totalPrice, paymentStatus: b.paymentStatus, reviewStatus: b.reviewStatus,
@@ -591,6 +592,55 @@ export class AdsV2Service implements OnModuleInit {
     const booking = await this.prisma.adBooking.findUnique({ where: { id } });
     if (!booking) throw new NotFoundException('الحجز غير موجود');
     return this.prisma.adBooking.update({ where: { id }, data: { reviewStatus: 'CANCELLED' } });
+  }
+
+  async adminDelete(id: string) {
+    const booking = await this.prisma.adBooking.findUnique({ where: { id } });
+    if (!booking) throw new NotFoundException('الحجز غير موجود');
+    await this.prisma.adBooking.delete({ where: { id } });
+    return { deleted: true };
+  }
+
+  async adminUpdate(id: string, dto: {
+    startDate?: string; billingPeriod?: string; bannerUrl?: string; destinationUrl?: string;
+  }) {
+    const booking = await this.prisma.adBooking.findUnique({ where: { id }, include: { slot: true } });
+    if (!booking) throw new NotFoundException('الحجز غير موجود');
+
+    const period = dto.billingPeriod || booking.billingPeriod;
+    const start = dto.startDate ? new Date(dto.startDate) : booking.startDate;
+    if (isNaN(start.getTime())) throw new BadRequestException('تاريخ البدء غير صحيح');
+    const periodDays = BILLING_PERIOD_DAYS[period];
+    if (!periodDays) throw new BadRequestException('مدة الحجز غير معروفة');
+    const end = new Date(start.getTime() + periodDays * 86400000);
+
+    // Only re-check availability if the dates/period actually moved —
+    // otherwise this booking would collide with itself.
+    if (dto.startDate || dto.billingPeriod) {
+      const overlapping = await this.prisma.adBooking.count({
+        where: {
+          id: { not: id }, slotId: booking.slotId,
+          reviewStatus: { in: ['PENDING_REVIEW', 'APPROVED'] },
+          startDate: { lte: end }, endDate: { gte: start },
+        },
+      });
+      if (overlapping >= booking.slot.maxConcurrentAds) {
+        throw new BadRequestException('هذه المساحة محجوزة بالكامل في الفترة الجديدة — جربي فترة أو مساحة أخرى');
+      }
+    }
+
+    const totalPrice = booking.paymentStatus === 'WAIVED' ? 0
+      : Math.round(booking.slot.basePriceWeekly * (BILLING_MULTIPLIERS[period] ?? 1));
+
+    return this.prisma.adBooking.update({
+      where: { id },
+      data: {
+        startDate: start, endDate: end, billingPeriod: period,
+        bannerUrl: dto.bannerUrl ?? booking.bannerUrl,
+        destinationUrl: dto.destinationUrl ?? booking.destinationUrl,
+        totalPrice,
+      },
+    });
   }
 
   async adminExtend(id: string, newEndDate: string) {
@@ -798,6 +848,24 @@ export class AdsV2Controller {
   adminCancel(@Param('id') id: string, @Request() req: any) {
     this.requireAdmin(req);
     return this.ads.adminCancel(id);
+  }
+
+  @Delete('admin/:id')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'حذف حجز إعلاني نهائيًا (أدمن)' })
+  adminDelete(@Param('id') id: string, @Request() req: any) {
+    this.requireAdmin(req);
+    return this.ads.adminDelete(id);
+  }
+
+  @Patch('admin/:id')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تعديل حجز إعلاني (التاريخ/المدة/الصورة/الرابط) — أدمن' })
+  adminUpdate(@Param('id') id: string, @Body() dto: any, @Request() req: any) {
+    this.requireAdmin(req);
+    return this.ads.adminUpdate(id, dto);
   }
 
   @Post('admin/:id/extend')
