@@ -1860,7 +1860,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
     <div style="margin-bottom:12px"><span class="lbl">المساحة الإعلانية</span><select class="sel" id="pa-slot"><option value="">جارٍ التحميل...</option></select></div>
     <div class="g2" style="gap:14px;margin-bottom:12px">
       <div><span class="lbl">تاريخ البدء</span><input class="inp" type="date" id="pa-start-date"></div>
-      <div><span class="lbl">المدة</span><select class="sel" id="pa-duration"><option value="WEEKLY">أسبوع</option><option value="MONTHLY" selected>شهر (خصم 15%)</option><option value="QUARTERLY">ربع سنة (خصم 30%)</option></select></div>
+      <div><span class="lbl">المدة</span><select class="sel" id="pa-duration"><option value="WEEKLY">أسبوع</option><option value="MONTHLY" selected>شهر (خصم 15%)</option><option value="QUARTERLY">ربع سنة (خصم 30%)</option><option value="SEMI_ANNUAL">6 أشهر (خصم 40%)</option><option value="ANNUAL">سنة (خصم 50%)</option></select></div>
     </div>
     <div style="margin-bottom:12px"><span class="lbl">رابط الصفحة عند الضغط على الإعلان</span><input class="inp" id="pa-destination" placeholder="https://" dir="ltr"></div>
     <div style="margin-bottom:16px">
@@ -1884,7 +1884,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
     <div style="margin-bottom:12px"><span class="lbl">المساحة الإعلانية</span><select class="sel" id="ga-slot"><option value="">جارٍ التحميل...</option></select></div>
     <div class="g2" style="gap:14px;margin-bottom:12px">
       <div><span class="lbl">تاريخ البدء</span><input class="inp" type="date" id="ga-start-date"></div>
-      <div><span class="lbl">المدة</span><select class="sel" id="ga-duration"><option value="WEEKLY">أسبوع</option><option value="MONTHLY" selected>شهر</option><option value="QUARTERLY">ربع سنة</option></select></div>
+      <div><span class="lbl">المدة</span><select class="sel" id="ga-duration"><option value="WEEKLY">أسبوع</option><option value="MONTHLY" selected>شهر</option><option value="QUARTERLY">ربع سنة</option><option value="SEMI_ANNUAL">6 أشهر</option><option value="ANNUAL">سنة</option></select></div>
     </div>
     <div style="margin-bottom:12px"><span class="lbl">رابط الصفحة عند الضغط على الإعلان</span><input class="inp" id="ga-destination" placeholder="https://" dir="ltr"></div>
     <div style="margin-bottom:12px">
@@ -1987,6 +1987,8 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
           <option value="WEEKLY">أسبوعي</option>
           <option value="MONTHLY" selected>شهري (خصم 15%)</option>
           <option value="QUARTERLY">ربع سنوي (خصم 30%)</option>
+          <option value="SEMI_ANNUAL">نصف سنوي (خصم 40%)</option>
+          <option value="ANNUAL">سنوي (خصم 50%)</option>
         </select>
       </div>
     </div>
@@ -3231,7 +3233,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
     <div style="background:var(--surface);border:1px solid var(--bd);border-radius:14px;padding:22px">
       <div class="g2" style="gap:14px;margin-bottom:14px">
         <div><span class="lbl">نوع الإعلان</span><input class="inp" id="ad-type-val" placeholder="اختاري من الأعلى" readonly><input type="hidden" id="ad-type-id"></div>
-        <div><span class="lbl">مدة الحجز</span><select class="sel" id="ad-duration"><option value="WEEKLY">أسبوع</option><option value="MONTHLY" selected>شهر (خصم 15%)</option><option value="QUARTERLY">ربع سنة — 3 أشهر (خصم 30%)</option></select></div>
+        <div><span class="lbl">مدة الحجز</span><select class="sel" id="ad-duration"><option value="WEEKLY">أسبوع</option><option value="MONTHLY" selected>شهر (خصم 15%)</option><option value="QUARTERLY">ربع سنة — 3 أشهر (خصم 30%)</option><option value="SEMI_ANNUAL">6 أشهر (خصم 40%)</option><option value="ANNUAL">سنة (خصم 50%)</option></select></div>
         <div><span class="lbl">تاريخ البدء</span><input class="inp" type="date" id="ad-start-date"></div>
         <div><span class="lbl">رابط الصفحة عند الضغط على الإعلان</span><input class="inp" id="ad-destination" placeholder="https://" dir="ltr"></div>
       </div>
@@ -8547,6 +8549,11 @@ async function loadAdsV2Admin() {
       grid.innerHTML = slots.map(function(s) {
         var monthly = Math.round(s.basePriceWeekly * 4 * 0.85);
         var quarterly = Math.round(s.basePriceWeekly * 12 * 0.70);
+        var semiAnnual = Math.round(s.basePriceWeekly * 26 * 0.60);
+        var annual = Math.round(s.basePriceWeekly * 52 * 0.50);
+        var priceTile = function(label, amount) {
+          return '<div style="background:var(--bg3);border-radius:6px;padding:6px;cursor:pointer;transition:background .15s" onmouseover="this.style.background=\'var(--bg4)\'" onmouseout="this.style.background=\'var(--bg3)\'" onclick="openAdBookingModal(\'' + s.id + '\')" title="اضغطي لحجز هذه المساحة مباشرة"><div style="color:var(--tt)">' + label + '</div><div style="font-weight:700;color:var(--gold)">' + formatEgp(amount) + '</div></div>';
+        };
         return '<div class="card"><div class="cb">' +
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">' +
           '<div style="font-size:13px;font-weight:700">' + s.name + '</div>' +
@@ -8559,10 +8566,15 @@ async function loadAdsV2Admin() {
           '<span class="pill ' + (s.activeCount > 0 ? "pa" : "pb2") + '" style="font-size:10px">📢 ' + s.activeCount + ' نشط الآن</span>' +
           '</div>' +
           '<button class="bl" style="width:100%;font-size:11px;padding:6px;border-radius:6px;margin-bottom:10px" onclick="openSlotCalendar(\'' + s.id + '\',\'' + s.name.replace(/'/g, "\\'") + '\')">📅 عرض تقويم الحجوزات</button>' +
-          '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:11px;text-align:center">' +
-          '<div style="background:var(--bg3);border-radius:6px;padding:6px"><div style="color:var(--tt)">أسبوعي</div><div style="font-weight:700;color:var(--gold)">' + formatEgp(s.basePriceWeekly) + '</div></div>' +
-          '<div style="background:var(--bg3);border-radius:6px;padding:6px"><div style="color:var(--tt)">شهري (-15%)</div><div style="font-weight:700;color:var(--gold)">' + formatEgp(monthly) + '</div></div>' +
-          '<div style="background:var(--bg3);border-radius:6px;padding:6px"><div style="color:var(--tt)">ربع سنوي (-30%)</div><div style="font-weight:700;color:var(--gold)">' + formatEgp(quarterly) + '</div></div>' +
+          '<div style="font-size:10px;color:var(--tt);margin-bottom:6px">اضغطي على أي سعر للحجز المباشر ↓</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:11px;text-align:center;margin-bottom:6px">' +
+          priceTile("أسبوعي", s.basePriceWeekly) +
+          priceTile("شهري (-15%)", monthly) +
+          priceTile("ربع سنوي (-30%)", quarterly) +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;text-align:center">' +
+          priceTile("6 أشهر (-40%)", semiAnnual) +
+          priceTile("سنوي (-50%)", annual) +
           '</div></div></div>';
       }).join("");
     }
@@ -8632,7 +8644,7 @@ async function loadAdsV2Inventory() {
     }
     var reviewLabel = { PENDING_REVIEW: "قيد المراجعة", APPROVED: "مقبول", REJECTED: "مرفوض", CANCELLED: "ملغي" };
     var reviewCls = { PENDING_REVIEW: "pa", APPROVED: "pg", REJECTED: "pr", CANCELLED: "pr" };
-    var payLabel = { UNPAID: "غير مدفوع", PAID: "مدفوع ✓", REFUNDED: "مسترد" };
+    var payLabel = { UNPAID: "غير مدفوع", PAID: "مدفوع ✓", REFUNDED: "مسترد", WAIVED: "هدية 🎁" };
     box.innerHTML = '<div class="tw"><table class="tbl"><thead><tr><th>المعلن</th><th>المساحة</th><th>المدة</th><th>ظهور/نقرات</th><th>CTR</th><th>القيمة</th><th>الدفع</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>' +
       list.map(function(b) {
         var start = new Date(b.startDate).toLocaleDateString("ar-EG");
@@ -9068,7 +9080,7 @@ var AD_SLOT_DESC = {
   SPONSORED_SUPPLIER_CARD: "بطاقة مميزة ضمن قائمة الموردين — حتى 3 معلنين بالتزامن",
   SECTION_DIVIDER: "بانر أفقي بين أقسام الصفحة الرئيسية",
 };
-var AD_BILLING_MULT = { WEEKLY: 1, MONTHLY: 4 * 0.85, QUARTERLY: 12 * 0.70 };
+var AD_BILLING_MULT = { WEEKLY: 1, MONTHLY: 4 * 0.85, QUARTERLY: 12 * 0.70, SEMI_ANNUAL: 26 * 0.60, ANNUAL: 52 * 0.50 };
 
 async function loadRealAdPricing() {
   var box = document.getElementById("real-ad-pricing-grid");
@@ -9085,7 +9097,7 @@ async function loadRealAdPricing() {
         '<div style="font-size:12px;color:var(--ts);margin-bottom:8px">' + s.dimensions + ' · ' + desc + '</div>' +
         '<div style="font-size:18px;font-weight:700;color:var(--red)">' + formatEgp(monthly) + ' <span style="font-size:12px;color:var(--ts);font-weight:400">شهريًا (من ' + formatEgp(s.basePriceWeekly) + '/أسبوع)</span></div>' +
         '</div></div>';
-    }).join("") + '<div class="card" style="border:1px solid var(--gold)"><div class="cb" style="text-align:center;display:flex;flex-direction:column;justify-content:center;height:100%"><div style="font-size:24px;margin-bottom:8px">💬</div><div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--gold)">خصومات الاشتراك الطويل</div><div style="font-size:12px;color:var(--ts);line-height:1.7">خصم 15% للاشتراك الشهري (بدل 4 أسابيع منفصلة) · خصم 30% للاشتراك الربع سنوي (بدل 12 أسبوعًا منفصلة)</div></div></div>';
+    }).join("") + '<div class="card" style="border:1px solid var(--gold)"><div class="cb" style="text-align:center;display:flex;flex-direction:column;justify-content:center;height:100%"><div style="font-size:24px;margin-bottom:8px">💬</div><div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--gold)">خصومات الاشتراك الطويل</div><div style="font-size:12px;color:var(--ts);line-height:1.7">خصم 15% شهري · خصم 30% ربع سنوي · خصم 40% كل 6 أشهر · خصم 50% سنويًا (كل خصم مقارنةً بحجز نفس المدة أسبوعًا بأسبوع)</div></div></div>';
   } catch (err) {
     box.innerHTML = '<div style="grid-column:1/-1;text-align:center;font-size:13px;color:var(--ts);padding:20px 0">⚠️ تعذر تحميل الأسعار — يرجى المحاولة لاحقًا</div>';
   }
@@ -9583,12 +9595,12 @@ async function raiseOrderDisputeReal(orderId) {
 window.raiseOrderDisputeReal = raiseOrderDisputeReal;
 
 // ── ADVERTISER SELF-SERVE BOOKING ──────────────────────────────────
-var ADSV2_BILLING_DAYS = { WEEKLY: 7, MONTHLY: 28, QUARTERLY: 84 };
-var ADSV2_BILLING_MULT = { WEEKLY: 1, MONTHLY: 4 * 0.85, QUARTERLY: 12 * 0.70 };
+var ADSV2_BILLING_DAYS = { WEEKLY: 7, MONTHLY: 28, QUARTERLY: 84, SEMI_ANNUAL: 182, ANNUAL: 364 };
+var ADSV2_BILLING_MULT = { WEEKLY: 1, MONTHLY: 4 * 0.85, QUARTERLY: 12 * 0.70, SEMI_ANNUAL: 26 * 0.60, ANNUAL: 52 * 0.50 };
 var ADSV2_SLOTS_CACHE = [];
 
-async function openAdBookingModal() {
-  if (!requireLoginForService(openAdBookingModal)) return;
+async function openAdBookingModal(preselectSlotId) {
+  if (!requireLoginForService(function(){ openAdBookingModal(preselectSlotId); })) return;
 
   var slotSel = document.getElementById("adb-slot");
   slotSel.innerHTML = '<option value="">جارٍ التحميل...</option>';
@@ -9597,6 +9609,7 @@ async function openAdBookingModal() {
     slotSel.innerHTML = ADSV2_SLOTS_CACHE.map(function(s) {
       return '<option value="' + s.id + '" data-price="' + s.basePriceWeekly + '">' + s.name + ' (' + formatEgp(s.basePriceWeekly) + '/أسبوع)</option>';
     }).join("");
+    if (preselectSlotId) slotSel.value = preselectSlotId;
   } catch (err) {
     slotSel.innerHTML = '<option value="">تعذر تحميل المساحات</option>';
   }
@@ -9727,7 +9740,7 @@ async function loadMyAdBookings() {
     box.innerHTML = list.map(function(b) {
       var start = new Date(b.startDate).toLocaleDateString("ar-EG");
       var end = new Date(b.endDate).toLocaleDateString("ar-EG");
-      var payNote = b.paymentStatus === "PAID" ? "" : ' · <span style="color:#F59E0B">' + (b.paymentStatus === "UNPAID" ? "بانتظار الدفع" : b.paymentStatus) + '</span>';
+      var payNote = b.paymentStatus === "PAID" ? "" : ' · <span style="color:#F59E0B">' + (b.paymentStatus === "UNPAID" ? "بانتظار الدفع" : b.paymentStatus === "WAIVED" ? "هدية 🎁" : b.paymentStatus === "REFUNDED" ? "مسترد" : b.paymentStatus) + '</span>';
       return '<div class="row"><div><div style="font-weight:700;font-size:13px">' + ((b.slot && b.slot.name) || "—") + '</div>' +
         '<div style="font-size:12px;color:var(--ts);margin-top:3px">' + start + ' → ' + end + ' · ' + formatEgp(b.totalPrice) + payNote + '</div></div>' +
         '<span class="pill ' + (reviewCls[b.reviewStatus] || "pa") + '">' + (reviewLabel[b.reviewStatus] || b.reviewStatus) + '</span></div>';

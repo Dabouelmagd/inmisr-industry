@@ -25,6 +25,8 @@ const BILLING_MULTIPLIERS: Record<string, number> = {
   WEEKLY: 1,
   MONTHLY: 4 * 0.85,   // 15% off vs 4 straight weeks — the platform default
   QUARTERLY: 12 * 0.70, // 30% off vs 12 straight weeks + top-of-sector pinning
+  SEMI_ANNUAL: 26 * 0.60, // 40% off vs 26 straight weeks (6 months)
+  ANNUAL: 52 * 0.50, // 50% off vs 52 straight weeks (1 year) — the deepest discount tier
 };
 
 // The number of days a booking actually occupies the slot for, per period —
@@ -34,6 +36,8 @@ const BILLING_PERIOD_DAYS: Record<string, number> = {
   WEEKLY: 7,
   MONTHLY: 28,
   QUARTERLY: 84,
+  SEMI_ANNUAL: 182,
+  ANNUAL: 364,
 };
 
 // Anomaly-detection thresholds (per the spec: spike >8-10% CTR is
