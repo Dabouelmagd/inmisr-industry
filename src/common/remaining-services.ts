@@ -538,6 +538,60 @@ export class FactoryNeedService {
 
 // ══════════════════════════════════════════════════════════════════
 // ══════════════════════════════════════════════════════════════════
+// DASHBOARD ACTIVITY — نشاط أخير حقيقي مبني على تحديثات الطلبات
+// الفعلية والتقييمات، بدل قائمة ثابتة من بيانات تجريبية.
+// ══════════════════════════════════════════════════════════════════
+
+const ORDER_STATUS_ACTIVITY: Record<string, { icon: string; text: (o: any) => string }> = {
+  ESCROW_FUNDED: { icon: '🔒', text: o => 'تم تحميل الضمان (Escrow) — طلب #' + o.id.slice(0, 8) },
+  IN_PRODUCTION: { icon: '🏭', text: o => 'بدأ التصنيع — طلب #' + o.id.slice(0, 8) },
+  SHIPPED: { icon: '🚚', text: o => 'تم شحن الطلب #' + o.id.slice(0, 8) },
+  DELIVERED: { icon: '📦', text: o => 'تم تسليم الطلب #' + o.id.slice(0, 8) },
+  CONFIRMED: { icon: '✅', text: o => 'تم تأكيد استلام الطلب #' + o.id.slice(0, 8) },
+  COMPLETED: { icon: '🎉', text: o => 'اكتمل الطلب #' + o.id.slice(0, 8) },
+  DISPUTED: { icon: '⚠️', text: o => 'تم فتح نزاع على الطلب #' + o.id.slice(0, 8) },
+  REFUNDED: { icon: '↩️', text: o => 'تم استرداد المبلغ — طلب #' + o.id.slice(0, 8) },
+};
+
+@Injectable()
+export class DashboardActivityService {
+  constructor(private prisma: PrismaService) {}
+
+  async getRecentActivity(companyId: string) {
+    const orders = await this.prisma.order.findMany({
+      where: { OR: [{ buyerCompanyId: companyId }, { supplierCompanyId: companyId }] },
+      orderBy: { updatedAt: 'desc' },
+      take: 8,
+      select: { id: true, status: true, updatedAt: true },
+    });
+
+    const reviews = await this.prisma.review.findMany({
+      where: { reviewerId: companyId },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      include: { reviewee: { select: { nameAr: true } } },
+    });
+
+    const items: { icon: string; text: string; at: Date }[] = [];
+
+    for (const o of orders) {
+      const info = ORDER_STATUS_ACTIVITY[o.status];
+      if (info) items.push({ icon: info.icon, text: info.text(o), at: o.updatedAt });
+    }
+    for (const r of reviews) {
+      items.push({
+        icon: '⭐',
+        text: 'قيّمتِ ' + (r.reviewee?.nameAr || 'الطرف الآخر') + ' بـ' + r.overallScore.toFixed(1) + ' نجوم',
+        at: r.createdAt,
+      });
+    }
+
+    items.sort((a, b) => b.at.getTime() - a.at.getTime());
+    return items.slice(0, 6);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // SUPPLY CHAIN CONTROL TOWER — تتبع شحنات حقيقي مبني على الطلبات
 // (Orders) الفعلية. لا يوجد تكامل حقيقي مع جهات جمركية أو GPS —
 // المراحل وحالة الجمارك بيانات يحدّثها المورد أو الأدمن يدويًا،

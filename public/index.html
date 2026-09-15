@@ -2386,14 +2386,10 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
       </div>
       <div class="g2">
         <div class="card" id="dash-activity-company"><div class="cb"><div style="font-size:15px;font-weight:700;margin-bottom:14px">النشاط الأخير</div>
-          <div style="display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--bd)"><div style="width:34px;height:34px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">✅</div><div style="flex:1"><div style="font-size:13px">تم الإفراج عن Escrow - طلبية #0891</div><div style="font-size:11px;color:var(--tt);margin-top:2px">منذ 3 ساعات</div></div></div>
-          <div style="display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--bd)"><div style="width:34px;height:34px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📋</div><div style="flex:1"><div style="font-size:13px">عرض سعر جديد على RFQ-0897</div><div style="font-size:11px;color:var(--tt);margin-top:2px">منذ 5 ساعات</div></div></div>
-          <div style="display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--bd)"><div style="width:34px;height:34px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🚚</div><div style="flex:1"><div style="font-size:13px">الشحنة #0892 غادرت المستودع</div><div style="font-size:11px;color:var(--tt);margin-top:2px">اليوم 8:44 ص</div></div></div>
-          <div style="display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--bd)"><div style="width:34px;height:34px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">⭐</div><div style="flex:1"><div style="font-size:13px">قيمت مورد حديد مصر 5 نجوم</div><div style="font-size:11px;color:var(--tt);margin-top:2px">أمس</div></div></div>
-          <div style="display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--bd)"><div style="width:34px;height:34px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🔒</div><div style="flex:1"><div style="font-size:13px">تم تحميل Escrow - طلبية #0892</div><div style="font-size:11px;color:var(--tt);margin-top:2px">3 يونيو</div></div></div>
+          <div id="dash-activity-company-list"><div style="font-size:13px;color:var(--ts);padding:14px 0;text-align:center">جارٍ التحميل...</div></div>
         </div></div>
         <div style="display:flex;flex-direction:column;gap:12px">
-          <div class="lc" id="dash-loyalty-company"><div style="font-size:13px;color:var(--ts)">نقاط الولاء</div><div class="lp">6,840</div><div class="lt">ذهبي 🥇</div><div style="height:5px;background:var(--bg4);border-radius:2px;margin:14px 0"><div style="height:100%;width:68%;background:linear-gradient(90deg,#C09300,#FFD700);border-radius:2px"></div></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tt)"><span>ذهبي (5,000)</span><span>3,160 للبلاتيني</span></div></div>
+          <div class="lc" id="dash-loyalty-company"><div style="font-size:13px;color:var(--ts)">نقاط الولاء</div><div class="lp" id="dash-loy-points">—</div><div class="lt" id="dash-loy-tier">جارٍ التحميل...</div><div style="height:5px;background:var(--bg4);border-radius:2px;margin:14px 0"><div style="height:100%;width:0%;background:linear-gradient(90deg,#C09300,#FFD700);border-radius:2px" id="dash-loy-bar"></div></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tt)"><span id="dash-loy-current-tier"></span><span id="dash-loy-next-tier"></span></div></div>
           <div class="card" id="dash-quick-company"><div class="cb"><div style="font-size:13px;font-weight:700;margin-bottom:10px">إجراءات سريعة</div><div style="display:flex;flex-direction:column;gap:7px"><button class="bc" style="width:100%;padding:9px;border-radius:8px" data-page="rfq">📋 طلب عرض سعر</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" data-page="sup">🔍 تصفح الموردين</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" id="open-chat2">💬 المحادثات (3)</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" data-page="pricing">💎 ترقية الباقة</button></div></div></div>
           <div class="card" id="dash-services-company"><div class="cb"><div style="font-size:13px;font-weight:700;margin-bottom:10px">الخدمات الصناعية</div><div style="display:flex;flex-direction:column;gap:7px"><button class="bl" style="width:100%;padding:9px;border-radius:8px" data-page="financing">💳 التمويل الصناعي</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" data-page="inspection">🧪 الفحص والجودة</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" data-page="training">🎓 التدريب ورفع الكفاءة</button><button class="bl" style="width:100%;padding:9px;border-radius:8px" data-page="supplychain">🛰️ سلسلة التوريد</button></div></div></div>
           <div class="card" id="dash-profile-company"><div class="cb"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:13px;font-weight:700">بيانات الشركة</div><button class="bl" style="font-size:11px;padding:4px 10px;border-radius:6px" onclick="openCompanyProfileEdit()">✏️ تعديل</button></div>
@@ -4209,6 +4205,8 @@ function goTo(pg, fromBack){
       if (role === "supplier" && typeof loadSupplierRfqs === "function") loadSupplierRfqs();
       if (role === "supplier" && typeof loadMyCustomers === "function") loadMyCustomers();
       if ((role === "supplier" || role === "company") && typeof loadCompanyProfile === "function") loadCompanyProfile();
+      if (role === "company" && typeof loadDashActivity === "function") loadDashActivity();
+      if (role === "company" && typeof loadDashLoyaltyWidget === "function") loadDashLoyaltyWidget();
       var myServicesSection = document.getElementById("dash-myservices");
       var myServicesNavBtn = document.getElementById("dash-nav-myservices");
       var mfgOpsSection = document.getElementById("dash-mfg-ops");
@@ -9620,6 +9618,45 @@ function renderCompanyProfileView(company) {
   if (companyEl) companyEl.innerHTML = html;
   if (supplierEl) supplierEl.innerHTML = html;
 }
+
+async function loadDashActivity() {
+  var box = document.getElementById("dash-activity-company-list");
+  if (!box) return;
+  try {
+    var items = await apiFetch("/dashboard/activity");
+    box.innerHTML = items.length ? items.map(function(it) {
+      var date = new Date(it.at);
+      var timeText = date.toLocaleDateString("ar-EG") + " · " + date.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
+      return '<div style="display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--bd)"><div style="width:34px;height:34px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">' + it.icon + '</div><div style="flex:1"><div style="font-size:13px">' + it.text + '</div><div style="font-size:11px;color:var(--tt);margin-top:2px">' + timeText + '</div></div></div>';
+    }).join("") : '<div style="font-size:13px;color:var(--ts);padding:14px 0;text-align:center">لا يوجد نشاط حتى الآن</div>';
+  } catch (err) {
+    box.innerHTML = '<div style="font-size:13px;color:var(--ts);padding:14px 0;text-align:center">⚠️ تعذر تحميل النشاط الأخير</div>';
+  }
+}
+window.loadDashActivity = loadDashActivity;
+
+async function loadDashLoyaltyWidget() {
+  var pointsEl = document.getElementById("dash-loy-points");
+  if (!pointsEl) return;
+  try {
+    var s = await apiFetch("/loyalty/summary");
+    var tierInfo = s.tierInfo || { label: "برونزي", badge: "🥉" };
+    pointsEl.textContent = (s.points || 0).toLocaleString("ar-EG");
+    document.getElementById("dash-loy-tier").textContent = tierInfo.label + " " + tierInfo.badge;
+    if (s.nextTier) {
+      document.getElementById("dash-loy-bar").style.width = Math.min(100, s.progress || 0) + "%";
+      document.getElementById("dash-loy-current-tier").textContent = tierInfo.label;
+      document.getElementById("dash-loy-next-tier").textContent = (s.pointsToNext || 0).toLocaleString("ar-EG") + " لـ" + s.nextTier.label;
+    } else {
+      document.getElementById("dash-loy-bar").style.width = "100%";
+      document.getElementById("dash-loy-current-tier").textContent = tierInfo.label;
+      document.getElementById("dash-loy-next-tier").textContent = "أعلى مستوى!";
+    }
+  } catch (err) {
+    document.getElementById("dash-loy-tier").textContent = "⚠️ تعذر التحميل";
+  }
+}
+window.loadDashLoyaltyWidget = loadDashLoyaltyWidget;
 
 async function loadCompanyProfile() {
   if (!window.isLoggedIn || !window.currentUser || !window.currentUser.companyId) return;

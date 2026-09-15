@@ -18,7 +18,7 @@ import { RfqService, CreateRfqDto, CreateQuoteDto } from '../rfq/rfq.service';
 import { EscrowService, DisputeDto } from '../escrow/escrow.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AntiLeakageService } from '../common/anti-leakage.service';
-import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, ProviderListingService, CompanyAssistantService, CompanyProfileService, QualityService, CustomIndustrialServiceService, SupplyChainService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
+import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, ProviderListingService, CompanyAssistantService, CompanyProfileService, QualityService, CustomIndustrialServiceService, SupplyChainService, DashboardActivityService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
 
 // ── Auth Guards (simplified) ───────────────────────────────────────
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -695,6 +695,21 @@ export class FactoryNeedController {
 
 // ── Reverse Logistics Controller ─────────────────────────────────
 @ApiTags('reverse-logistics')
+// ── Dashboard Activity Controller ──────────────────────────────────
+@ApiTags('dashboard')
+@Controller('dashboard')
+export class DashboardActivityController {
+  constructor(private activity: DashboardActivityService) {}
+
+  @Get('activity')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'نشاط أخير حقيقي للشركة الحالية (طلبات + تقييمات)' })
+  getActivity(@Request() req: any) {
+    return this.activity.getRecentActivity(req.user.companyId);
+  }
+}
+
 // ── Supply Chain Control Tower Controller ──────────────────────────
 @ApiTags('supply-chain')
 @Controller('supply-chain')
