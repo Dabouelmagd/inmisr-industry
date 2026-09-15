@@ -2406,10 +2406,10 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         <div style="display:flex;gap:8px"><button class="bl" style="border-radius:8px" data-page="orders">📦 طلبات واردة</button><button class="bl" style="border-radius:8px" onclick="openSubmitProduct()">+ منتج جديد</button><button class="bc" style="border-radius:8px" data-msg="report">تنزيل تقرير المبيعات</button></div>
       </div>
       <div class="g4" id="dash-ov-supplier" style="margin-bottom:22px">
-        <div class="kc" style="border-top:3px solid var(--red)"><div class="kl">الإيرادات / الشهر</div><div class="kv">1.8M <span style="font-size:13px;color:var(--tt)">ج.م</span></div><div class="kch">↑ 24%</div></div>
-        <div class="kc" style="border-top:3px solid #C09300"><div class="kl">طلبات RFQ واردة</div><div class="kv">12</div><div class="kch">4 تحتاج رد</div></div>
-        <div class="kc" style="border-top:3px solid #22C55E"><div class="kl">صفقات مكتملة</div><div class="kv">345</div><div class="kch">Trust Score 94/100</div></div>
-        <div class="kc" style="border-top:3px solid #3B82F6"><div class="kl">متوسط التقييم</div><div class="kv">★ 4.9</div><div class="kch">من 345 تقييم</div></div>
+        <div class="kc" style="border-top:3px solid var(--red)"><div class="kl">الإيرادات / الشهر</div><div class="kv" id="sup-kpi-revenue">—</div></div>
+        <div class="kc" style="border-top:3px solid #C09300"><div class="kl">طلبات RFQ تحتاج رد</div><div class="kv" id="sup-kpi-rfq">—</div></div>
+        <div class="kc" style="border-top:3px solid #22C55E"><div class="kl">صفقات مكتملة</div><div class="kv" id="sup-kpi-deals">—</div><div class="kch" id="sup-kpi-trust"></div></div>
+        <div class="kc" style="border-top:3px solid #3B82F6"><div class="kl">متوسط التقييم</div><div class="kv" id="sup-kpi-rating">—</div><div class="kch" id="sup-kpi-reviews"></div></div>
       </div>
       <div class="g2">
         <div class="card" id="dash-rfq-supplier"><div class="cb"><div style="font-size:15px;font-weight:700;margin-bottom:14px">طلبات عروض الأسعار الواردة (RFQ)</div>
@@ -2421,8 +2421,8 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         <div style="display:flex;flex-direction:column;gap:12px">
           <div class="card" id="dash-sub-supplier"><div class="cb"><div style="font-size:13px;font-weight:700;margin-bottom:10px">باقة الاشتراك</div>
             <div style="text-align:center;padding:10px 0">
-              <div style="font-size:20px;font-weight:700;color:var(--gold)">نخبة 🏆</div>
-              <div style="font-size:12px;color:var(--ts);margin-top:4px">منتجات غير محدودة · أولوية ظهور قصوى ×5</div>
+              <div style="font-size:20px;font-weight:700;color:var(--gold)" id="sup-sub-plan">—</div>
+              <div style="font-size:12px;color:var(--ts);margin-top:4px" id="sup-sub-note"></div>
             </div>
             <button class="bl" style="width:100%;padding:8px;border-radius:8px;font-size:13px" data-page="pricing">إدارة الاشتراك</button>
           </div></div>
@@ -9663,9 +9663,34 @@ async function loadCompanyProfile() {
   try {
     COMPANY_PROFILE_CACHE = await apiFetch("/companies/me");
     renderCompanyProfileView(COMPANY_PROFILE_CACHE);
+    renderSupplierDashKpis(COMPANY_PROFILE_CACHE);
   } catch (err) { /* silent — cards just keep loading state */ }
 }
 window.loadCompanyProfile = loadCompanyProfile;
+
+var SUB_PLAN_LABELS = {
+  FREE: { text: "مجاني", note: "10 منتجات · 5 ردود شهريًا" },
+  GROWTH: { text: "نمو ⭐", note: "200 منتج · ظهور محسّن ×2" },
+  ELITE: { text: "نخبة 🏆", note: "منتجات غير محدودة · أولوية ظهور قصوى ×5" },
+};
+
+function renderSupplierDashKpis(c) {
+  var revEl = document.getElementById("sup-kpi-revenue");
+  if (!revEl) return; // not on supplier dashboard
+  revEl.innerHTML = formatEgp(c.monthRevenue || 0);
+  document.getElementById("sup-kpi-rfq").textContent = c.pendingRfqCount || 0;
+  document.getElementById("sup-kpi-deals").textContent = c.totalDeals || 0;
+  document.getElementById("sup-kpi-trust").textContent = "Trust Score " + (c.trustScore || 0) + "/100";
+  document.getElementById("sup-kpi-rating").textContent = "★ " + (c.avgRating || 0).toFixed(1);
+  document.getElementById("sup-kpi-reviews").textContent = "من " + (c.totalReviews || 0) + " تقييم";
+
+  var planInfo = SUB_PLAN_LABELS[(c.subscription && c.subscription.plan) || "FREE"];
+  var planEl = document.getElementById("sup-sub-plan");
+  if (planEl) {
+    planEl.textContent = planInfo.text;
+    document.getElementById("sup-sub-note").textContent = planInfo.note;
+  }
+}
 
 function openCompanyProfileEdit() {
   var c = COMPANY_PROFILE_CACHE || {};

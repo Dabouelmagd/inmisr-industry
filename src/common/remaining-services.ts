@@ -1091,10 +1091,38 @@ export class CompanyProfileService {
   async getMine(companyId: string) {
     const company = await this.prisma.company.findUnique({
       where: { id: companyId },
-      include: { location: true, categories: { include: { category: { select: { nameAr: true } } } } },
+      include: {
+        location: true,
+        categories: { include: { category: { select: { nameAr: true } } } },
+        subscription: true,
+      },
     });
     if (!company) throw new NotFoundException('لا يوجد ملف شركة مرتبط بحسابك');
-    return company;
+
+    // Real KPIs for the supplier dashboard overview cards — computed here
+    // rather than shipped as separate hardcoded numbers on the frontend.
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const [monthRevenueAgg, pendingRfqCount] = await Promise.all([
+      this.prisma.order.aggregate({
+        where: {
+          supplierCompanyId: companyId,
+          status: { in: ['CONFIRMED', 'COMPLETED'] },
+          confirmedAt: { gte: monthStart },
+        },
+        _sum: { netToSupplier: true },
+      }),
+      this.prisma.rfqQuote.count({
+        where: { supplierCompanyId: companyId, status: 'PENDING' },
+      }),
+    ]);
+
+    return {
+      ...company,
+      monthRevenue: monthRevenueAgg._sum.netToSupplier || 0,
+      pendingRfqCount,
+    };
   }
 
   async updateMine(companyId: string, dto: {
