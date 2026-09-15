@@ -4466,8 +4466,19 @@ document.addEventListener("DOMContentLoaded",function(){
   async function renderAdreqTypesGrid() {
     var grid = document.getElementById("adreq-types-grid");
     if (!grid) return;
+    // Safety timeout: if the fetch below hangs for any reason (network
+    // stall, a promise that never settles), show a visible error instead
+    // of leaving "جارٍ التحميل..." on screen forever with no way to tell
+    // what went wrong without opening DevTools.
+    var timedOut = false;
+    var timeoutId = setTimeout(function() {
+      timedOut = true;
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;font-size:13px;color:var(--red);padding:14px 0">⚠️ استغرق تحميل المساحات وقتًا أطول من المتوقع (timeout) — يرجى تحديث الصفحة والمحاولة مرة أخرى</div>';
+    }, 12000);
     try {
       ADREQ_SLOTS_CACHE = await apiFetch("/promo-placements/slots");
+      clearTimeout(timeoutId);
+      if (timedOut) return; // the timeout message already replaced it; don't overwrite with a late success
       grid.innerHTML = ADREQ_SLOTS_CACHE.map(function(s) {
         var icon = (typeof AD_SLOT_ICONS !== "undefined" && AD_SLOT_ICONS[s.locationKey]) || "📢";
         return '<div class="ad-type-card" data-adreq-type="' + s.id + '" onclick="selectAdType(this,\'' + s.id + '\')">' +
@@ -4480,7 +4491,9 @@ document.addEventListener("DOMContentLoaded",function(){
           '</div>';
       }).join("");
     } catch (err) {
-      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;font-size:13px;color:var(--ts);padding:14px 0">⚠️ تعذر تحميل المساحات المتاحة</div>';
+      clearTimeout(timeoutId);
+      if (timedOut) return;
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;font-size:13px;color:var(--red);padding:14px 0">⚠️ تعذر تحميل المساحات المتاحة — ' + (err && err.message ? err.message : "خطأ غير معروف") + '</div>';
     }
   }
   window.renderAdreqTypesGrid = renderAdreqTypesGrid;
