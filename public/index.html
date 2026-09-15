@@ -1903,11 +1903,16 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
     <button class="mc" onclick="closeM('dash-financing-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
     <div style="font-size:16px;font-weight:700;margin-bottom:16px">💳 طلب تمويل صناعي</div>
     <div class="g2" style="gap:14px;margin-bottom:12px">
-      <div><span class="lbl">المبلغ المطلوب (ج.م)</span><input class="inp" type="number" id="dmq-fin-amount" placeholder="500000"></div>
-      <div><span class="lbl">مدة السداد (شهور)</span><input class="inp" type="number" id="dmq-fin-months" placeholder="24"></div>
+      <div><span class="lbl">المبلغ المطلوب (ج.م)</span><input class="inp" type="number" id="dmq-fin-amount" placeholder="500000" oninput="calcDashFinancing()"></div>
+      <div><span class="lbl">مدة السداد (شهور)</span><input class="inp" type="number" id="dmq-fin-months" placeholder="24" oninput="calcDashFinancing()"></div>
     </div>
     <div style="margin-bottom:12px"><span class="lbl">الغرض من التمويل</span><input class="inp" id="dmq-fin-purpose" placeholder="مثال: شراء آلات جديدة"></div>
-    <div style="margin-bottom:16px"><span class="lbl">الشريك التمويلي المفضّل</span><select class="sel" id="dmq-fin-bank"><option>CIB</option><option>بنك التنمية الصناعية</option><option>QNB الأهلي</option><option>مرن — حسب أفضل عرض</option></select></div>
+    <div style="margin-bottom:16px"><span class="lbl">الشريك التمويلي المفضّل</span><select class="sel" id="dmq-fin-bank" onchange="calcDashFinancing()"><option value="14">CIB — 14% سنويًا</option><option value="11">بنك التنمية الصناعية — 11% سنويًا</option><option value="16">QNB الأهلي — 16% سنويًا</option></select></div>
+    <div id="dmq-fin-result" style="display:none;background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:16px">
+      <div class="row" style="border-bottom:1px solid var(--bd)"><span style="color:var(--ts);font-size:12px">القسط الشهري</span><span style="font-weight:700;color:var(--gold)" id="dmq-fin-monthly">—</span></div>
+      <div class="row" style="border-bottom:1px solid var(--bd)"><span style="color:var(--ts);font-size:12px">إجمالي الفوائد</span><span style="font-weight:700" id="dmq-fin-interest">—</span></div>
+      <div class="row"><span style="color:var(--ts);font-size:12px">إجمالي المسدد</span><span style="font-weight:700" id="dmq-fin-total">—</span></div>
+    </div>
     <button class="bc" style="width:100%;padding:11px;font-size:13px" id="dmq-fin-submit-btn" onclick="submitDashFinancingRequest()">إرسال طلب التمويل</button>
   </div>
 </div>
@@ -7669,6 +7674,28 @@ function runPendingActionAfterLogin() {
 window.runPendingActionAfterLogin = runPendingActionAfterLogin;
 
 // ── FINANCING (real backend: POST/GET /finance) ───────────────────
+var DASH_FIN_BANK_NAMES = { "14": "CIB", "11": "بنك التنمية الصناعية", "16": "QNB الأهلي" };
+
+function calcDashFinancing() {
+  var amount = parseFloat(document.getElementById("dmq-fin-amount").value) || 0;
+  var months = parseInt(document.getElementById("dmq-fin-months").value, 10) || 0;
+  var annualRate = parseFloat(document.getElementById("dmq-fin-bank").value) || 0;
+  var resultEl = document.getElementById("dmq-fin-result");
+  if (amount <= 0 || months <= 0) { resultEl.style.display = "none"; return; }
+
+  var monthlyRate = annualRate / 12 / 100;
+  var monthlyPayment = monthlyRate === 0 ? amount / months : (amount * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -months));
+  var totalPaid = monthlyPayment * months;
+  var totalInterest = totalPaid - amount;
+  var fmt = function(n) { return Math.round(n).toLocaleString("ar-EG") + " ج.م"; };
+
+  resultEl.style.display = "block";
+  document.getElementById("dmq-fin-monthly").textContent = fmt(monthlyPayment);
+  document.getElementById("dmq-fin-interest").textContent = fmt(totalInterest);
+  document.getElementById("dmq-fin-total").textContent = fmt(totalPaid);
+}
+window.calcDashFinancing = calcDashFinancing;
+
 async function submitDashFinancingRequest() {
   var amount = Number(document.getElementById("dmq-fin-amount").value);
   var months = Number(document.getElementById("dmq-fin-months").value);
@@ -7677,11 +7704,12 @@ async function submitDashFinancingRequest() {
   var btn = document.getElementById("dmq-fin-submit-btn");
   btn.disabled = true; btn.textContent = "جارٍ الإرسال...";
   try {
+    var bankRateVal = document.getElementById("dmq-fin-bank").value;
     var result = await apiFetch("/finance/apply", {
       method: "POST",
       body: JSON.stringify({
         amount: amount, durationMonths: months,
-        bankPartner: document.getElementById("dmq-fin-bank").value,
+        bankPartner: DASH_FIN_BANK_NAMES[bankRateVal] || "CIB",
         purpose: document.getElementById("dmq-fin-purpose").value.trim() || undefined,
       }),
     });
