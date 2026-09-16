@@ -1199,6 +1199,34 @@ export class EvInitiativeController {
     return this.ev.listCars();
   }
 
+  @Post('admin/upload-image')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @UseInterceptors(FileInterceptor('image', {
+    storage: diskStorage({
+      destination: join(process.cwd(), 'uploads', 'ev-cars'),
+      filename: (req: any, file, cb) => {
+        const ext = extname(file.originalname) || '.jpg';
+        cb(null, `ev-car-${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`);
+      },
+    }),
+    fileFilter: (req, file, cb) => {
+      if (!/^image\/(png|jpe?g|webp)$/.test(file.mimetype)) {
+        return cb(new BadRequestException('الملف لازم يكون صورة PNG أو JPG أو WEBP'), false);
+      }
+      cb(null, true);
+    },
+    limits: { fileSize: 4 * 1024 * 1024 }, // 4MB
+  }))
+  @ApiOperation({ summary: 'رفع صورة سيارة لمبادرة الإحلال (أدمن)' })
+  uploadImage(@UploadedFile() file: any, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    if (!file) throw new BadRequestException('لم يتم إرفاق أي ملف');
+    return { imageUrl: `/uploads/ev-cars/${file.filename}` };
+  }
+
   @Get('admin/cars')
   @UseGuards(JwtGuard)
   @ApiBearerAuth()

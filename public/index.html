@@ -1994,7 +1994,13 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
       <div><span class="lbl">الموديل</span><input class="inp" id="evc-model" placeholder="مثال: Arrow"></div>
     </div>
     <div style="margin-bottom:12px"><span class="lbl">رقم الموديل (اختياري)</span><input class="inp" id="evc-modelno" placeholder="Model No"></div>
-    <div style="margin-bottom:12px"><span class="lbl">روابط الصور (كل رابط في سطر)</span><textarea class="inp" id="evc-images" rows="3" placeholder="/assets/ev-voza-arrow-brochure.jpg"></textarea></div>
+    <div style="margin-bottom:12px">
+      <span class="lbl">صور السيارة</span>
+      <input type="file" id="evc-image-upload" accept="image/png,image/jpeg,image/webp" multiple style="display:none" onchange="handleEvImageUpload(this.files)">
+      <button class="bl" style="width:100%;padding:9px;font-size:12px;border-radius:8px;margin-bottom:8px" onclick="document.getElementById('evc-image-upload').click()">📤 رفع صور من جهازك</button>
+      <div id="evc-image-preview" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+      <div id="evc-upload-status" style="font-size:11px;color:var(--ts);margin-top:6px"></div>
+    </div>
     <div style="margin-bottom:12px"><span class="lbl">المواصفات (كل مواصفة: الاسم = القيمة، سطر لكل واحدة)</span><textarea class="inp" id="evc-specs" rows="5" placeholder="المدى = 240 كم بالشحن + 100 كم بالمولد
 السرعة القصوى = 90 كم/س
 زمن الشحن = 6 ساعات
@@ -7514,7 +7520,7 @@ async function loadEvCars() {
       return;
     }
     grid.innerHTML = cars.map(function(c, idx) {
-      var imgs = c.imageUrls || [];
+      var imgs = (c.imageUrls || []).map(function(u){ return resolveUploadUrl(u); });
       var mainImg = imgs[0] || "";
       var galleryId = "ev-gallery-" + idx;
       var specs = c.specsJson || {};
@@ -7643,15 +7649,58 @@ window.updateEvLeadStatus = async function(id, status) {
   }
 };
 
+var EV_CURRENT_IMAGES = [];
+
+function renderEvImagePreview() {
+  var preview = document.getElementById("evc-image-preview");
+  if (!preview) return;
+  preview.innerHTML = EV_CURRENT_IMAGES.map(function(url, i) {
+    return '<div style="position:relative;width:70px;height:70px"><img src="' + resolveUploadUrl(url) + '" style="width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid var(--bd)"><button onclick="removeEvImage(' + i + ')" style="position:absolute;top:-6px;left:-6px;width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;border:none;cursor:pointer;font-size:11px;line-height:1">✕</button></div>';
+  }).join("");
+}
+window.renderEvImagePreview = renderEvImagePreview;
+
+window.removeEvImage = function(index) {
+  EV_CURRENT_IMAGES.splice(index, 1);
+  renderEvImagePreview();
+};
+
+window.handleEvImageUpload = async function(files) {
+  if (!files || !files.length) return;
+  var statusEl = document.getElementById("evc-upload-status");
+  var token = getAuthToken("inmisr_access_token");
+  for (var i = 0; i < files.length; i++) {
+    var file = files[i];
+    statusEl.textContent = "جارٍ رفع الصورة " + (i + 1) + " من " + files.length + "...";
+    try {
+      var formData = new FormData();
+      formData.append("image", file);
+      var uploadRes = await fetch(API_BASE + "/ev-initiative/admin/upload-image", {
+        method: "POST", headers: token ? { "Authorization": "Bearer " + token } : {}, body: formData
+      });
+      var uploadBody = await uploadRes.json().catch(function(){ return null; });
+      if (!uploadRes.ok) throw new Error((uploadBody && uploadBody.message) || "تعذر رفع الصورة");
+      EV_CURRENT_IMAGES.push(uploadBody.data.imageUrl);
+      renderEvImagePreview();
+    } catch (err) {
+      toast("⚠️ " + (err.message || "تعذر رفع إحدى الصور"));
+    }
+  }
+  statusEl.textContent = "";
+  document.getElementById("evc-image-upload").value = "";
+};
+
 var EV_ADMIN_CARS_CACHE = [];
 
 window.openEvCarModal = function() {
   document.getElementById("evc-modal-title").textContent = "🚗 إضافة سيارة جديدة للمبادرة";
   document.getElementById("evc-edit-id").value = "";
   document.getElementById("evc-submit-btn").textContent = "إضافة السيارة";
-  ["evc-brand","evc-model","evc-modelno","evc-images","evc-specs"].forEach(function(id) {
+  ["evc-brand","evc-model","evc-modelno","evc-specs"].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.value = "";
   });
+  EV_CURRENT_IMAGES = [];
+  renderEvImagePreview();
   document.getElementById("evc-active").checked = true;
   if (typeof openM === "function") openM("ev-car-modal");
 };
@@ -7664,7 +7713,8 @@ window.editEvCar = function(id) {
   document.getElementById("evc-brand").value = car.brand;
   document.getElementById("evc-model").value = car.modelName;
   document.getElementById("evc-modelno").value = car.modelNo || "";
-  document.getElementById("evc-images").value = (car.imageUrls || []).join("\n");
+  EV_CURRENT_IMAGES = (car.imageUrls || []).slice();
+  renderEvImagePreview();
   var specs = car.specsJson || {};
   document.getElementById("evc-specs").value = Object.keys(specs).map(function(k){ return k + " = " + specs[k]; }).join("\n");
   document.getElementById("evc-active").checked = car.isActive;
@@ -7680,8 +7730,9 @@ async function renderEvAdminCarsGrid() {
     EV_ADMIN_CARS_CACHE = cars;
     grid.innerHTML = cars.length ? cars.map(function(c) {
       var img = (c.imageUrls || [])[0] || "";
-      return '<div class="card"><div style="background:#f5f5f0">' + (img ? '<img src="' + img + '" style="width:100%;height:160px;object-fit:contain">' : '') + '</div><div class="cb">' +
+      return '<div class="card"><div style="background:#f5f5f0">' + (img ? '<img src="' + resolveUploadUrl(img) + '" style="width:100%;height:160px;object-fit:contain">' : '') + '</div><div class="cb">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:14px;font-weight:700">' + c.brand + ' ' + c.modelName + '</div><span class="pill ' + (c.isActive ? "pg" : "pa") + '">' + (c.isActive ? "مفعّلة" : "غير مفعّلة") + '</span></div>' +
+        '<div style="font-size:11px;color:var(--ts);margin-bottom:8px">' + (c.imageUrls || []).length + ' صورة</div>' +
         '<button class="bl" style="width:100%;padding:7px;font-size:12px;border-radius:7px" onclick="editEvCar(\'' + c.id + '\')">✏️ تعديل الصور والمواصفات</button>' +
         '</div></div>';
     }).join("") : '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--ts)">لا توجد سيارات مضافة بعد</div>';
@@ -7695,8 +7746,7 @@ window.submitEvCar = async function() {
   var brand = (document.getElementById("evc-brand")||{}).value || "";
   var model = (document.getElementById("evc-model")||{}).value || "";
   if (!brand.trim() || !model.trim()) { toast("الرجاء إدخال الماركة والموديل"); return; }
-  var imagesRaw = (document.getElementById("evc-images")||{}).value || "";
-  var imageUrls = imagesRaw.split("\n").map(function(s){ return s.trim(); }).filter(Boolean);
+  var imageUrls = EV_CURRENT_IMAGES.slice();
   var specsRaw = (document.getElementById("evc-specs")||{}).value || "";
   var specsJson = {};
   specsRaw.split("\n").forEach(function(line) {
