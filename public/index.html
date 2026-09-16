@@ -4244,7 +4244,7 @@ function goTo(pg, fromBack){
     if (typeof resetDashToOverview === "function") resetDashToOverview();
   }
   document.querySelectorAll(".nb").forEach(function(b){b.classList.remove("on");});
-  var m={home:0,sup:1,offers:4,pricing:5,adreq:6,incubator:7,dash:8,solar:-1,rfq:-1,orders:-1,loyalty:-1,map:-1,packaging:-1,shipping:-1,reg:-1,about:-1,privacy:-1,security:-1,terms:-1,factory:-1,financing:-1,inspection:-1,training:-1,supplychain:-1};
+  var m={home:0,sup:1,offers:4,pricing:5,adreq:6,incubator:7,dash:8,solar:-1,rfq:-1,orders:-1,loyalty:-1,reg:-1,about:-1,privacy:-1,security:-1,terms:-1,shipping:2,packaging:2,map:2,factory:3,financing:3,inspection:3,training:3,supplychain:3};
   if(m[pg]!==undefined){var bs=document.querySelectorAll(".nb");if(bs[m[pg]])bs[m[pg]].classList.add("on");}
   updateBackArrowVisibility();
   window.scrollTo(0,0);
