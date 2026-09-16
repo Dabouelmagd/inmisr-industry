@@ -4407,10 +4407,15 @@ window.rfqStep = rfqStep;
 
 function bnd(id,fn){var e=document.getElementById(id);if(e)e.addEventListener("click",fn);}
 
-onDomReady(function(){
+onDomReady(async function(){
 
   // ROUTING: show the page matching the URL the visitor actually landed
   // on (a shared /rfq link, a bookmark, a browser refresh, etc.)
+  // Wait for the session to actually be restored first — otherwise a
+  // refresh on a gated page (dash/orders/admin/loyalty) races
+  // window.isLoggedIn still being false, goTo() bounces to the login
+  // modal, and a genuinely valid "تذكرني" session looks like a logout.
+  if (typeof restoreSession === "function") { try { await restoreSession(); } catch (e) {} }
   routeFromLocation();
 
   // THEME
