@@ -1107,6 +1107,71 @@ export class SolarLeadService {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// EV INITIATIVE — مبادرة إحلال السيارات الكهربائية (VOZA). نفس نمط
+// SolarLeadService بالضبط: كتالوج سيارات + نموذج بيانات عميل حقيقي.
+// ══════════════════════════════════════════════════════════════════
+
+@Injectable()
+export class EvInitiativeService {
+  constructor(private prisma: PrismaService) {}
+
+  async listCars() {
+    return this.prisma.evInitiativeCar.findMany({ where: { isActive: true }, orderBy: { createdAt: 'asc' } });
+  }
+
+  async adminCreateCar(dto: { brand: string; modelName: string; modelNo?: string; specsJson?: any; imageUrls?: string[] }) {
+    if (!dto.brand?.trim() || !dto.modelName?.trim()) {
+      throw new BadRequestException('اسم الماركة والموديل مطلوبان');
+    }
+    return this.prisma.evInitiativeCar.create({
+      data: {
+        brand: dto.brand, modelName: dto.modelName, modelNo: dto.modelNo,
+        specsJson: dto.specsJson || {}, imageUrls: dto.imageUrls || [],
+      },
+    });
+  }
+
+  async adminUpdateCar(id: string, dto: { isActive?: boolean; specsJson?: any; imageUrls?: string[] }) {
+    const car = await this.prisma.evInitiativeCar.findUnique({ where: { id } });
+    if (!car) throw new NotFoundException('السيارة غير موجودة');
+    return this.prisma.evInitiativeCar.update({ where: { id }, data: dto });
+  }
+
+  async submit(dto: {
+    carId?: string; fullName: string; phone: string; governorate?: string; city?: string;
+    nationalId?: string; profession?: string; oldCarModel?: string; oldCarYear?: string;
+    oldCarDetails?: string; licenseValid?: string; preferredContactTime?: string; howHeard?: string;
+  }) {
+    if (!dto.fullName?.trim() || !dto.phone?.trim()) {
+      throw new BadRequestException('الاسم بالكامل ورقم الموبايل مطلوبان');
+    }
+    return this.prisma.evInitiativeLead.create({
+      data: {
+        carId: dto.carId, fullName: dto.fullName, phone: dto.phone,
+        governorate: dto.governorate, city: dto.city, nationalId: dto.nationalId,
+        profession: dto.profession, oldCarModel: dto.oldCarModel, oldCarYear: dto.oldCarYear,
+        oldCarDetails: dto.oldCarDetails, licenseValid: dto.licenseValid,
+        preferredContactTime: dto.preferredContactTime, howHeard: dto.howHeard,
+        status: 'PENDING',
+      },
+    });
+  }
+
+  async adminList() {
+    return this.prisma.evInitiativeLead.findMany({ orderBy: { createdAt: 'desc' }, include: { car: { select: { brand: true, modelName: true } } } });
+  }
+
+  async adminUpdateStatus(id: string, status: string) {
+    if (!['PENDING', 'CONTACTED', 'APPROVED', 'REJECTED'].includes(status)) {
+      throw new BadRequestException('حالة غير معروفة');
+    }
+    const lead = await this.prisma.evInitiativeLead.findUnique({ where: { id } });
+    if (!lead) throw new NotFoundException('الطلب غير موجود');
+    return this.prisma.evInitiativeLead.update({ where: { id }, data: { status } });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // SERVICE CONSULTATION SERVICE — طلبات مشورة شحن + تغليف مخصص (بدون تسجيل دخول)
 // ══════════════════════════════════════════════════════════════════
 

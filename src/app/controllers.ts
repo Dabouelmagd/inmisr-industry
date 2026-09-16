@@ -18,7 +18,7 @@ import { RfqService, CreateRfqDto, CreateQuoteDto } from '../rfq/rfq.service';
 import { EscrowService, DisputeDto } from '../escrow/escrow.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AntiLeakageService } from '../common/anti-leakage.service';
-import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, ServiceConsultationService, ProviderListingService, CompanyAssistantService, CompanyProfileService, QualityService, CustomIndustrialServiceService, SupplyChainService, DashboardActivityService, WorkerService, MarketGapService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
+import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, EvInitiativeService, ServiceConsultationService, ProviderListingService, CompanyAssistantService, CompanyProfileService, QualityService, CustomIndustrialServiceService, SupplyChainService, DashboardActivityService, WorkerService, MarketGapService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
 
 // ── Auth Guards (simplified) ───────────────────────────────────────
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -1184,6 +1184,69 @@ export class SolarLeadController {
       throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
     }
     return this.solar.adminUpdateStatus(id, body.status);
+  }
+}
+
+// ── EV Initiative Controller (VOZA) ─────────────────────────────────
+@ApiTags('ev-initiative')
+@Controller('ev-initiative')
+export class EvInitiativeController {
+  constructor(private ev: EvInitiativeService) {}
+
+  @Get('cars')
+  @ApiOperation({ summary: 'كتالوج سيارات مبادرة الإحلال الكهربائي (عام)' })
+  listCars() {
+    return this.ev.listCars();
+  }
+
+  @Post('admin/cars')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'إضافة سيارة جديدة للمبادرة (أدمن)' })
+  adminCreateCar(@Body() dto: any, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.ev.adminCreateCar(dto);
+  }
+
+  @Post('admin/cars/:id')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تعديل سيارة في المبادرة (أدمن)' })
+  adminUpdateCar(@Param('id') id: string, @Body() dto: any, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.ev.adminUpdateCar(id, dto);
+  }
+
+  @Post('submit')
+  @ApiOperation({ summary: 'تقديم طلب اشتراك في مبادرة إحلال السيارات (بدون تسجيل دخول)' })
+  submit(@Body() dto: any) {
+    return this.ev.submit(dto);
+  }
+
+  @Get('admin/all')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'كل طلبات مبادرة إحلال السيارات (أدمن)' })
+  adminList(@Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.ev.adminList();
+  }
+
+  @Post('admin/:id/status')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تحديث حالة طلب مبادرة (أدمن)' })
+  adminUpdateStatus(@Param('id') id: string, @Body() body: { status: string }, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.ev.adminUpdateStatus(id, body.status);
   }
 }
 

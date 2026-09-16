@@ -988,6 +988,45 @@ model SolarLead {
   @@map("solar_leads")
 }
 
+model EvInitiativeCar {
+  id          String   @id @default(uuid())
+  brand       String
+  modelName   String
+  modelNo     String?
+  specsJson   Json     @default("{}")
+  imageUrls   Json     @default("[]")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  leads       EvInitiativeLead[]
+
+  @@map("ev_initiative_cars")
+}
+
+model EvInitiativeLead {
+  id                    String   @id @default(uuid())
+  carId                 String?
+  car                   EvInitiativeCar? @relation(fields: [carId], references: [id])
+  fullName              String
+  phone                 String
+  governorate           String?
+  city                  String?
+  nationalId            String?
+  profession            String?
+  oldCarModel           String?
+  oldCarYear            String?
+  oldCarDetails         String?
+  licenseValid          String?
+  preferredContactTime  String?
+  howHeard              String?
+  status                String   @default("PENDING")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("ev_initiative_leads")
+}
+
 model ServiceConsultation {
   id          String   @id @default(uuid())
   kind        String   // SHIPPING / PACKAGING

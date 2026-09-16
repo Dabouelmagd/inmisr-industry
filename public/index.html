@@ -355,6 +355,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
 
 /* ── SOLAR INITIATIVE BADGE — distinctive national initiative marker ── */
 .solar-nav-badge{display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#F59E0B,#FB923C);border:none;border-radius:10px;padding:6px 12px;cursor:pointer;font-family:inherit;color:#fff;font-size:11px;font-weight:700;line-height:1.25;flex-shrink:0;box-shadow:0 2px 10px rgba(245,158,11,.4);transition:all .2s;text-align:right}
+.ev-nav-badge{display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#0EA5E9,#22D3EE);border:none;border-radius:10px;padding:6px 12px;cursor:pointer;font-family:inherit;color:#fff;font-size:11px;font-weight:700;line-height:1.25;flex-shrink:0;box-shadow:0 2px 10px rgba(14,165,233,.4);transition:all .2s;text-align:right}
 .guide-nav-badge{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--bd2);border-radius:10px;padding:6px 12px;cursor:pointer;font-family:inherit;color:var(--ts);font-size:11px;font-weight:700;line-height:1.25;flex-shrink:0;transition:all .2s;text-align:right}
 .guide-nav-badge:hover{border-color:var(--red);color:var(--red)}
 .solar-nav-badge:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(245,158,11,.55)}
@@ -403,6 +404,10 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   <button class="solar-nav-badge" data-page="solar">
     <span style="font-size:15px">☀️</span>
     <span>شمسك<br>طاقتك</span>
+  </button>
+  <button class="ev-nav-badge" data-page="evinitiative">
+    <span style="font-size:15px">🚗</span>
+    <span>إحلال<br>سيارتك</span>
   </button>
   <button class="guide-nav-badge" data-page="guide">
     <span style="font-size:15px">📖</span>
@@ -1576,6 +1581,84 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   </div>
 </div>
 
+<div class="page" id="page-evinitiative">
+  <div style="padding:10px 32px 0;max-width:1100px;margin:0 auto">
+    <div class="ad-banner ad-l" onclick="showMsg('ad_click')">
+      <span>📢</span><span>مساحة إعلانية — ads@inmisr.net</span>
+      <span style="font-size:11px;background:rgba(192,147,0,.15);padding:2px 8px;border-radius:8px;color:var(--gold)">إعلان</span>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div style="background:linear-gradient(135deg,var(--bg2),rgba(14,165,233,.06));padding:48px 32px;text-align:center;position:relative;overflow:hidden">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% -10%,rgba(14,165,233,.15) 0%,transparent 70%);pointer-events:none"></div>
+    <div style="position:relative">
+      <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(14,165,233,.12);border:1px solid rgba(14,165,233,.3);color:#0EA5E9;padding:6px 18px;border-radius:30px;font-size:13px;font-weight:700;margin-bottom:16px">🚗 مبادرة إحلال السيارات — بالشراكة مع VOZA</div>
+      <h2 style="font-size:32px;font-weight:700;margin-bottom:10px">بدّل سيارتك القديمة بسيارة كهربائية جديدة</h2>
+      <p style="color:var(--ts);max-width:560px;margin:0 auto 24px;font-size:14px;line-height:1.9">فرصة استثنائية بعد توقف دام لسنوات — قيمة سيارتك القديمة تُحسب كمقدّم أو دفعة أولى لسيارتك الكهربائية الجديدة، مع مزايا وضمانات حصرية لأعضاء المنصة</p>
+      <button class="hm" onclick="document.getElementById('ev-form-section').scrollIntoView({behavior:'smooth'})">قدّمي طلبك الآن ←</button>
+    </div>
+  </div>
+
+  <!-- BENEFITS -->
+  <div class="sec sa"><div class="mw">
+    <div class="stitle">مزايا حصرية للمبادرة</div>
+    <div class="ssub">امتيازات ما كانتش متاحة قبل كده</div>
+    <div class="g4">
+      <div class="card"><div class="cb"><div style="font-size:28px;margin-bottom:10px">🪪</div><div style="font-size:14px;font-weight:700;margin-bottom:6px">رخصة مجانية 3 سنوات</div><div style="font-size:12px;color:var(--ts);line-height:1.7">رخصة السيارة الجديدة مجانًا بالكامل لمدة 3 سنوات</div></div></div>
+      <div class="card"><div class="cb"><div style="font-size:28px;margin-bottom:10px">🔋</div><div style="font-size:14px;font-weight:700;margin-bottom:6px">ضمان بطارية 5 سنوات</div><div style="font-size:12px;color:var(--ts);line-height:1.7">ضمان شامل على البطارية لمدة 5 سنوات كاملة</div></div></div>
+      <div class="card"><div class="cb"><div style="font-size:28px;margin-bottom:10px">🛡️</div><div style="font-size:14px;font-weight:700;margin-bottom:6px">تأمين شامل 3 سنوات</div><div style="font-size:12px;color:var(--ts);line-height:1.7">وثيقة تأمين شاملة ضد الحوادث والسرقة لمدة 3 سنوات</div></div></div>
+      <div class="card"><div class="cb"><div style="font-size:28px;margin-bottom:10px">⚡</div><div style="font-size:14px;font-weight:700;margin-bottom:6px">شحن مجاني 3 سنوات</div><div style="font-size:12px;color:var(--ts);line-height:1.7">كارت شحن مجاني لتغطية استهلاك الكهرباء لمدة 3 سنوات</div></div></div>
+    </div>
+  </div></div>
+
+  <!-- CARS CATALOG -->
+  <div class="sec"><div class="mw">
+    <div class="stitle">السيارات المتاحة في المبادرة</div>
+    <div class="ssub">موديلات معتمدة بمواصفات أوروبية</div>
+    <div id="ev-cars-grid" class="g2"><div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--ts)">جارٍ التحميل...</div></div>
+  </div></div>
+
+  <!-- HOW IT WORKS -->
+  <div class="sec sa"><div class="mw">
+    <div class="stitle">إزاي المبادرة بتشتغل؟</div>
+    <div class="ssub">من التقديم لحد استلام سيارتك الجديدة</div>
+    <div class="g4">
+      <div style="text-align:center"><div style="width:46px;height:46px;border-radius:50%;background:rgba(14,165,233,.15);color:#0EA5E9;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;margin:0 auto 10px">1</div><div style="font-size:13px;font-weight:700;margin-bottom:5px">تقديم الطلب</div><div style="font-size:12px;color:var(--ts)">عبّي بيانات سيارتك القديمة وبياناتك</div></div>
+      <div style="text-align:center"><div style="width:46px;height:46px;border-radius:50%;background:rgba(14,165,233,.15);color:#0EA5E9;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;margin:0 auto 10px">2</div><div style="font-size:13px;font-weight:700;margin-bottom:5px">تقييم سيارتك القديمة</div><div style="font-size:12px;color:var(--ts)">فريق المبادرة يتواصل معك لتقييم السيارة</div></div>
+      <div style="text-align:center"><div style="width:46px;height:46px;border-radius:50%;background:rgba(14,165,233,.15);color:#0EA5E9;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;margin:0 auto 10px">3</div><div style="font-size:13px;font-weight:700;margin-bottom:5px">اختيار برنامج التمويل</div><div style="font-size:12px;color:var(--ts)">عرض برامج التمويل المناسبة لاختيار الأفضل</div></div>
+      <div style="text-align:center"><div style="width:46px;height:46px;border-radius:50%;background:rgba(14,165,233,.15);color:#0EA5E9;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;margin:0 auto 10px">4</div><div style="font-size:13px;font-weight:700;margin-bottom:5px">التسليم</div><div style="font-size:12px;color:var(--ts)">استلمي سيارتك الكهربائية الجديدة بكل ضماناتها</div></div>
+    </div>
+  </div></div>
+
+  <!-- APPLICATION FORM -->
+  <div class="sec sa" id="ev-form-section"><div class="mw" style="max-width:680px">
+    <div class="stitle">📝 استمارة بيانات العميل</div>
+    <div class="ssub">هيتواصل معاكِ فريق المبادرة لمتابعة طلبك</div>
+    <div class="rb">
+      <div style="margin-bottom:14px"><span class="lbl">مهتمة بأي سيارة؟</span><select class="sel" id="ev-car"><option value="">— اختاري السيارة —</option></select></div>
+      <div class="g2" style="margin-bottom:14px">
+        <div><span class="lbl">الاسم بالكامل</span><input class="inp" id="ev-name" placeholder="اسمك الرباعي"></div>
+        <div><span class="lbl">رقم الموبايل</span><input class="inp" id="ev-phone" placeholder="01xxxxxxxxx" dir="ltr"></div>
+        <div><span class="lbl">المحافظة</span><input class="inp" id="ev-gov" placeholder="مثال: القاهرة"></div>
+        <div><span class="lbl">المدينة</span><input class="inp" id="ev-city" placeholder="مثال: مدينة نصر"></div>
+        <div><span class="lbl">المهنة</span><input class="inp" id="ev-profession" placeholder="مهنتك"></div>
+        <div><span class="lbl">الرقم القومي (اختياري الآن)</span><input class="inp" id="ev-national-id" placeholder="يُستكمل لاحقًا بصورة البطاقة" dir="ltr"></div>
+      </div>
+      <div style="font-size:13px;font-weight:700;margin:18px 0 10px">بيانات السيارة القديمة</div>
+      <div class="g2" style="margin-bottom:14px">
+        <div><span class="lbl">نوع وموديل السيارة</span><input class="inp" id="ev-old-model" placeholder="مثال: فيات 128"></div>
+        <div><span class="lbl">سنة الصنع</span><input class="inp" id="ev-old-year" placeholder="مثال: 2005"></div>
+        <div style="grid-column:1/-1"><span class="lbl">بيانات إضافية عن السيارة</span><input class="inp" id="ev-old-details" placeholder="الحالة العامة، الكيلومترات، إلخ"></div>
+        <div><span class="lbl">رخصة السيارة سارية؟</span><select class="sel" id="ev-license-valid"><option value="">— اختاري —</option><option value="سارية">سارية</option><option value="غير سارية">غير سارية</option></select></div>
+        <div><span class="lbl">أنسب وقت للتواصل</span><input class="inp" id="ev-contact-time" placeholder="مثال: مساءً بعد 5"></div>
+      </div>
+      <div style="margin-bottom:18px"><span class="lbl">إزاي عرفتِ عن المبادرة؟</span><select class="sel" id="ev-how-heard"><option value="">— اختاري —</option><option value="إعلان">إعلان</option><option value="معرض">معرض</option><option value="توصية من صديق">توصية من صديق</option><option value="أخرى">أخرى</option></select></div>
+      <button class="bc" style="width:100%;padding:13px;font-size:14px;border-radius:10px" onclick="submitEvInitiativeRequest()">🚀 إرسال طلب الاشتراك في المبادرة</button>
+    </div>
+  </div></div>
+</div>
+
 <div class="page" id="page-incubator">
   <div style="padding:10px 32px 0"><div class="ad-banner ad-l" data-ad-type="incubator" onclick="showMsg(&#39;ad_click&#39;)"><span style="font-size:16px">📢</span><span>مساحة إعلانية للممولين والمستثمرين — ads@inmisr.net</span><span style="font-size:11px;background:rgba(192,147,0,.15);padding:2px 8px;border-radius:8px;color:var(--gold)">إعلان</span></div></div>
   <div style="background:var(--bg2);padding:56px 32px;text-align:center;position:relative;overflow:hidden">
@@ -1898,6 +1981,25 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
     <div style="margin-bottom:12px"><span class="lbl">ملاحظة جمركية (اختياري)</span><input class="inp" id="us-customs-note" placeholder="مثال: خيوط بوليستر"></div>
     <div style="margin-bottom:16px"><span class="lbl">تاريخ التسليم المتوقع</span><input class="inp" type="date" id="us-eta"></div>
     <button class="bc" style="width:100%;padding:11px;font-size:13px" id="us-submit-btn" onclick="submitUpdateShipment()">حفظ التحديث</button>
+  </div>
+</div>
+
+<div class="mov" id="ev-car-modal">
+  <div class="modal" style="max-width:460px">
+    <button class="mc" onclick="closeM('ev-car-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px">🚗 إضافة سيارة جديدة للمبادرة</div>
+    <div class="g2" style="gap:14px;margin-bottom:12px">
+      <div><span class="lbl">الماركة</span><input class="inp" id="evc-brand" placeholder="مثال: VOZA"></div>
+      <div><span class="lbl">الموديل</span><input class="inp" id="evc-model" placeholder="مثال: Arrow"></div>
+    </div>
+    <div style="margin-bottom:12px"><span class="lbl">رقم الموديل (اختياري)</span><input class="inp" id="evc-modelno" placeholder="Model No"></div>
+    <div style="margin-bottom:12px"><span class="lbl">روابط الصور (كل رابط في سطر)</span><textarea class="inp" id="evc-images" rows="3" placeholder="/assets/ev-voza-arrow-brochure.jpg"></textarea></div>
+    <div style="margin-bottom:16px"><span class="lbl">المواصفات (كل مواصفة: الاسم = القيمة، سطر لكل واحدة)</span><textarea class="inp" id="evc-specs" rows="5" placeholder="المدى = 240 كم بالشحن + 100 كم بالمولد
+السرعة القصوى = 90 كم/س
+زمن الشحن = 6 ساعات
+عدد المقاعد = 4 مقاعد
+الشاشة = 10.5 بوصة ذكية"></textarea></div>
+    <button class="bc" style="width:100%;padding:11px;font-size:13px" id="evc-submit-btn" onclick="submitEvCar()">إضافة السيارة</button>
   </div>
 </div>
 
@@ -2699,6 +2801,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
       <div class="asc">الرئيسية</div>
       <button class="asb on" data-admin="overview"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>نظرة عامة</button>
       <button class="asb" data-admin="solar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>☀️ شمسك طاقتك <span style="background:rgba(245,158,11,.2);color:#D97706;padding:1px 6px;border-radius:8px;font-size:11px;margin-right:4px">جديد</span></button>
+      <button class="asb" data-admin="evinitiative" onclick="refreshEvAdminTable()"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>🚗 إحلال السيارات <span style="background:rgba(14,165,233,.2);color:#0EA5E9;padding:1px 6px;border-radius:8px;font-size:11px;margin-right:4px">جديد</span></button>
       <div class="asc">المنصة</div>
       <button class="asb" data-admin="suppliers"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>الموردون</button>
       <button class="asb" data-admin="factories"><svg viewBox="0 0 24 24"><path d="M22 22H2M2 22V6l7 4V6l7 4V6l6 4v12"/></svg>المصانع (المشترون)</button>
@@ -2917,6 +3020,19 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
     <div class="kc" style="border-top:3px solid #22C55E"><div class="kl">تمت الموافقة</div><div class="kv">1</div><div class="kch">قيد التركيب</div></div>
   </div>
   <div class="tw"><table class="tbl"><thead><tr><th>الشركة</th><th>القطاع</th><th>المنطقة</th><th>فاتورة الكهرباء</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody><tr><td><strong>مصنع النور للبلاستيك</strong><div style="font-size:11px;color:var(--tt);margin-top:2px">كريم منصور · منذ 3 ساعات</div></td><td>البتروكيماويات</td><td>العاشر من رمضان</td><td style="color:var(--gold);font-weight:600">45,000 ج.م</td><td><span class="pill pa">معلق</span></td><td style="white-space:nowrap"><button class="bl" style="font-size:11px;padding:4px 9px;border-radius:5px" data-view-solar="sr1">عرض</button> <button class="bc" style="font-size:11px;padding:4px 9px;border-radius:5px" data-contact-solar="sr1">تواصل</button></td></tr><tr><td><strong>مصانع الدلتا للنسيج</strong><div style="font-size:11px;color:var(--tt);margin-top:2px">هالة عبدالرحمن · منذ يوم</div></td><td>الصناعات النسيجية</td><td>المحلة</td><td style="color:var(--gold);font-weight:600">120,000 ج.م</td><td><span class="pill pb2">تم التواصل</span></td><td style="white-space:nowrap"><button class="bl" style="font-size:11px;padding:4px 9px;border-radius:5px" data-view-solar="sr2">عرض</button> <button class="bc" style="font-size:11px;padding:4px 9px;border-radius:5px" data-contact-solar="sr2">تواصل</button></td></tr><tr><td><strong>شركة النيل للأغذية</strong><div style="font-size:11px;color:var(--tt);margin-top:2px">عمرو فتحي · منذ 4 أيام</div></td><td>الصناعات الغذائية</td><td>6 أكتوبر</td><td style="color:var(--gold);font-weight:600">68,000 ج.م</td><td><span class="pill pg">تمت الموافقة</span></td><td style="white-space:nowrap"><button class="bl" style="font-size:11px;padding:4px 9px;border-radius:5px" data-view-solar="sr3">عرض</button> <button class="bc" style="font-size:11px;padding:4px 9px;border-radius:5px" data-contact-solar="sr3">تواصل</button></td></tr></tbody></table></div>
+</div>
+      <div id="atab-evinitiative" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <div><div style="font-size:20px;font-weight:700">🚗 مبادرة إحلال السيارات — VOZA</div><div style="font-size:13px;color:var(--ts);margin-top:4px">طلبات اشتراك العملاء في مبادرة استبدال السيارات القديمة بسيارات كهربائية</div></div>
+    <button class="bl" style="font-size:12px;padding:6px 14px;border-radius:7px" onclick="openEvCarModal()">+ إضافة سيارة جديدة</button>
+  </div>
+  <div class="g4" style="margin-bottom:22px" id="ev-admin-kpis">
+    <div class="kc" style="border-top:3px solid #0EA5E9"><div class="kl">إجمالي الطلبات</div><div class="kv" id="ev-kpi-total">0</div></div>
+    <div class="kc" style="border-top:3px solid #D97706"><div class="kl">معلقة</div><div class="kv" id="ev-kpi-pending">0</div></div>
+    <div class="kc" style="border-top:3px solid #3B82F6"><div class="kl">قيد التواصل</div><div class="kv" id="ev-kpi-contacted">0</div></div>
+    <div class="kc" style="border-top:3px solid #22C55E"><div class="kl">موافَق عليها</div><div class="kv" id="ev-kpi-approved">0</div></div>
+  </div>
+  <div class="tw"><table class="tbl"><thead><tr><th>العميل</th><th>السيارة المطلوبة</th><th>السيارة القديمة</th><th>المحافظة</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="ev-admin-tbody"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--ts)">جارٍ التحميل...</td></tr></tbody></table></div>
 </div>
       <div id="atab-verif" style="display:none"><div style="font-size:20px;font-weight:700;margin-bottom:18px">طلبات التحقق (7)</div><div class="card" style="margin-bottom:12px"><div class="cb" style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:14px;font-weight:600">شركة الدلتا للحديد</div><div style="font-size:12px;color:var(--ts);margin-top:4px">سجل تجاري + بطاقة ضريبية · منذ 48 ساعة</div></div><div style="display:flex;gap:8px"><button class="bl" style="padding:7px 14px;font-size:13px;border-radius:7px" onclick="openVerifPreview('شركة الدلتا للحديد','سجل تجاري + بطاقة ضريبية','منذ 48 ساعة')">🔍 معاينة</button><button class="bc" style="padding:7px 14px;font-size:13px;border-radius:7px" data-msg="accept">قبول</button><button class="bl" style="padding:7px 14px;font-size:13px;border-radius:7px" data-msg="reject">رفض</button></div></div></div>
 <div class="card" style="margin-bottom:12px"><div class="cb" style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:14px;font-weight:600">مصنع النور للبلاستيك</div><div style="font-size:12px;color:var(--ts);margin-top:4px">شهادات ISO · منذ 24 ساعة</div></div><div style="display:flex;gap:8px"><button class="bl" style="padding:7px 14px;font-size:13px;border-radius:7px" onclick="openVerifPreview('مصنع النور للبلاستيك','شهادات ISO','منذ 24 ساعة')">🔍 معاينة</button><button class="bc" style="padding:7px 14px;font-size:13px;border-radius:7px" data-msg="accept">قبول</button><button class="bl" style="padding:7px 14px;font-size:13px;border-radius:7px" data-msg="reject">رفض</button></div></div></div>
@@ -4191,6 +4307,7 @@ function goTo(pg, fromBack){
   if (tickerEl) tickerEl.style.display = (pg === "home") ? "flex" : "none";
   var sectorsSidebarEl = document.getElementById("sidebar");
   if (sectorsSidebarEl) sectorsSidebarEl.style.display = (pg === "admin" || pg === "dash") ? "none" : "";
+  if (pg === "evinitiative" && typeof loadEvCars === "function") loadEvCars();
   if (pg === "admin" && typeof loadAdminOverview === "function") {
     loadAdminOverview();
   }
@@ -4755,7 +4872,7 @@ onDomReady(function(){
 
   // ADMIN
   function showAdmin(name,btn){
-    ["overview","suppliers","factories","orders","disputes","revenue","escrow","verif","ads","offers-admin","incubator","products","sectors","payments","solar","services","team","promocodes","reports","translator"].forEach(function(t){
+    ["overview","suppliers","factories","orders","disputes","revenue","escrow","verif","ads","offers-admin","incubator","products","sectors","payments","solar","evinitiative","services","team","promocodes","reports","translator"].forEach(function(t){
       var e=document.getElementById("atab-"+t); if(e)e.style.display=t===name?"block":"none";
     });
     document.querySelectorAll(".asb").forEach(function(b){b.classList.remove("on");});
@@ -7381,6 +7498,73 @@ function populateSolarSectorDropdown() {
   });
 }
 
+async function loadEvCars() {
+  var grid = document.getElementById("ev-cars-grid");
+  var select = document.getElementById("ev-car");
+  if (!grid) return;
+  try {
+    var cars = await apiFetch("/ev-initiative/cars");
+    if (!cars.length) {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--ts)">لا توجد سيارات متاحة حاليًا في المبادرة</div>';
+      return;
+    }
+    grid.innerHTML = cars.map(function(c) {
+      var imgs = c.imageUrls || [];
+      var mainImg = imgs[0] || "";
+      var specs = c.specsJson || {};
+      var specRows = Object.keys(specs).map(function(k) {
+        return '<div class="row"><span style="color:var(--ts)">' + k + '</span><span style="font-weight:700">' + specs[k] + '</span></div>';
+      }).join("");
+      return '<div class="card"><div style="background:var(--bg3)">' + (mainImg ? '<img src="' + mainImg + '" style="width:100%;height:220px;object-fit:cover">' : '') + '</div><div class="cb"><div style="font-size:16px;font-weight:700;margin-bottom:4px">' + c.brand + ' ' + c.modelName + '</div>' + (c.modelNo ? '<div style="font-size:12px;color:var(--ts);margin-bottom:12px">' + c.modelNo + '</div>' : '') + specRows + '</div></div>';
+    }).join("");
+    if (select) {
+      select.innerHTML = '<option value="">— اختاري السيارة —</option>' + cars.map(function(c) {
+        return '<option value="' + c.id + '">' + c.brand + ' ' + c.modelName + '</option>';
+      }).join("");
+    }
+  } catch (err) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--ts)">⚠️ تعذر تحميل السيارات المتاحة</div>';
+  }
+}
+window.loadEvCars = loadEvCars;
+
+window.submitEvInitiativeRequest = async function() {
+  var name = (document.getElementById("ev-name")||{}).value || "";
+  var phone = (document.getElementById("ev-phone")||{}).value || "";
+  if (!name.trim() || !phone.trim()) {
+    toast("الرجاء إدخال الاسم بالكامل ورقم الموبايل على الأقل");
+    return;
+  }
+  try {
+    await apiFetch("/ev-initiative/submit", {
+      method: "POST",
+      body: JSON.stringify({
+        carId: (document.getElementById("ev-car")||{}).value || undefined,
+        fullName: name, phone: phone,
+        governorate: (document.getElementById("ev-gov")||{}).value || undefined,
+        city: (document.getElementById("ev-city")||{}).value || undefined,
+        nationalId: (document.getElementById("ev-national-id")||{}).value || undefined,
+        profession: (document.getElementById("ev-profession")||{}).value || undefined,
+        oldCarModel: (document.getElementById("ev-old-model")||{}).value || undefined,
+        oldCarYear: (document.getElementById("ev-old-year")||{}).value || undefined,
+        oldCarDetails: (document.getElementById("ev-old-details")||{}).value || undefined,
+        licenseValid: (document.getElementById("ev-license-valid")||{}).value || undefined,
+        preferredContactTime: (document.getElementById("ev-contact-time")||{}).value || undefined,
+        howHeard: (document.getElementById("ev-how-heard")||{}).value || undefined,
+      })
+    });
+    toast("✅ تم استلام طلبك! سيتواصل معك فريق المبادرة قريبًا لتقييم سيارتك القديمة");
+    ["ev-name","ev-phone","ev-gov","ev-city","ev-profession","ev-national-id","ev-old-model","ev-old-year","ev-old-details","ev-contact-time"].forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.value = "";
+    });
+    ["ev-car","ev-license-valid","ev-how-heard"].forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.value = "";
+    });
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إرسال الطلب"));
+  }
+};
+
 window.submitSolarRequest = async function() {
   var company = (document.getElementById("sol-company")||{}).value || "";
   var contact = (document.getElementById("sol-contact")||{}).value || "";
@@ -7408,6 +7592,88 @@ window.submitSolarRequest = async function() {
     });
   } catch (err) {
     toast("⚠️ " + (err.message || "تعذر إرسال الطلب"));
+  }
+};
+
+async function refreshEvAdminTable() {
+  var tbody = document.getElementById("ev-admin-tbody");
+  if (!tbody) return;
+  try {
+    var leads = await apiFetch("/ev-initiative/admin/all");
+    var statusMap = { PENDING: ["pa", "معلق"], CONTACTED: ["pb2", "تم التواصل"], APPROVED: ["pg", "موافَق"], REJECTED: ["pr", "مرفوض"] };
+    document.getElementById("ev-kpi-total").textContent = leads.length;
+    document.getElementById("ev-kpi-pending").textContent = leads.filter(function(l){ return l.status === "PENDING"; }).length;
+    document.getElementById("ev-kpi-contacted").textContent = leads.filter(function(l){ return l.status === "CONTACTED"; }).length;
+    document.getElementById("ev-kpi-approved").textContent = leads.filter(function(l){ return l.status === "APPROVED"; }).length;
+    tbody.innerHTML = leads.length ? leads.map(function(l) {
+      var st = statusMap[l.status] || ["pa", l.status];
+      var carName = l.car ? (l.car.brand + " " + l.car.modelName) : "—";
+      return '<tr><td><strong>' + l.fullName + '</strong><div style="font-size:11px;color:var(--tt);margin-top:2px">' + l.phone + '</div></td>' +
+        '<td>' + carName + '</td>' +
+        '<td>' + (l.oldCarModel || "—") + (l.oldCarYear ? " (" + l.oldCarYear + ")" : "") + '</td>' +
+        '<td>' + (l.governorate || "—") + '</td>' +
+        '<td><span class="pill ' + st[0] + '">' + st[1] + '</span></td>' +
+        '<td style="white-space:nowrap">' +
+        '<button class="bl" style="font-size:11px;padding:4px 9px;border-radius:5px" onclick="updateEvLeadStatus(\'' + l.id + '\',\'CONTACTED\')">تم التواصل</button> ' +
+        '<button class="bc" style="font-size:11px;padding:4px 9px;border-radius:5px" onclick="updateEvLeadStatus(\'' + l.id + '\',\'APPROVED\')">موافقة</button>' +
+        '</td></tr>';
+    }).join("") : '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--ts)">لا توجد طلبات حتى الآن</td></tr>';
+  } catch (err) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--ts)">⚠️ تعذر تحميل الطلبات</td></tr>';
+  }
+}
+window.refreshEvAdminTable = refreshEvAdminTable;
+
+window.updateEvLeadStatus = async function(id, status) {
+  try {
+    await apiFetch("/ev-initiative/admin/" + id + "/status", { method: "POST", body: JSON.stringify({ status: status }) });
+    toast("✅ تم تحديث حالة الطلب");
+    refreshEvAdminTable();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تحديث الحالة"));
+  }
+};
+
+window.openEvCarModal = function() {
+  if (typeof openM === "function") openM("ev-car-modal");
+};
+
+window.submitEvCar = async function() {
+  var brand = (document.getElementById("evc-brand")||{}).value || "";
+  var model = (document.getElementById("evc-model")||{}).value || "";
+  if (!brand.trim() || !model.trim()) { toast("الرجاء إدخال الماركة والموديل"); return; }
+  var imagesRaw = (document.getElementById("evc-images")||{}).value || "";
+  var imageUrls = imagesRaw.split("\n").map(function(s){ return s.trim(); }).filter(Boolean);
+  var specsRaw = (document.getElementById("evc-specs")||{}).value || "";
+  var specsJson = {};
+  specsRaw.split("\n").forEach(function(line) {
+    var parts = line.split("=");
+    if (parts.length >= 2) {
+      var key = parts[0].trim();
+      var val = parts.slice(1).join("=").trim();
+      if (key && val) specsJson[key] = val;
+    }
+  });
+  var btn = document.getElementById("evc-submit-btn");
+  btn.disabled = true; btn.textContent = "جارٍ الإضافة...";
+  try {
+    await apiFetch("/ev-initiative/admin/cars", {
+      method: "POST",
+      body: JSON.stringify({
+        brand: brand, modelName: model,
+        modelNo: (document.getElementById("evc-modelno")||{}).value || undefined,
+        imageUrls: imageUrls, specsJson: specsJson,
+      }),
+    });
+    toast("✅ تمت إضافة السيارة للمبادرة");
+    if (typeof closeM === "function") closeM("ev-car-modal");
+    ["evc-brand","evc-model","evc-modelno","evc-images","evc-specs"].forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.value = "";
+    });
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إضافة السيارة"));
+  } finally {
+    btn.disabled = false; btn.textContent = "إضافة السيارة";
   }
 };
 
