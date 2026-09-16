@@ -1199,6 +1199,17 @@ export class EvInitiativeController {
     return this.ev.listCars();
   }
 
+  @Get('admin/cars')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'كل سيارات المبادرة بما فيها غير المفعّلة (أدمن)' })
+  adminListCars(@Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.ev.adminListCars();
+  }
+
   @Post('admin/cars')
   @UseGuards(JwtGuard)
   @ApiBearerAuth()

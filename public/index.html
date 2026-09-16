@@ -1987,18 +1987,20 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
 <div class="mov" id="ev-car-modal">
   <div class="modal" style="max-width:460px">
     <button class="mc" onclick="closeM('ev-car-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>
-    <div style="font-size:16px;font-weight:700;margin-bottom:16px">🚗 إضافة سيارة جديدة للمبادرة</div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px" id="evc-modal-title">🚗 إضافة سيارة جديدة للمبادرة</div>
+    <input type="hidden" id="evc-edit-id" value="">
     <div class="g2" style="gap:14px;margin-bottom:12px">
       <div><span class="lbl">الماركة</span><input class="inp" id="evc-brand" placeholder="مثال: VOZA"></div>
       <div><span class="lbl">الموديل</span><input class="inp" id="evc-model" placeholder="مثال: Arrow"></div>
     </div>
     <div style="margin-bottom:12px"><span class="lbl">رقم الموديل (اختياري)</span><input class="inp" id="evc-modelno" placeholder="Model No"></div>
     <div style="margin-bottom:12px"><span class="lbl">روابط الصور (كل رابط في سطر)</span><textarea class="inp" id="evc-images" rows="3" placeholder="/assets/ev-voza-arrow-brochure.jpg"></textarea></div>
-    <div style="margin-bottom:16px"><span class="lbl">المواصفات (كل مواصفة: الاسم = القيمة، سطر لكل واحدة)</span><textarea class="inp" id="evc-specs" rows="5" placeholder="المدى = 240 كم بالشحن + 100 كم بالمولد
+    <div style="margin-bottom:12px"><span class="lbl">المواصفات (كل مواصفة: الاسم = القيمة، سطر لكل واحدة)</span><textarea class="inp" id="evc-specs" rows="5" placeholder="المدى = 240 كم بالشحن + 100 كم بالمولد
 السرعة القصوى = 90 كم/س
 زمن الشحن = 6 ساعات
 عدد المقاعد = 4 مقاعد
 الشاشة = 10.5 بوصة ذكية"></textarea></div>
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ts);cursor:pointer;margin-bottom:16px"><input type="checkbox" id="evc-active" checked style="width:14px;height:14px">مفعّلة وظاهرة للعملاء</label>
     <button class="bc" style="width:100%;padding:11px;font-size:13px" id="evc-submit-btn" onclick="submitEvCar()">إضافة السيارة</button>
   </div>
 </div>
@@ -2801,7 +2803,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
       <div class="asc">الرئيسية</div>
       <button class="asb on" data-admin="overview"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>نظرة عامة</button>
       <button class="asb" data-admin="solar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>☀️ شمسك طاقتك <span style="background:rgba(245,158,11,.2);color:#D97706;padding:1px 6px;border-radius:8px;font-size:11px;margin-right:4px">جديد</span></button>
-      <button class="asb" data-admin="evinitiative" onclick="refreshEvAdminTable()"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>🚗 إحلال السيارات <span style="background:rgba(14,165,233,.2);color:#0EA5E9;padding:1px 6px;border-radius:8px;font-size:11px;margin-right:4px">جديد</span></button>
+      <button class="asb" data-admin="evinitiative" onclick="refreshEvAdminTable();renderEvAdminCarsGrid()"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>🚗 إحلال السيارات <span style="background:rgba(14,165,233,.2);color:#0EA5E9;padding:1px 6px;border-radius:8px;font-size:11px;margin-right:4px">جديد</span></button>
       <div class="asc">المنصة</div>
       <button class="asb" data-admin="suppliers"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>الموردون</button>
       <button class="asb" data-admin="factories"><svg viewBox="0 0 24 24"><path d="M22 22H2M2 22V6l7 4V6l7 4V6l6 4v12"/></svg>المصانع (المشترون)</button>
@@ -3032,6 +3034,9 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
     <div class="kc" style="border-top:3px solid #3B82F6"><div class="kl">قيد التواصل</div><div class="kv" id="ev-kpi-contacted">0</div></div>
     <div class="kc" style="border-top:3px solid #22C55E"><div class="kl">موافَق عليها</div><div class="kv" id="ev-kpi-approved">0</div></div>
   </div>
+  <div style="font-size:15px;font-weight:700;margin-bottom:12px">🚙 السيارات المضافة للمبادرة</div>
+  <div class="g3" id="ev-admin-cars-grid" style="margin-bottom:26px"><div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--ts)">جارٍ التحميل...</div></div>
+  <div style="font-size:15px;font-weight:700;margin-bottom:12px">📋 طلبات العملاء</div>
   <div class="tw"><table class="tbl"><thead><tr><th>العميل</th><th>السيارة المطلوبة</th><th>السيارة القديمة</th><th>المحافظة</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="ev-admin-tbody"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--ts)">جارٍ التحميل...</td></tr></tbody></table></div>
 </div>
       <div id="atab-verif" style="display:none"><div style="font-size:20px;font-weight:700;margin-bottom:18px">طلبات التحقق (7)</div><div class="card" style="margin-bottom:12px"><div class="cb" style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:14px;font-weight:600">شركة الدلتا للحديد</div><div style="font-size:12px;color:var(--ts);margin-top:4px">سجل تجاري + بطاقة ضريبية · منذ 48 ساعة</div></div><div style="display:flex;gap:8px"><button class="bl" style="padding:7px 14px;font-size:13px;border-radius:7px" onclick="openVerifPreview('شركة الدلتا للحديد','سجل تجاري + بطاقة ضريبية','منذ 48 ساعة')">🔍 معاينة</button><button class="bc" style="padding:7px 14px;font-size:13px;border-radius:7px" data-msg="accept">قبول</button><button class="bl" style="padding:7px 14px;font-size:13px;border-radius:7px" data-msg="reject">رفض</button></div></div></div>
@@ -7638,9 +7643,53 @@ window.updateEvLeadStatus = async function(id, status) {
   }
 };
 
+var EV_ADMIN_CARS_CACHE = [];
+
 window.openEvCarModal = function() {
+  document.getElementById("evc-modal-title").textContent = "🚗 إضافة سيارة جديدة للمبادرة";
+  document.getElementById("evc-edit-id").value = "";
+  document.getElementById("evc-submit-btn").textContent = "إضافة السيارة";
+  ["evc-brand","evc-model","evc-modelno","evc-images","evc-specs"].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.value = "";
+  });
+  document.getElementById("evc-active").checked = true;
   if (typeof openM === "function") openM("ev-car-modal");
 };
+
+window.editEvCar = function(id) {
+  var car = EV_ADMIN_CARS_CACHE.find(function(c){ return c.id === id; });
+  if (!car) return;
+  document.getElementById("evc-modal-title").textContent = "✏️ تعديل " + car.brand + " " + car.modelName;
+  document.getElementById("evc-edit-id").value = car.id;
+  document.getElementById("evc-brand").value = car.brand;
+  document.getElementById("evc-model").value = car.modelName;
+  document.getElementById("evc-modelno").value = car.modelNo || "";
+  document.getElementById("evc-images").value = (car.imageUrls || []).join("\n");
+  var specs = car.specsJson || {};
+  document.getElementById("evc-specs").value = Object.keys(specs).map(function(k){ return k + " = " + specs[k]; }).join("\n");
+  document.getElementById("evc-active").checked = car.isActive;
+  document.getElementById("evc-submit-btn").textContent = "حفظ التعديلات";
+  if (typeof openM === "function") openM("ev-car-modal");
+};
+
+async function renderEvAdminCarsGrid() {
+  var grid = document.getElementById("ev-admin-cars-grid");
+  if (!grid) return;
+  try {
+    var cars = await apiFetch("/ev-initiative/admin/cars");
+    EV_ADMIN_CARS_CACHE = cars;
+    grid.innerHTML = cars.length ? cars.map(function(c) {
+      var img = (c.imageUrls || [])[0] || "";
+      return '<div class="card"><div style="background:#f5f5f0">' + (img ? '<img src="' + img + '" style="width:100%;height:160px;object-fit:contain">' : '') + '</div><div class="cb">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:14px;font-weight:700">' + c.brand + ' ' + c.modelName + '</div><span class="pill ' + (c.isActive ? "pg" : "pa") + '">' + (c.isActive ? "مفعّلة" : "غير مفعّلة") + '</span></div>' +
+        '<button class="bl" style="width:100%;padding:7px;font-size:12px;border-radius:7px" onclick="editEvCar(\'' + c.id + '\')">✏️ تعديل الصور والمواصفات</button>' +
+        '</div></div>';
+    }).join("") : '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--ts)">لا توجد سيارات مضافة بعد</div>';
+  } catch (err) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--ts)">⚠️ تعذر تحميل السيارات</div>';
+  }
+}
+window.renderEvAdminCarsGrid = renderEvAdminCarsGrid;
 
 window.submitEvCar = async function() {
   var brand = (document.getElementById("evc-brand")||{}).value || "";
@@ -7658,26 +7707,39 @@ window.submitEvCar = async function() {
       if (key && val) specsJson[key] = val;
     }
   });
+  var editId = (document.getElementById("evc-edit-id")||{}).value || "";
+  var isActive = (document.getElementById("evc-active")||{}).checked;
   var btn = document.getElementById("evc-submit-btn");
-  btn.disabled = true; btn.textContent = "جارٍ الإضافة...";
+  btn.disabled = true; btn.textContent = editId ? "جارٍ الحفظ..." : "جارٍ الإضافة...";
   try {
-    await apiFetch("/ev-initiative/admin/cars", {
-      method: "POST",
-      body: JSON.stringify({
-        brand: brand, modelName: model,
-        modelNo: (document.getElementById("evc-modelno")||{}).value || undefined,
-        imageUrls: imageUrls, specsJson: specsJson,
-      }),
-    });
-    toast("✅ تمت إضافة السيارة للمبادرة");
+    if (editId) {
+      await apiFetch("/ev-initiative/admin/cars/" + editId, {
+        method: "POST",
+        body: JSON.stringify({ isActive: isActive, imageUrls: imageUrls, specsJson: specsJson }),
+      });
+      toast("✅ تم حفظ تعديلات السيارة");
+    } else {
+      await apiFetch("/ev-initiative/admin/cars", {
+        method: "POST",
+        body: JSON.stringify({
+          brand: brand, modelName: model,
+          modelNo: (document.getElementById("evc-modelno")||{}).value || undefined,
+          imageUrls: imageUrls, specsJson: specsJson,
+        }),
+      });
+      toast("✅ تمت إضافة السيارة للمبادرة");
+    }
     if (typeof closeM === "function") closeM("ev-car-modal");
+    if (typeof renderEvAdminCarsGrid === "function") renderEvAdminCarsGrid();
+    if (typeof loadEvCars === "function") loadEvCars();
     ["evc-brand","evc-model","evc-modelno","evc-images","evc-specs"].forEach(function(id) {
       var el = document.getElementById(id); if (el) el.value = "";
     });
   } catch (err) {
-    toast("⚠️ " + (err.message || "تعذر إضافة السيارة"));
+    toast("⚠️ " + (err.message || "تعذر حفظ السيارة"));
+
   } finally {
-    btn.disabled = false; btn.textContent = "إضافة السيارة";
+    btn.disabled = false; btn.textContent = editId ? "حفظ التعديلات" : "إضافة السيارة";
   }
 };
 

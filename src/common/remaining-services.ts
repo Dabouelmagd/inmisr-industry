@@ -1119,6 +1119,10 @@ export class EvInitiativeService {
     return this.prisma.evInitiativeCar.findMany({ where: { isActive: true }, orderBy: { createdAt: 'asc' } });
   }
 
+  async adminListCars() {
+    return this.prisma.evInitiativeCar.findMany({ orderBy: { createdAt: 'asc' } });
+  }
+
   async adminCreateCar(dto: { brand: string; modelName: string; modelNo?: string; specsJson?: any; imageUrls?: string[] }) {
     if (!dto.brand?.trim() || !dto.modelName?.trim()) {
       throw new BadRequestException('اسم الماركة والموديل مطلوبان');
