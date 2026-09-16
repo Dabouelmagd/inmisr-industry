@@ -558,7 +558,7 @@ export class MarketGapService {
     const results: any[] = [];
     for (const cat of categories) {
       const rfqs = await this.prisma.rfqRequest.findMany({
-        where: { categoryId: cat.id, status: { in: ['PUBLISHED', 'QUOTES_RECEIVED', 'NEGOTIATING', 'ACCEPTED'] } },
+        where: { categoryId: cat.id, status: { in: ['PUBLISHED', 'QUOTES_RECEIVED', 'UNDER_NEGOTIATION', 'ACCEPTED'] } },
         select: { id: true, deliveryCity: true },
       });
       if (rfqs.length < 2) continue; // not enough real signal to call it a pattern
