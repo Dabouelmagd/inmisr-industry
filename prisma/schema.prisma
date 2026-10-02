@@ -155,6 +155,7 @@ model User {
   twoFaEnabled    Boolean   @default(false)
   twoFaSecret     String?
   refreshTokens   RefreshToken[]
+  webauthnCredentials WebAuthnCredential[]
   passwordResetTokens PasswordResetToken[]
   otpCodes        OtpCode[]
   deviceTokens    DeviceToken[]
@@ -968,6 +969,21 @@ model SpecialOffer {
 
   @@index([companyId, status])
   @@map("special_offers")
+}
+
+model WebAuthnCredential {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialId  String   @unique
+  publicKey     String   // base64-encoded COSE public key
+  counter       Int      @default(0)
+  deviceLabel   String?
+  createdAt     DateTime @default(now())
+  lastUsedAt    DateTime?
+
+  @@index([userId])
+  @@map("webauthn_credentials")
 }
 
 model SolarLead {

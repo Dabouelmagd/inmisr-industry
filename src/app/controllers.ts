@@ -186,6 +186,67 @@ export class AuthController {
   me(@Request() req: any) {
     return { user: req.user };
   }
+
+  // ── WEBAUTHN (Face ID / Touch ID / security keys) ──────────────────
+  // rpID must be the domain the BROWSER PAGE is actually on (inmisr.net),
+  // not the API subdomain the request happens to hit — that's just where
+  // WEBAUTHN_RP_ID/ORIGIN below point by default. Overridable via env for
+  // any other environment (staging, localhost) without a code change.
+  private webauthnRpID() {
+    return process.env.WEBAUTHN_RP_ID || 'inmisr.net';
+  }
+  private webauthnOrigin() {
+    return process.env.WEBAUTHN_ORIGIN || 'https://inmisr.net';
+  }
+
+  @Post('webauthn/register/options')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'بدء تسجيل بصمة دخول جديدة (Face ID / Touch ID)' })
+  webauthnRegisterOptions(@Request() req: any) {
+    return this.auth.webauthnRegistrationOptions(req.user.sub, this.webauthnRpID());
+  }
+
+  @Post('webauthn/register/verify')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تأكيد تسجيل بصمة الدخول' })
+  webauthnRegisterVerify(@Body() body: { response: any; deviceLabel?: string }, @Request() req: any) {
+    return this.auth.webauthnVerifyRegistration(req.user.sub, body.response, this.webauthnOrigin(), this.webauthnRpID(), body.deviceLabel);
+  }
+
+  @Post('webauthn/login/options')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({ summary: 'بدء تسجيل الدخول ببصمة مسجّلة مسبقًا' })
+  webauthnLoginOptions(@Body() body: { emailOrPhone: string }) {
+    return this.auth.webauthnLoginOptions(body.emailOrPhone, this.webauthnRpID());
+  }
+
+  @Post('webauthn/login/verify')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({ summary: 'تأكيد تسجيل الدخول ببصمة' })
+  @HttpCode(HttpStatus.OK)
+  webauthnLoginVerify(@Body() body: { response: any }, @Request() req: any) {
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    const ua = req.headers['user-agent'] || 'unknown';
+    return this.auth.webauthnVerifyLogin(body.response, this.webauthnOrigin(), this.webauthnRpID(), ip, ua);
+  }
+
+  @Get('webauthn/credentials')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'بصمات الدخول المسجّلة لحسابي' })
+  webauthnListCredentials(@Request() req: any) {
+    return this.auth.webauthnListCredentials(req.user.sub);
+  }
+
+  @Delete('webauthn/credentials/:id')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'حذف بصمة دخول مسجّلة' })
+  webauthnDeleteCredential(@Param('id') id: string, @Request() req: any) {
+    return this.auth.webauthnDeleteCredential(req.user.sub, id);
+  }
 }
 
 // ── Suppliers Controller ───────────────────────────────────────────

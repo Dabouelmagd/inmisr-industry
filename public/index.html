@@ -430,6 +430,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
 </div>
     <div class="aw"><button class="ab" onclick="openOwnerLogin()"><div class="ap"></div><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></button><div class="at">سوبر أدمن — داتا لايف</div></div>
     <div class="aw"><button class="tb" id="nav-dash-btn" data-page="dash" style="display:none"><svg viewBox="0 0 24 24" style="width:16px;height:16px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></button><div class="at">لوحة التحكم</div></div>
+    <div class="aw"><button class="tb" id="nav-webauthn-btn" onclick="registerWebAuthnDevice()" style="display:none">🔐</button><div class="at">تسجيل بصمة الدخول لهذا الجهاز</div></div>
     <div class="aw"><button class="tb" id="nav-logout-btn" onclick="doLogout()" style="display:none"><svg viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button><div class="at">تسجيل خروج</div></div>
     <div id="nav-welcome" style="display:none;align-items:center;gap:8px;padding:0 6px">
       <span style="font-size:13px;color:var(--tp)">أهلًا، <strong id="nav-welcome-name"></strong></span>
@@ -3862,6 +3863,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
         <span style="font-size:12px;color:var(--red);cursor:pointer" onclick="openForgotPasswordFlow()">نسيت كلمة المرور؟</span>
       </div>
       <button class="bc" id="login-submit-btn" style="width:100%;padding:12px;font-size:14px;border-radius:10px" onclick="submitLogin()">دخول ←</button>
+      <button class="bl" id="login-webauthn-btn" style="width:100%;padding:11px;font-size:13px;border-radius:10px;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:7px" onclick="loginWithWebAuthn()"><span style="font-size:16px">🔐</span><span>الدخول ببصمة الجهاز (Face ID / Touch ID)</span></button>
       <div style="text-align:center;margin-top:14px;font-size:13px;color:var(--ts)">معندكيش حساب؟ <span style="color:var(--red);cursor:pointer;font-weight:600" onclick="document.getElementById('login-modal').classList.remove('open');goTo('reg')">سجلي الآن</span></div>
     </div>
   </div>
@@ -11718,7 +11720,13 @@ window.openLoginModal = function() {
   document.getElementById("login-modal").classList.add("open");
 };
 
-window.openOwnerLogin = function() {
+window.openOwnerLogin = async function() {
+  // If this is clicked before restoreSession() has finished (e.g. right
+  // after a page load), window.isLoggedIn can still read false even
+  // though a valid remembered session is about to be restored a moment
+  // later — waiting here means a real "تذكرني" session skips the form
+  // every time instead of only when the click happens to land late.
+  if (window.SESSION_RESTORE_PROMISE) { try { await window.SESSION_RESTORE_PROMISE; } catch (e) {} }
   if (window.isLoggedIn && window.loggedInRole === "owner") { goTo("admin"); return; }
   selectedLoginType = null;
   ["supplier","company","owner","worker"].forEach(function(t){ document.getElementById("login-btn-"+t).classList.remove("sel"); });
@@ -11970,6 +11978,8 @@ function updateLogoutButtonVisibility() {
   if (btn) btn.style.display = window.isLoggedIn ? "" : "none";
   var dashBtn = document.getElementById("nav-dash-btn");
   if (dashBtn) dashBtn.style.display = window.isLoggedIn ? "" : "none";
+  var webauthnBtn = document.getElementById("nav-webauthn-btn");
+  if (webauthnBtn) webauthnBtn.style.display = (window.isLoggedIn && window.PublicKeyCredential) ? "" : "none";
 
   var loginBtn = document.getElementById("nav-login-btn");
   var registerBtn = document.getElementById("nav-register-btn");
@@ -11991,9 +12001,10 @@ window.updateLogoutButtonVisibility = updateLogoutButtonVisibility;
 // (even with "تذكرني" checked) was never actually re-validated on
 // page load, so every refresh silently logged the user back out of
 // the UI even though their token was still sitting in storage.
+window.SESSION_RESTORE_DONE = false;
 async function restoreSession() {
   var token = getAuthToken("inmisr_access_token");
-  if (!token) return;
+  if (!token) { window.SESSION_RESTORE_DONE = true; return; }
   try {
     var result = await apiFetch("/auth/me");
     var u = result.user;
@@ -12010,8 +12021,25 @@ async function restoreSession() {
     if ((uiRole === "company" || uiRole === "supplier") && typeof loadCompanyProfile === "function") loadCompanyProfile();
   } catch (err) {
     clearAuthTokens(); // token expired/invalid — don't keep a dead session lying around
+  } finally {
+    window.SESSION_RESTORE_DONE = true;
   }
 }
+
+// A single shared promise any code can await to know restoreSession()
+// has settled (succeeded or failed) at least once, instead of racing
+// it — e.g. the owner-login icon deciding whether to show the login
+// form or skip straight to the dashboard for an already-valid session.
+window.SESSION_RESTORE_PROMISE = (function() {
+  if (window.SESSION_RESTORE_DONE) return Promise.resolve();
+  return new Promise(function(resolve) {
+    var check = function() {
+      if (window.SESSION_RESTORE_DONE) resolve();
+      else setTimeout(check, 20);
+    };
+    check();
+  });
+})();
 window.restoreSession = restoreSession;
 onDomReady(restoreSession);
 
@@ -12032,38 +12060,131 @@ window.submitLogin = async function() {
 
     var rememberEl = document.getElementById("login-remember");
     var remember = !!(rememberEl && rememberEl.checked);
-    saveAuthTokens(data.accessToken, data.refreshToken, remember);
-
-    // Map the server's real role back to the UI's role vocabulary,
-    // rather than trusting whichever tab the person happened to click.
-    var serverRole = (data.user && data.user.role) || "";
-    var uiRole = serverRole === "SUPPLIER" ? "supplier"
-               : serverRole === "BUYER" ? "company"
-               : serverRole === "WORKER" ? "worker"
-               : (serverRole === "ADMIN" || serverRole === "SUPER_ADMIN") ? "owner"
-               : selectedLoginType;
-
-    document.getElementById("login-modal").classList.remove("open");
-    window.isLoggedIn = true;
-    window.loggedInRole = uiRole;
-    window.currentUser = data.user;
-    updateLogoutButtonVisibility();
-    if (uiRole === "worker" && typeof loadWorkerProfile === "function") loadWorkerProfile();
-    if ((uiRole === "company" || uiRole === "supplier") && typeof loadCompanyProfile === "function") loadCompanyProfile();
-
-    if (typeof runPendingActionAfterLogin === "function" && runPendingActionAfterLogin()) {
-      toast("تم تسجيل الدخول ✓ — جارٍ استكمال طلبك...");
-    } else if (uiRole === "owner") {
-      toast("تم تسجيل الدخول بنجاح — مرحباً بك في لوحة تحكم الإدارة");
-      goTo("admin");
-    } else {
-      toast("تم تسجيل الدخول بنجاح — مرحباً بك في لوحة تحكم حسابك");
-      goTo("dash");
-    }
+    completeLoginSuccess(data, remember);
   } catch (err) {
     toast("⚠️ " + (err.message || "بيانات الدخول غير صحيحة"));
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = "دخول ←"; }
+  }
+};
+
+// Shared by password login and WebAuthn (Face ID / Touch ID) login —
+// both end up with the exact same {accessToken, refreshToken, user}
+// shape from the backend, so both finish the same way.
+function completeLoginSuccess(data, remember) {
+  saveAuthTokens(data.accessToken, data.refreshToken, remember);
+
+  // Map the server's real role back to the UI's role vocabulary,
+  // rather than trusting whichever tab the person happened to click.
+  var serverRole = (data.user && data.user.role) || "";
+  var uiRole = serverRole === "SUPPLIER" ? "supplier"
+             : serverRole === "BUYER" ? "company"
+             : serverRole === "WORKER" ? "worker"
+             : (serverRole === "ADMIN" || serverRole === "SUPER_ADMIN") ? "owner"
+             : selectedLoginType;
+
+  var loginModalEl = document.getElementById("login-modal");
+  if (loginModalEl) loginModalEl.classList.remove("open");
+  window.isLoggedIn = true;
+  window.loggedInRole = uiRole;
+  window.currentUser = data.user;
+  updateLogoutButtonVisibility();
+  if (uiRole === "worker" && typeof loadWorkerProfile === "function") loadWorkerProfile();
+  if ((uiRole === "company" || uiRole === "supplier") && typeof loadCompanyProfile === "function") loadCompanyProfile();
+
+  if (typeof runPendingActionAfterLogin === "function" && runPendingActionAfterLogin()) {
+    toast("تم تسجيل الدخول ✓ — جارٍ استكمال طلبك...");
+  } else if (uiRole === "owner") {
+    toast("تم تسجيل الدخول بنجاح — مرحباً بك في لوحة تحكم الإدارة");
+    goTo("admin");
+  } else {
+    toast("تم تسجيل الدخول بنجاح — مرحباً بك في لوحة تحكم حسابك");
+    goTo("dash");
+  }
+}
+window.completeLoginSuccess = completeLoginSuccess;
+
+// ── WEBAUTHN (Face ID / Touch ID / security keys) — real browser
+// credential ceremonies, verified cryptographically on the server.
+function _waBufToB64url(buf) {
+  var bytes = new Uint8Array(buf), str = "";
+  for (var i = 0; i < bytes.byteLength; i++) str += String.fromCharCode(bytes[i]);
+  return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function _waB64urlToBuf(b64url) {
+  var b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
+  while (b64.length % 4) b64 += "=";
+  var bin = atob(b64), buf = new ArrayBuffer(bin.length), bytes = new Uint8Array(buf);
+  for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return buf;
+}
+
+window.registerWebAuthnDevice = async function() {
+  if (!window.isLoggedIn) { toast("🔒 سجّلي الدخول أولًا عشان تقدري تسجّلي بصمة الدخول"); return; }
+  if (!window.PublicKeyCredential) { toast("⚠️ المتصفح أو الجهاز ده مش بيدعم تسجيل الدخول بالبصمة"); return; }
+  try {
+    var options = await apiFetch("/auth/webauthn/register/options", { method: "POST" });
+    options.challenge = _waB64urlToBuf(options.challenge);
+    options.user.id = _waB64urlToBuf(options.user.id);
+    if (options.excludeCredentials) {
+      options.excludeCredentials = options.excludeCredentials.map(function(c) {
+        return Object.assign({}, c, { id: _waB64urlToBuf(c.id) });
+      });
+    }
+    var credential = await navigator.credentials.create({ publicKey: options });
+    var attestation = {
+      id: credential.id, rawId: _waBufToB64url(credential.rawId), type: credential.type,
+      response: {
+        attestationObject: _waBufToB64url(credential.response.attestationObject),
+        clientDataJSON: _waBufToB64url(credential.response.clientDataJSON),
+      },
+      clientExtensionResults: credential.getClientExtensionResults ? credential.getClientExtensionResults() : {},
+    };
+    await apiFetch("/auth/webauthn/register/verify", {
+      method: "POST",
+      body: JSON.stringify({ response: attestation, deviceLabel: (navigator.platform || "هذا الجهاز") }),
+    });
+    toast("✅ تم تسجيل بصمة الدخول — تقدري تدخلي بيها من المرة الجاية من نفس الجهاز");
+  } catch (err) {
+    if (err && err.name === "NotAllowedError") { toast("تم إلغاء تسجيل البصمة"); return; }
+    toast("⚠️ " + (err.message || "تعذر تسجيل البصمة"));
+  }
+};
+
+window.loginWithWebAuthn = async function() {
+  if (!window.PublicKeyCredential) { toast("⚠️ المتصفح أو الجهاز ده مش بيدعم تسجيل الدخول بالبصمة"); return; }
+  var emailEl = document.getElementById("login-email");
+  var emailOrPhone = (emailEl && emailEl.value) || "";
+  if (!emailOrPhone.trim()) { toast("اكتبي الإيميل أو رقم الهاتف الأول، وبعدين دوسي بصمة الدخول"); return; }
+  try {
+    var options = await apiFetch("/auth/webauthn/login/options", {
+      method: "POST", body: JSON.stringify({ emailOrPhone: emailOrPhone.trim() }),
+    });
+    options.challenge = _waB64urlToBuf(options.challenge);
+    if (options.allowCredentials) {
+      options.allowCredentials = options.allowCredentials.map(function(c) {
+        return Object.assign({}, c, { id: _waB64urlToBuf(c.id) });
+      });
+    }
+    var assertion = await navigator.credentials.get({ publicKey: options });
+    var assertionResponse = {
+      id: assertion.id, rawId: _waBufToB64url(assertion.rawId), type: assertion.type,
+      response: {
+        authenticatorData: _waBufToB64url(assertion.response.authenticatorData),
+        clientDataJSON: _waBufToB64url(assertion.response.clientDataJSON),
+        signature: _waBufToB64url(assertion.response.signature),
+        userHandle: assertion.response.userHandle ? _waBufToB64url(assertion.response.userHandle) : null,
+      },
+    };
+    var data = await apiFetch("/auth/webauthn/login/verify", {
+      method: "POST", body: JSON.stringify({ response: assertionResponse }),
+    });
+    var rememberEl = document.getElementById("login-remember");
+    var remember = !rememberEl || rememberEl.checked; // defaults to true, matching the password-login checkbox default
+    completeLoginSuccess(data, remember);
+  } catch (err) {
+    if (err && err.name === "NotAllowedError") { toast("تم إلغاء الدخول بالبصمة"); return; }
+    toast("⚠️ " + (err.message || "تعذر الدخول بالبصمة — جرّبي بكلمة المرور"));
   }
 };
 

@@ -1,7 +1,7 @@
 // ─── auth/auth.service.ts ─────────────────────────────────────────
 import {
   Injectable, UnauthorizedException, ConflictException,
-  BadRequestException, ForbiddenException,
+  BadRequestException, ForbiddenException, NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -10,6 +10,10 @@ import { NotificationsService } from '../notifications/notifications.service';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { OAuth2Client } from 'google-auth-library';
+import {
+  generateRegistrationOptions, verifyRegistrationResponse,
+  generateAuthenticationOptions, verifyAuthenticationResponse,
+} from '@simplewebauthn/server';
 
 // Real (public, well-known) approximate coordinates for Egypt's major
 // industrial zones and governorate capitals — used to place a newly
@@ -458,6 +462,124 @@ export class AuthService {
       assistantPermissions: isActiveAssistant ? user.assistantOf.permissions : undefined,
       assistantRoleLabel: isActiveAssistant ? user.assistantOf.roleLabel : undefined,
     };
+  }
+
+  // ── WEBAUTHN — real Face ID / Touch ID / security-key login, backed
+  // by @simplewebauthn/server (verifies real cryptographic signatures;
+  // nothing here is simulated). Challenges are short-lived and kept
+  // in memory only — this runs as a single PM2 process, so a Map is
+  // enough; it never needs to survive a restart.
+  private webauthnChallenges = new Map<string, string>();
+
+  async webauthnRegistrationOptions(userId: string, rpID: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('الحساب غير موجود');
+    const existing = await this.prisma.webAuthnCredential.findMany({ where: { userId } });
+    const options = await generateRegistrationOptions({
+      rpName: 'إن مصر للصناعة',
+      rpID,
+      userID: new TextEncoder().encode(userId),
+      userName: user.email || userId,
+      attestationType: 'none',
+      excludeCredentials: existing.map(c => ({ id: c.credentialId })),
+      authenticatorSelection: { residentKey: 'preferred', userVerification: 'preferred', authenticatorAttachment: 'platform' },
+    });
+    this.webauthnChallenges.set(userId, options.challenge);
+    return options;
+  }
+
+  async webauthnVerifyRegistration(userId: string, response: any, origin: string, rpID: string, deviceLabel?: string) {
+    const expectedChallenge = this.webauthnChallenges.get(userId);
+    if (!expectedChallenge) throw new BadRequestException('انتهت صلاحية الجلسة — حاولي تسجيل البصمة تاني');
+    const verification = await verifyRegistrationResponse({
+      response, expectedChallenge, expectedOrigin: origin, expectedRPID: rpID,
+    });
+    if (!verification.verified || !verification.registrationInfo) {
+      throw new BadRequestException('تعذر التحقق من البصمة — حاولي تاني');
+    }
+    const { credential } = verification.registrationInfo;
+    await this.prisma.webAuthnCredential.create({
+      data: {
+        userId,
+        credentialId: credential.id,
+        publicKey: Buffer.from(credential.publicKey).toString('base64'),
+        counter: credential.counter,
+        deviceLabel: deviceLabel || null,
+      },
+    });
+    this.webauthnChallenges.delete(userId);
+    return { message: 'تم تسجيل بصمة الدخول بنجاح — تقدري تستخدميها من المرة الجاية' };
+  }
+
+  async webauthnLoginOptions(emailOrPhone: string, rpID: string) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          emailOrPhone.includes('@')
+            ? { email: { equals: emailOrPhone, mode: 'insensitive' } }
+            : {},
+          { phoneHash: await this.hashPhone(emailOrPhone) },
+        ],
+      },
+    });
+    if (!user) throw new NotFoundException('الحساب غير موجود');
+    const creds = await this.prisma.webAuthnCredential.findMany({ where: { userId: user.id } });
+    if (!creds.length) throw new BadRequestException('لا توجد بصمة دخول مسجّلة لهذا الحساب بعد');
+    const options = await generateAuthenticationOptions({
+      rpID,
+      userVerification: 'preferred',
+      allowCredentials: creds.map(c => ({ id: c.credentialId })),
+    });
+    this.webauthnChallenges.set(user.id, options.challenge);
+    return options;
+  }
+
+  async webauthnVerifyLogin(response: any, origin: string, rpID: string, ip: string, ua: string) {
+    const cred = await this.prisma.webAuthnCredential.findUnique({
+      where: { credentialId: response.id },
+      include: { user: { include: { company: { include: { subscription: true } }, workerProfile: true, assistantOf: true } } },
+    });
+    if (!cred) throw new UnauthorizedException('بصمة غير مسجّلة على هذه المنصة');
+    const user = cred.user;
+    const expectedChallenge = this.webauthnChallenges.get(user.id);
+    if (!expectedChallenge) throw new BadRequestException('انتهت صلاحية الجلسة — حاولي تاني');
+
+    const verification = await verifyAuthenticationResponse({
+      response, expectedChallenge, expectedOrigin: origin, expectedRPID: rpID,
+      credential: {
+        id: cred.credentialId,
+        publicKey: Buffer.from(cred.publicKey, 'base64'),
+        counter: cred.counter,
+      },
+    });
+    if (!verification.verified) throw new UnauthorizedException('فشل التحقق من البصمة');
+
+    await this.prisma.webAuthnCredential.update({
+      where: { id: cred.id },
+      data: { counter: verification.authenticationInfo.newCounter, lastUsedAt: new Date() },
+    });
+    this.webauthnChallenges.delete(user.id);
+
+    if (user.isBanned) throw new ForbiddenException(`الحساب موقوف: ${user.banReason}`);
+    await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date(), lastLoginIp: ip } });
+
+    const tokens = await this.generateTokens(user, ip, ua);
+    return { ...tokens, user: this.sanitizeUser(user) };
+  }
+
+  async webauthnListCredentials(userId: string) {
+    return this.prisma.webAuthnCredential.findMany({
+      where: { userId },
+      select: { id: true, deviceLabel: true, createdAt: true, lastUsedAt: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async webauthnDeleteCredential(userId: string, credentialRowId: string) {
+    const cred = await this.prisma.webAuthnCredential.findUnique({ where: { id: credentialRowId } });
+    if (!cred || cred.userId !== userId) throw new NotFoundException('البصمة غير موجودة');
+    await this.prisma.webAuthnCredential.delete({ where: { id: credentialRowId } });
+    return { message: 'تم حذف بصمة الدخول' };
   }
 }
 
