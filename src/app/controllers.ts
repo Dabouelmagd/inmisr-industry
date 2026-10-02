@@ -1185,6 +1185,17 @@ export class SolarLeadController {
     }
     return this.solar.adminUpdateStatus(id, body.status);
   }
+
+  @Post('admin/:id/execution')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تحديث مرحلة التنفيذ وبيانات التمويل لطلب طاقة شمسية (أدمن)' })
+  adminUpdateExecution(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+    return this.solar.adminUpdateExecution(id, body);
+  }
 }
 
 // ── EV Initiative Controller (VOZA) ─────────────────────────────────

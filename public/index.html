@@ -1454,6 +1454,24 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
     </div>
   </div></div>
 
+  <!-- FINANCING CALCULATOR -->
+  <div class="sec"><div class="mw" style="max-width:680px">
+    <div class="stitle">💰 حاسبة تمويل المنظومة الشمسية</div>
+    <div class="ssub">احسبي القسط الشهري المتوقع قبل ما تقدّمي طلبك</div>
+    <div class="rb">
+      <div class="g2" style="gap:14px;margin-bottom:12px">
+        <div><span class="lbl">تكلفة المنظومة المتوقعة (ج.م)</span><input class="inp" type="number" id="sol-calc-cost" placeholder="500000" oninput="calcSolarFinancing()"></div>
+        <div><span class="lbl">مدة التقسيط (شهور)</span><input class="inp" type="number" id="sol-calc-months" placeholder="60" oninput="calcSolarFinancing()"></div>
+      </div>
+      <div style="margin-bottom:14px"><span class="lbl">البنك الشريك</span><select class="sel" id="sol-calc-bank" onchange="calcSolarFinancing()"><option value="12">بنك التنمية الصناعية — 12% سنويًا</option><option value="14">CIB — 14% سنويًا</option><option value="15">QNB الأهلي — 15% سنويًا</option></select></div>
+      <div id="sol-calc-result" style="display:none;background:var(--bg3);border-radius:10px;padding:12px">
+        <div class="row" style="border-bottom:1px solid var(--bd)"><span style="color:var(--ts);font-size:12px">القسط الشهري</span><span style="font-weight:700;color:var(--gold)" id="sol-calc-monthly">—</span></div>
+        <div class="row" style="border-bottom:1px solid var(--bd)"><span style="color:var(--ts);font-size:12px">إجمالي الفوائد</span><span style="font-weight:700" id="sol-calc-interest">—</span></div>
+        <div class="row"><span style="color:var(--ts);font-size:12px">إجمالي المسدد</span><span style="font-weight:700" id="sol-calc-total">—</span></div>
+      </div>
+    </div>
+  </div></div>
+
   <!-- APPLICATION FORM -->
   <div class="sec sa" id="solar-form-section"><div class="mw" style="max-width:680px">
     <div class="stitle">📝 نموذج طلب التحويل للطاقة الشمسية</div>
@@ -3757,10 +3775,28 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
       <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px;text-align:center;font-size:11px;color:var(--ts)">🧾<br>فاتورة الكهرباء</div>
       <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px;text-align:center;font-size:11px;color:var(--ts)">📄<br>السجل التجاري</div>
     </div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;margin-bottom:16px">
       <button class="bc" style="flex:1;padding:10px;font-size:13px;border-radius:8px" data-mark-contacted="">تم التواصل</button>
       <button style="background:rgba(34,197,94,.1);color:#16A34A;border:1px solid rgba(34,197,94,.2);border-radius:8px;flex:1;padding:10px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600" data-mark-approved="">موافقة وربط بمورد</button>
     </div>
+    <div class="dv"></div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px">⚙️ مرحلة التنفيذ والتمويل</div>
+    <input type="hidden" id="sd-exec-id" value="">
+    <div style="margin-bottom:10px"><span class="lbl">مرحلة التنفيذ الحالية</span><select class="sel" id="sd-exec-stage">
+      <option value="SUBMITTED">تم التقديم</option>
+      <option value="FEASIBILITY_STUDY">دراسة جدوى جارية</option>
+      <option value="FINANCING_APPROVED">تمت الموافقة على التمويل</option>
+      <option value="INSTALLATION_SCHEDULED">موعد تركيب محدد</option>
+      <option value="INSTALLING">التركيب جارٍ</option>
+      <option value="COMPLETED">التشغيل اكتمل</option>
+    </select></div>
+    <div class="g2" style="gap:10px;margin-bottom:10px">
+      <div><span class="lbl">سعة المنظومة (كيلووات)</span><input class="inp" type="number" id="sd-exec-size" placeholder="100"></div>
+      <div><span class="lbl">التكلفة التقديرية (ج.م)</span><input class="inp" type="number" id="sd-exec-cost" placeholder="500000"></div>
+      <div><span class="lbl">خطة الدفع</span><input class="inp" id="sd-exec-plan" placeholder="مثال: تقسيط 60 شهر — CIB"></div>
+      <div><span class="lbl">موعد التركيب المتوقع</span><input class="inp" type="date" id="sd-exec-date"></div>
+    </div>
+    <button class="bl" style="width:100%;padding:9px;font-size:13px;border-radius:8px" onclick="saveSolarExecution()">حفظ بيانات التنفيذ</button>
   </div>
 </div>
 
@@ -7496,7 +7532,9 @@ async function loadSolarLeadsAdmin() {
         contact: r.contactName, phone: r.phone, email: r.email || "—",
         monthly_bill: r.monthlyBill || "—", roof_area: r.roofArea || "—",
         status: r.status.toLowerCase(), submitted: new Date(r.createdAt).toLocaleDateString("ar-EG"),
-        notes: r.notes || ""
+        notes: r.notes || "", executionStage: r.executionStage || "SUBMITTED",
+        systemSizeKw: r.systemSizeKw, estimatedCost: r.estimatedCost,
+        paymentPlan: r.paymentPlan || "", installationDate: r.installationDate
       };
     });
     refreshSolarAdminTable();
@@ -7839,7 +7877,35 @@ window.viewSolarRequest = function(id) {
   document.getElementById("sd-notes").textContent = r.notes || "لا توجد ملاحظات";
   document.querySelector('[data-mark-contacted]').setAttribute("data-mark-contacted", r.id);
   document.querySelector('[data-mark-approved]').setAttribute("data-mark-approved", r.id);
+  document.getElementById("sd-exec-id").value = r.id;
+  document.getElementById("sd-exec-stage").value = r.executionStage || "SUBMITTED";
+  document.getElementById("sd-exec-size").value = r.systemSizeKw || "";
+  document.getElementById("sd-exec-cost").value = r.estimatedCost || "";
+  document.getElementById("sd-exec-plan").value = r.paymentPlan || "";
+  document.getElementById("sd-exec-date").value = r.installationDate ? r.installationDate.substring(0, 10) : "";
   document.getElementById("solar-detail-modal").classList.add("open");
+};
+
+window.saveSolarExecution = async function() {
+  var id = document.getElementById("sd-exec-id").value;
+  if (!id) return;
+  var dateVal = document.getElementById("sd-exec-date").value;
+  try {
+    await apiFetch("/solar-leads/admin/" + id + "/execution", {
+      method: "POST",
+      body: JSON.stringify({
+        executionStage: document.getElementById("sd-exec-stage").value,
+        systemSizeKw: parseFloat(document.getElementById("sd-exec-size").value) || undefined,
+        estimatedCost: parseFloat(document.getElementById("sd-exec-cost").value) || undefined,
+        paymentPlan: document.getElementById("sd-exec-plan").value || undefined,
+        installationDate: dateVal || undefined,
+      }),
+    });
+    toast("✅ تم حفظ بيانات التنفيذ");
+    loadSolarLeadsAdmin();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر حفظ بيانات التنفيذ"));
+  }
 };
 
 window.contactSolarRequest = async function(id) {
@@ -8088,6 +8154,26 @@ window.runPendingActionAfterLogin = runPendingActionAfterLogin;
 
 // ── FINANCING (real backend: POST/GET /finance) ───────────────────
 var DASH_FIN_BANK_NAMES = { "14": "CIB", "11": "بنك التنمية الصناعية", "16": "QNB الأهلي" };
+
+function calcSolarFinancing() {
+  var amount = parseFloat(document.getElementById("sol-calc-cost").value) || 0;
+  var months = parseInt(document.getElementById("sol-calc-months").value, 10) || 0;
+  var annualRate = parseFloat(document.getElementById("sol-calc-bank").value) || 0;
+  var resultEl = document.getElementById("sol-calc-result");
+  if (amount <= 0 || months <= 0) { resultEl.style.display = "none"; return; }
+
+  var monthlyRate = annualRate / 12 / 100;
+  var monthlyPayment = monthlyRate === 0 ? amount / months : (amount * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -months));
+  var totalPaid = monthlyPayment * months;
+  var totalInterest = totalPaid - amount;
+  var fmt = function(n) { return Math.round(n).toLocaleString("ar-EG") + " ج.م"; };
+
+  resultEl.style.display = "block";
+  document.getElementById("sol-calc-monthly").textContent = fmt(monthlyPayment);
+  document.getElementById("sol-calc-interest").textContent = fmt(totalInterest);
+  document.getElementById("sol-calc-total").textContent = fmt(totalPaid);
+}
+window.calcSolarFinancing = calcSolarFinancing;
 
 function calcDashFinancing() {
   var amount = parseFloat(document.getElementById("dmq-fin-amount").value) || 0;

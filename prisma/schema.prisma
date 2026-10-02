@@ -971,19 +971,26 @@ model SpecialOffer {
 }
 
 model SolarLead {
-  id          String   @id @default(uuid())
-  companyName String
-  sector      String?
-  region      String?
-  contactName String
-  phone       String
-  email       String?
-  monthlyBill String?
-  roofArea    String?
-  notes       String?
-  status      String   @default("PENDING")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(uuid())
+  companyName     String
+  sector          String?
+  region          String?
+  contactName     String
+  phone           String
+  email           String?
+  monthlyBill     String?
+  roofArea        String?
+  notes           String?
+  status          String   @default("PENDING")
+  // Execution tracking — set by the admin team as the real installation
+  // progresses, once a lead is approved and a feasibility study is done.
+  executionStage  String   @default("SUBMITTED")
+  systemSizeKw    Float?
+  estimatedCost   Float?
+  paymentPlan     String?
+  installationDate DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@map("solar_leads")
 }

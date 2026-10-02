@@ -1104,6 +1104,34 @@ export class SolarLeadService {
     if (!lead) throw new NotFoundException('الطلب غير موجود');
     return this.prisma.solarLead.update({ where: { id }, data: { status } });
   }
+
+  // ── EXECUTION TRACKING — real installation-stage progress, set by the
+  // admin team once a lead is approved and moving toward installation.
+  private static readonly EXECUTION_STAGES = [
+    'SUBMITTED', 'FEASIBILITY_STUDY', 'FINANCING_APPROVED',
+    'INSTALLATION_SCHEDULED', 'INSTALLING', 'COMPLETED',
+  ];
+
+  async adminUpdateExecution(id: string, dto: {
+    executionStage?: string; systemSizeKw?: number; estimatedCost?: number;
+    paymentPlan?: string; installationDate?: string;
+  }) {
+    const lead = await this.prisma.solarLead.findUnique({ where: { id } });
+    if (!lead) throw new NotFoundException('الطلب غير موجود');
+    if (dto.executionStage && !SolarLeadService.EXECUTION_STAGES.includes(dto.executionStage)) {
+      throw new BadRequestException('مرحلة تنفيذ غير معروفة');
+    }
+    return this.prisma.solarLead.update({
+      where: { id },
+      data: {
+        executionStage: dto.executionStage,
+        systemSizeKw: dto.systemSizeKw,
+        estimatedCost: dto.estimatedCost,
+        paymentPlan: dto.paymentPlan,
+        installationDate: dto.installationDate ? new Date(dto.installationDate) : undefined,
+      },
+    });
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════
