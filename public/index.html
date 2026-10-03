@@ -356,6 +356,124 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
 /* ── SOLAR INITIATIVE BADGE — distinctive national initiative marker ── */
 .solar-nav-badge{display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#F59E0B,#FB923C);border:none;border-radius:10px;padding:6px 12px;cursor:pointer;font-family:inherit;color:#fff;font-size:11px;font-weight:700;line-height:1.25;flex-shrink:0;box-shadow:0 2px 10px rgba(245,158,11,.4);transition:all .2s;text-align:right}
 .ev-nav-badge{display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#0EA5E9,#22D3EE);border:none;border-radius:10px;padding:6px 12px;cursor:pointer;font-family:inherit;color:#fff;font-size:11px;font-weight:700;line-height:1.25;flex-shrink:0;box-shadow:0 2px 10px rgba(14,165,233,.4);transition:all .2s;text-align:right}
+.evs-nav-badge{display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#B8F33C,#7FD11B);border:none;border-radius:10px;padding:6px 12px;cursor:pointer;font-family:inherit;color:#0B1200;font-size:11px;font-weight:700;line-height:1.25;flex-shrink:0;box-shadow:0 2px 10px rgba(150,220,40,.35);transition:all .2s;text-align:right}
+@media (max-width:760px){.evs-nav-badge{padding:6px 9px}.evs-nav-badge span:last-child{display:none}}
+/* ═══ EV SALES INITIATIVE (.evs) — dark showroom: one vivid "volt" accent, hairline borders, big numerals ═══ */
+.evs{--evs-acc:#B8F33C;--evs-ink:#0B1200;--evs-acc-t:#B8F33C;--evs-line:var(--bd2);font-family:"Cairo",sans-serif;color:var(--tp);padding-bottom:72px}
+[data-theme=light] .evs{--evs-acc-t:#3F6B0A}
+.evs *{box-sizing:border-box}
+.evs h1,.evs h2,.evs h3{font-family:"Tajawal","Cairo",sans-serif;font-weight:700;margin:0;line-height:1.35}
+.evs-wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+.evs-hero{position:relative;text-align:center;padding:76px 0 52px;overflow:hidden;isolation:isolate}
+.evs-hero::before{content:"";position:absolute;inset:0;z-index:-2;background:radial-gradient(60% 55% at 50% 0%,color-mix(in srgb,var(--evs-acc) 20%,transparent),transparent 70%)}
+.evs-hero::after{content:"";position:absolute;inset:0;z-index:-1;background-image:linear-gradient(var(--bd) 1px,transparent 1px),linear-gradient(90deg,var(--bd) 1px,transparent 1px);background-size:44px 44px;-webkit-mask-image:radial-gradient(70% 70% at 50% 30%,#000 30%,transparent 80%);mask-image:radial-gradient(70% 70% at 50% 30%,#000 30%,transparent 80%)}
+.evs-eyebrow{display:inline-flex;align-items:center;gap:9px;border:1px solid var(--evs-line);background:color-mix(in srgb,var(--surface) 70%,transparent);padding:7px 16px;border-radius:999px;font-size:13px;color:var(--ts);margin-bottom:22px}
+.evs-dot{width:8px;height:8px;border-radius:50%;background:var(--evs-acc);box-shadow:0 0 0 4px color-mix(in srgb,var(--evs-acc) 25%,transparent)}
+.evs-h1{font-size:clamp(34px,6.2vw,62px);max-width:820px;margin:0 auto 18px!important}
+.evs-h1 em{font-style:normal;color:var(--evs-acc-t)}
+.evs-lead{max-width:600px;margin:0 auto 30px;font-size:17px;line-height:1.9;color:var(--ts)}
+.evs-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.evs-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 24px;border-radius:12px;border:1px solid transparent;background:var(--evs-acc);color:var(--evs-ink);font:700 15px "Cairo",sans-serif;cursor:pointer;transition:transform .18s,box-shadow .18s,background .18s}
+.evs-btn:hover{box-shadow:0 8px 24px -8px color-mix(in srgb,var(--evs-acc) 70%,transparent)}
+.evs-btn:focus-visible,.evs-chip:focus-visible,.evs-card button:focus-visible{outline:2px solid var(--evs-acc);outline-offset:3px}
+.evs-btn-ghost{background:transparent;color:var(--tp);border-color:var(--evs-line)}
+.evs-btn-ghost:hover{background:var(--surface2);box-shadow:none}
+.evs-btn[disabled]{opacity:.5;cursor:not-allowed;box-shadow:none}
+.evs-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--evs-line);border:1px solid var(--evs-line);border-radius:18px;overflow:hidden;max-width:900px;margin:44px auto 0}
+.evs-stat{background:var(--bg2);padding:20px 14px;text-align:center}
+.evs-stat b{display:block;font:700 30px "Tajawal",sans-serif;font-variant-numeric:tabular-nums;color:var(--tp)}
+.evs-stat span{font-size:12.5px;color:var(--tt);line-height:1.6}
+.evs-sec{padding:46px 0;scroll-margin-top:130px}
+.evs-sec-head{margin-bottom:26px}
+.evs-sec-head h2{font-size:clamp(24px,3.6vw,34px);margin-bottom:6px}
+.evs-sec-head p{margin:0;color:var(--ts);font-size:15px;line-height:1.8}
+.evs-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.evs-step{border:1px solid var(--evs-line);border-radius:16px;padding:20px;background:var(--surface)}
+.evs-step i{display:block;font:700 40px "Tajawal",sans-serif;font-style:normal;color:transparent;-webkit-text-stroke:1.5px var(--evs-acc-t);line-height:1;margin-bottom:10px}
+.evs-step h3{font-size:17px;margin-bottom:4px}
+.evs-step p{margin:0;font-size:13.5px;color:var(--ts);line-height:1.8}
+.evs-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.evs-filters .inp,.evs-filters .sel{min-height:44px;width:auto}
+.evs-search{flex:1 1 220px}
+.evs-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.evs-chip{border:1px solid var(--evs-line);background:transparent;color:var(--ts);border-radius:999px;padding:8px 16px;min-height:40px;font:600 13.5px "Cairo",sans-serif;cursor:pointer;transition:all .18s}
+.evs-chip:hover{border-color:var(--evs-acc-t);color:var(--tp)}
+.evs-chip[aria-pressed=true]{background:var(--evs-acc);border-color:var(--evs-acc);color:var(--evs-ink)}
+.evs-count{font-size:13px;color:var(--tt);margin-bottom:14px}
+.evs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:18px}
+.evs-card{display:flex;flex-direction:column;border:1px solid var(--evs-line);border-radius:18px;background:var(--surface);overflow:hidden;transition:border-color .2s,transform .2s}
+@media (hover:hover) and (prefers-reduced-motion:no-preference){.evs-card:hover{border-color:var(--evs-acc-t);transform:translateY(-3px)}}
+.evs-card-img{position:relative;aspect-ratio:16/10;background:linear-gradient(160deg,#F4F5F1,#E2E6DC);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer}
+.evs-card-img img{width:100%;height:100%;object-fit:contain}
+.evs-badges{position:absolute;top:10px;right:10px;display:flex;gap:6px;flex-wrap:wrap}
+.evs-b{font:700 11.5px "Cairo",sans-serif;padding:4px 10px;border-radius:999px;background:rgba(10,12,16,.82);color:#fff;border:1px solid rgba(255,255,255,.18)}
+.evs-b-ok{background:var(--evs-acc);color:var(--evs-ink);border-color:transparent}
+.evs-b-pre{background:#F59E0B;color:#1b1200;border-color:transparent}
+.evs-b-out{background:#EF4444;color:#fff;border-color:transparent}
+.evs-card-body{padding:18px 18px 20px;display:flex;flex-direction:column;gap:12px;flex:1}
+.evs-brand{font-size:12.5px;color:var(--tt);letter-spacing:0}
+.evs-card h3{font-size:21px}
+.evs-cat{display:inline-block;font-size:11.5px;border:1px solid var(--evs-line);border-radius:999px;padding:2px 10px;color:var(--ts);margin-inline-start:8px;vertical-align:middle;font-family:"Cairo",sans-serif;font-weight:500}
+.evs-specs{display:flex;flex-wrap:wrap;gap:6px}
+.evs-spec{font-size:12px;border-radius:8px;background:var(--surface2);padding:5px 10px;color:var(--ts);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.evs-price{margin-top:auto}
+.evs-price small{display:block;font-size:12px;color:var(--tt);margin-bottom:2px}
+.evs-price b{font:700 29px "Tajawal",sans-serif;font-variant-numeric:tabular-nums}
+.evs-price b span{font-size:14px;font-weight:500;color:var(--ts);margin-inline-start:5px}
+.evs-from{font-size:13px;color:var(--evs-acc-t);line-height:1.7}
+.evs-from b{font-variant-numeric:tabular-nums}
+.evs-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.evs-actions .evs-btn{min-height:42px;padding:0 10px;font-size:13.5px;border-radius:10px}
+.evs-empty,.evs-note{border:1px dashed var(--evs-line);border-radius:16px;padding:28px 20px;text-align:center;color:var(--ts);font-size:14.5px;line-height:1.9}
+.evs-banks{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.evs-bank{border:1px solid var(--evs-line);border-radius:18px;padding:20px;background:var(--surface);display:flex;flex-direction:column;gap:14px}
+.evs-bank-head{display:flex;align-items:center;gap:12px}
+.evs-bank-logo{width:46px;height:46px;border-radius:12px;background:#fff;border:1px solid var(--evs-line);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font:700 18px "Tajawal",sans-serif;color:#0B1200}
+.evs-bank-logo img{width:100%;height:100%;object-fit:contain}
+.evs-bank h3{font-size:18px}
+.evs-kv{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--evs-line);border:1px solid var(--evs-line);border-radius:12px;overflow:hidden}
+.evs-kv div{background:var(--bg2);padding:10px 12px}
+.evs-kv b{display:block;font:700 19px "Tajawal",sans-serif;font-variant-numeric:tabular-nums}
+.evs-kv span{font-size:11.5px;color:var(--tt)}
+.evs-bank p{margin:0;font-size:13px;color:var(--ts);line-height:1.8}
+.evs-form{border:1px solid var(--evs-line);border-radius:22px;padding:28px;background:var(--surface);max-width:760px;margin:0 auto}
+.evs-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.evs-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.evs-field label,.evs-lbl{font-size:13px;color:var(--ts);font-weight:600}
+.evs-field .inp,.evs-field .sel{min-height:46px;width:100%}
+.evs-field textarea.inp{min-height:84px;resize:vertical}
+.evs-field input[type=range]{width:100%;accent-color:var(--evs-acc);height:28px}
+.evs-hint{font-size:12.5px;color:var(--tt)}
+.evs-seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--evs-line);border-radius:12px;padding:4px;gap:4px;margin-bottom:16px}
+.evs-seg button{min-height:42px;border:0;border-radius:9px;background:transparent;color:var(--ts);font:700 14px "Cairo",sans-serif;cursor:pointer}
+.evs-seg button[aria-pressed=true]{background:var(--evs-acc);color:var(--evs-ink)}
+.evs-calc{border:1px solid var(--evs-line);border-radius:16px;padding:18px;background:var(--bg2);margin-bottom:16px}
+.evs-result{margin-top:6px;border-radius:14px;background:var(--surface2);padding:16px}
+.evs-result .big{font:700 34px "Tajawal",sans-serif;font-variant-numeric:tabular-nums;color:var(--evs-acc-t);line-height:1.2}
+.evs-result .big span{font-size:14px;font-weight:500;color:var(--ts);margin-inline-start:6px}
+.evs-rows{margin-top:10px;display:grid;gap:6px}
+.evs-rows div{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;color:var(--ts)}
+.evs-rows b{color:var(--tp);font-variant-numeric:tabular-nums}
+.evs-disc{font-size:12px;color:var(--tt);line-height:1.8;margin-top:10px}
+.evs-ok{border:1px solid var(--evs-acc-t);border-radius:16px;padding:22px;text-align:center;line-height:1.9}
+.evs-dialog{width:min(980px,94vw);max-height:92vh;margin:auto;padding:0;border:1px solid var(--evs-line);border-radius:22px;background:var(--bg2);color:var(--tp);overflow:auto;--evs-acc:#B8F33C;--evs-ink:#0B1200;--evs-acc-t:#B8F33C;--evs-line:var(--bd2)}
+[data-theme=light] .evs-dialog{--evs-acc-t:#3F6B0A}
+.evs-dialog::backdrop{background:rgba(5,7,10,.66);backdrop-filter:blur(3px)}
+html:has(dialog.evs-dialog[open]){overflow:hidden}
+.evs-dlg-x{position:sticky;top:12px;float:left;margin:12px 0 0 12px;z-index:3;width:42px;height:42px;border-radius:50%;border:1px solid var(--evs-line);background:var(--surface);color:var(--tp);font-size:18px;cursor:pointer}
+.evs-dlg-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:26px;padding:26px}
+.evs-gal-main{border-radius:16px;background:linear-gradient(160deg,#F4F5F1,#E2E6DC);aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.evs-gal-main img{width:100%;height:100%;object-fit:contain}
+.evs-thumbs{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.evs-thumbs button{width:66px;height:66px;border-radius:10px;border:2px solid transparent;padding:0;background:#EEF0EA;cursor:pointer;overflow:hidden}
+.evs-thumbs button[aria-current=true]{border-color:var(--evs-acc)}
+.evs-thumbs img{width:100%;height:100%;object-fit:cover}
+.evs-spec-table{width:100%;border-collapse:collapse;margin-top:10px}
+.evs-spec-table td{padding:9px 4px;border-bottom:1px solid var(--evs-line);font-size:13.5px}
+.evs-spec-table td:first-child{color:var(--tt);width:42%}
+.evs-dlg-foot{padding:0 26px 26px}
+@media (max-width:760px){.evs-hero{padding:52px 0 34px}.evs-dlg-grid{grid-template-columns:1fr;padding:18px}.evs-form{padding:18px}.evs-form-grid{grid-template-columns:1fr}.evs-sec{padding:34px 0}}
+@media (prefers-reduced-motion:reduce){.evs-card,.evs-btn,.evs-chip{transition:none}}
 .guide-nav-badge{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--bd2);border-radius:10px;padding:6px 12px;cursor:pointer;font-family:inherit;color:var(--ts);font-size:11px;font-weight:700;line-height:1.25;flex-shrink:0;transition:all .2s;text-align:right}
 .guide-nav-badge:hover{border-color:var(--red);color:var(--red)}
 .solar-nav-badge:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(245,158,11,.55)}
@@ -408,6 +526,10 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   <button class="ev-nav-badge" data-page="evinitiative">
     <span style="font-size:15px">🚗</span>
     <span>إحلال<br>سيارتك</span>
+  </button>
+  <button class="evs-nav-badge" data-page="evsales" title="مبادرة بيع السيارات الكهربائية" aria-label="مبادرة بيع السيارات الكهربائية">
+    <span style="font-size:15px">🚘</span>
+    <span>اشتري<br>كهربائية</span>
   </button>
   <button class="guide-nav-badge" data-page="guide">
     <span style="font-size:15px">📖</span>
@@ -1600,6 +1722,80 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   </div>
 </div>
 
+<div class="page" id="page-evsales">
+<div class="evs">
+  <section class="evs-hero"><div class="evs-wrap">
+    <span class="evs-eyebrow"><span class="evs-dot"></span>مبادرة السيارات الكهربائية</span>
+    <h1 class="evs-h1">سيارتك الكهربائية.<br><em>بقسط يناسبك.</em></h1>
+    <p class="evs-lead">اختاري من السيارات المتاحة في المبادرة، قارني شروط البنوك الممولة، واحسبي قسطك بنفسك قبل ما تقدّمي طلبك.</p>
+    <div class="evs-cta">
+      <button class="evs-btn" type="button" onclick="evsScroll('evs-cars')">استعرضي السيارات</button>
+      <button class="evs-btn evs-btn-ghost" type="button" onclick="evsScroll('evs-order')">احسبي قسطك وقدّمي طلبك</button>
+    </div>
+    <div class="evs-stats" id="evs-stats" style="display:none"></div>
+  </div></section>
+
+  <section class="evs-sec"><div class="evs-wrap">
+    <div class="evs-sec-head"><h2>إزاي بتشتري؟</h2><p>أربع خطوات بسيطة من الاختيار لحد التسليم.</p></div>
+    <div class="evs-steps">
+      <div class="evs-step"><i>1</i><h3>اختاري سيارتك</h3><p>قارني الأسعار والمواصفات بين السيارات المتاحة في المبادرة.</p></div>
+      <div class="evs-step"><i>2</i><h3>احسبي قسطك</h3><p>اختاري البنك والمقدم ومدة التقسيط وشوفي القسط التقديري فورًا.</p></div>
+      <div class="evs-step"><i>3</i><h3>قدّمي طلبك</h3><p>سيبي بياناتك وفريق المبادرة هيتواصل معاكِ لاستكمال الإجراءات.</p></div>
+      <div class="evs-step"><i>4</i><h3>التمويل والتسليم</h3><p>البنك بيراجع الطلب ويوافق، وبعدها بتستلمي سيارتك.</p></div>
+    </div>
+  </div></section>
+
+  <section class="evs-sec" id="evs-cars"><div class="evs-wrap">
+    <div class="evs-sec-head"><h2>السيارات المتاحة في المبادرة</h2><p>كل سيارة بسعرها ومواصفاتها وأقل قسط ممكن عليها.</p></div>
+    <div class="evs-filters">
+      <input class="inp evs-search" id="evs-q" type="search" placeholder="ابحثي بالماركة أو الموديل" aria-label="بحث عن سيارة" oninput="evsFilter()">
+      <select class="sel" id="evs-brand" aria-label="الماركة" onchange="evsFilter()"><option value="">كل الماركات</option></select>
+      <select class="sel" id="evs-sort" aria-label="ترتيب النتائج" onchange="evsFilter()">
+        <option value="default">الترتيب الافتراضي</option>
+        <option value="price-asc">السعر: الأقل أولًا</option>
+        <option value="price-desc">السعر: الأعلى أولًا</option>
+      </select>
+    </div>
+    <div class="evs-chips" id="evs-cats" role="group" aria-label="فئة السيارة"></div>
+    <div class="evs-count" id="evs-count" aria-live="polite"></div>
+    <div class="evs-grid" id="evs-grid"><div class="evs-empty" style="grid-column:1/-1">جارٍ تحميل السيارات...</div></div>
+  </div></section>
+
+  <section class="evs-sec"><div class="evs-wrap">
+    <div class="evs-sec-head"><h2>البنوك الممولة وشروطها</h2><p>قارني الفايدة وأقصى مدة وأقل مقدم قبل ما تختاري.</p></div>
+    <div class="evs-banks" id="evs-banks"></div>
+  </div></section>
+
+  <section class="evs-sec" id="evs-order"><div class="evs-wrap">
+    <div class="evs-sec-head" style="text-align:center"><h2>قدّمي طلبك</h2><p>اختاري السيارة وخطة الدفع، وفريق المبادرة هيتواصل معاكِ.</p></div>
+    <form class="evs-form" id="evs-form" onsubmit="evsSubmit(event)" novalidate>
+      <div class="evs-field"><label for="evsf-car">السيارة</label><select class="sel" id="evsf-car" onchange="evsFormCarChange()"><option value="">— اختاري السيارة —</option></select></div>
+      <div class="evs-lbl" id="evs-pay-lbl" style="margin-bottom:8px">طريقة الدفع</div>
+      <div class="evs-seg" role="group" aria-labelledby="evs-pay-lbl">
+        <button type="button" id="evs-pay-inst" aria-pressed="true" onclick="evsSetPay('INSTALLMENT')">تقسيط بنكي</button>
+        <button type="button" id="evs-pay-cash" aria-pressed="false" onclick="evsSetPay('CASH')">كاش</button>
+      </div>
+      <div id="evsf-calc-wrap"><div class="evs-calc" id="evsf-calc"></div></div>
+      <div class="evs-form-grid">
+        <div class="evs-field"><label for="evsf-name">الاسم بالكامل</label><input class="inp" id="evsf-name" autocomplete="name" placeholder="اسمك الثلاثي"></div>
+        <div class="evs-field"><label for="evsf-phone">رقم الموبايل</label><input class="inp" id="evsf-phone" type="tel" inputmode="tel" autocomplete="tel" dir="ltr" placeholder="01xxxxxxxxx"></div>
+        <div class="evs-field"><label for="evsf-gov">المحافظة</label><input class="inp" id="evsf-gov" autocomplete="address-level1" placeholder="مثال: القاهرة"></div>
+        <div class="evs-field"><label for="evsf-city">المدينة / المنطقة</label><input class="inp" id="evsf-city" autocomplete="address-level2" placeholder="مثال: مدينة نصر"></div>
+      </div>
+      <div class="evs-field"><label for="evsf-notes">ملاحظات (اختياري)</label><textarea class="inp" id="evsf-notes" placeholder="أي تفاصيل تحبي نعرفها"></textarea></div>
+      <button class="evs-btn" id="evsf-submit" type="submit" style="width:100%">إرسال الطلب</button>
+      <div class="evs-disc" style="text-align:center">إرسال الطلب لا يُلزمك بالشراء، وبيانات القسط تقديرية لحد ما البنك يؤكدها بعد دراسة الطلب.</div>
+    </form>
+    <div class="evs-ok" id="evs-ok" style="display:none;max-width:760px;margin:0 auto"></div>
+  </div></section>
+</div>
+
+<dialog class="evs-dialog" id="evs-dialog" closedby="any" aria-labelledby="evs-dlg-title">
+  <button class="evs-dlg-x" type="button" aria-label="إغلاق" onclick="document.getElementById('evs-dialog').close()">✕</button>
+  <div id="evs-dlg-body"></div>
+</dialog>
+</div>
+
 <div class="page" id="page-evinitiative">
   <div style="padding:10px 32px 0;max-width:1100px;margin:0 auto">
     <div class="ad-banner ad-l" onclick="showMsg('ad_click')">
@@ -2027,6 +2223,64 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
 الشاشة = 10.5 بوصة ذكية"></textarea></div>
     <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ts);cursor:pointer;margin-bottom:16px"><input type="checkbox" id="evc-active" checked style="width:14px;height:14px">مفعّلة وظاهرة للعملاء</label>
     <button class="bc" style="width:100%;padding:11px;font-size:13px" id="evc-submit-btn" onclick="submitEvCar()">إضافة السيارة</button>
+  </div>
+</div>
+
+<div class="mov" id="evs-car-modal">
+  <div class="modal" style="max-width:540px;max-height:90vh;overflow:auto">
+    <button class="mc" onclick="closeM('evs-car-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px" aria-label="إغلاق">✕</button>
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px" id="evsc-title">🚘 إضافة سيارة للمبادرة</div>
+    <input type="hidden" id="evsc-id" value="">
+    <div class="g2" style="gap:12px;margin-bottom:12px">
+      <div><span class="lbl">الماركة</span><input class="inp" id="evsc-brand" placeholder="مثال: VOZA"></div>
+      <div><span class="lbl">الموديل</span><input class="inp" id="evsc-model" placeholder="مثال: Arrow"></div>
+      <div><span class="lbl">الفئة</span><input class="inp" id="evsc-category" list="evsc-cat-list" placeholder="مثال: هاتشباك"><datalist id="evsc-cat-list"><option value="هاتشباك"><option value="سيدان"><option value="SUV"><option value="كروس أوفر"><option value="تجارية"></datalist></div>
+      <div><span class="lbl">سنة الصنع</span><input class="inp" id="evsc-year" type="number" placeholder="2026"></div>
+      <div><span class="lbl">السعر (ج.م)</span><input class="inp" id="evsc-price" type="number" placeholder="450000"></div>
+      <div><span class="lbl">حالة المخزون</span><select class="sel" id="evsc-stock"><option value="AVAILABLE">متاحة</option><option value="PREORDER">حجز مسبق</option><option value="SOLD_OUT">نفدت</option></select></div>
+    </div>
+    <div style="margin-bottom:12px">
+      <span class="lbl">صور السيارة (أول صورة هي الرئيسية)</span>
+      <input type="file" id="evsc-image-upload" accept="image/png,image/jpeg,image/webp" multiple style="display:none" onchange="handleEvsImageUpload(this.files)">
+      <button class="bl" type="button" style="width:100%;padding:9px;font-size:12px;border-radius:8px;margin-bottom:8px" onclick="document.getElementById('evsc-image-upload').click()">📤 رفع صور من جهازك</button>
+      <div id="evsc-image-preview" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+      <div id="evsc-upload-status" style="font-size:11px;color:var(--ts);margin-top:6px"></div>
+    </div>
+    <div style="margin-bottom:12px"><span class="lbl">المواصفات (كل مواصفة: الاسم = القيمة، سطر لكل واحدة)</span><textarea class="inp" id="evsc-specs" rows="6" placeholder="المدى = 400 كم&#10;الشحن السريع = 30 دقيقة&#10;القوة = 204 حصان&#10;عدد المقاعد = 5"></textarea></div>
+    <div class="g2" style="gap:12px;margin-bottom:16px">
+      <div><span class="lbl">ترتيب العرض (الأصغر أولًا)</span><input class="inp" id="evsc-sort" type="number" value="0"></div>
+      <div style="display:flex;flex-direction:column;gap:8px;justify-content:flex-end">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ts);cursor:pointer"><input type="checkbox" id="evsc-featured" style="width:14px;height:14px">⭐ سيارة مميزة</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ts);cursor:pointer"><input type="checkbox" id="evsc-active" checked style="width:14px;height:14px">مفعّلة وظاهرة للعملاء</label>
+      </div>
+    </div>
+    <button class="bc" style="width:100%;padding:11px;font-size:13px" id="evsc-submit-btn" onclick="submitEvsCar()">إضافة السيارة</button>
+  </div>
+</div>
+
+<div class="mov" id="evs-bank-modal">
+  <div class="modal" style="max-width:480px;max-height:90vh;overflow:auto">
+    <button class="mc" onclick="closeM('evs-bank-modal')" style="position:absolute;top:14px;left:14px;background:var(--bg3);border:none;color:var(--ts);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px" aria-label="إغلاق">✕</button>
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px" id="evsb-title">🏦 إضافة بنك تمويل</div>
+    <input type="hidden" id="evsb-id" value="">
+    <div style="margin-bottom:12px"><span class="lbl">اسم البنك</span><input class="inp" id="evsb-name" placeholder="مثال: البنك الأهلي المصري"></div>
+    <div style="margin-bottom:12px">
+      <span class="lbl">شعار البنك (اختياري)</span>
+      <input type="file" id="evsb-logo-upload" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="handleEvsLogoUpload(this.files)">
+      <div style="display:flex;align-items:center;gap:10px"><button class="bl" type="button" style="padding:8px 14px;font-size:12px;border-radius:8px" onclick="document.getElementById('evsb-logo-upload').click()">📤 رفع الشعار</button><div id="evsb-logo-preview"></div></div>
+    </div>
+    <div class="g2" style="gap:12px;margin-bottom:12px">
+      <div><span class="lbl">الفائدة السنوية %</span><input class="inp" id="evsb-rate" type="number" step="0.01" placeholder="مثال: 18"></div>
+      <div><span class="lbl">أقصى مدة (شهر)</span><input class="inp" id="evsb-months" type="number" placeholder="مثال: 60"></div>
+      <div><span class="lbl">أقل مقدم %</span><input class="inp" id="evsb-down" type="number" step="0.5" placeholder="مثال: 20"></div>
+      <div><span class="lbl">مصاريف إدارية % (من الممول)</span><input class="inp" id="evsb-fee" type="number" step="0.1" placeholder="مثال: 1"></div>
+    </div>
+    <div style="margin-bottom:12px"><span class="lbl">ملاحظات تظهر للعميل (اختياري)</span><textarea class="inp" id="evsb-notes" rows="3" placeholder="مثال: بيشترط تحويل مرتب على البنك"></textarea></div>
+    <div class="g2" style="gap:12px;margin-bottom:16px">
+      <div><span class="lbl">ترتيب العرض</span><input class="inp" id="evsb-sort" type="number" value="0"></div>
+      <label style="display:flex;align-items:flex-end;gap:6px;font-size:13px;color:var(--ts);cursor:pointer;padding-bottom:8px"><input type="checkbox" id="evsb-active" checked style="width:14px;height:14px">مفعّل وظاهر للعملاء</label>
+    </div>
+    <button class="bc" style="width:100%;padding:11px;font-size:13px" id="evsb-submit-btn" onclick="submitEvsBank()">إضافة البنك</button>
   </div>
 </div>
 
@@ -2829,6 +3083,7 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
       <button class="asb on" data-admin="overview"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>نظرة عامة</button>
       <button class="asb" data-admin="solar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>☀️ شمسك طاقتك <span style="background:rgba(245,158,11,.2);color:#D97706;padding:1px 6px;border-radius:8px;font-size:11px;margin-right:4px">جديد</span></button>
       <button class="asb" data-admin="evinitiative" onclick="refreshEvAdminTable();renderEvAdminCarsGrid()"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>🚗 إحلال السيارات <span style="background:rgba(14,165,233,.2);color:#0EA5E9;padding:1px 6px;border-radius:8px;font-size:11px;margin-right:4px">جديد</span></button>
+      <button class="asb" data-admin="evsales"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>🚘 بيع السيارات <span style="background:rgba(184,243,60,.2);color:#6FA10C;padding:1px 6px;border-radius:8px;font-size:11px;margin-right:4px">جديد</span></button>
       <div class="asc">المنصة</div>
       <button class="asb" data-admin="suppliers"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>الموردون</button>
       <button class="asb" data-admin="factories"><svg viewBox="0 0 24 24"><path d="M22 22H2M2 22V6l7 4V6l7 4V6l6 4v12"/></svg>المصانع (المشترون)</button>
@@ -3063,6 +3318,24 @@ footer{background:var(--bg2);border-top:1px solid var(--bd);padding:36px;text-al
   <div class="g3" id="ev-admin-cars-grid" style="margin-bottom:26px"><div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--ts)">جارٍ التحميل...</div></div>
   <div style="font-size:15px;font-weight:700;margin-bottom:12px">📋 طلبات العملاء</div>
   <div class="tw"><table class="tbl"><thead><tr><th>العميل</th><th>السيارة المطلوبة</th><th>السيارة القديمة</th><th>المحافظة</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="ev-admin-tbody"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--ts)">جارٍ التحميل...</td></tr></tbody></table></div>
+</div>
+      <div id="atab-evsales" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px">
+    <div><div style="font-size:20px;font-weight:700">🚘 مبادرة بيع السيارات الكهربائية</div><div style="font-size:13px;color:var(--ts);margin-top:4px">السيارات وأسعارها، بنوك التمويل وشروطها، وطلبات العملاء</div></div>
+    <div style="display:flex;gap:8px"><button class="bl" style="font-size:12px;padding:6px 14px;border-radius:7px" onclick="openEvsCarModal()">+ إضافة سيارة</button><button class="bl" style="font-size:12px;padding:6px 14px;border-radius:7px" onclick="openEvsBankModal()">+ إضافة بنك</button></div>
+  </div>
+  <div class="g4" style="margin-bottom:22px">
+    <div class="kc" style="border-top:3px solid #B8F33C"><div class="kl">إجمالي الطلبات</div><div class="kv" id="evsa-kpi-total">0</div></div>
+    <div class="kc" style="border-top:3px solid #D97706"><div class="kl">طلبات معلقة</div><div class="kv" id="evsa-kpi-pending">0</div></div>
+    <div class="kc" style="border-top:3px solid #3B82F6"><div class="kl">سيارات مفعّلة</div><div class="kv" id="evsa-kpi-cars">0</div></div>
+    <div class="kc" style="border-top:3px solid #22C55E"><div class="kl">بنوك مفعّلة</div><div class="kv" id="evsa-kpi-banks">0</div></div>
+  </div>
+  <div style="font-size:15px;font-weight:700;margin-bottom:12px">🚙 السيارات</div>
+  <div class="g3" id="evsa-cars" style="margin-bottom:26px"><div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--ts)">جارٍ التحميل...</div></div>
+  <div style="font-size:15px;font-weight:700;margin-bottom:12px">🏦 بنوك التمويل</div>
+  <div class="tw" style="margin-bottom:26px"><table class="tbl"><thead><tr><th>البنك</th><th>الفائدة السنوية</th><th>أقصى مدة</th><th>أقل مقدم</th><th>مصاريف إدارية</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="evsa-banks"><tr><td colspan="7" style="text-align:center;padding:20px;color:var(--ts)">جارٍ التحميل...</td></tr></tbody></table></div>
+  <div style="font-size:15px;font-weight:700;margin-bottom:12px">📋 طلبات العملاء</div>
+  <div class="tw"><table class="tbl"><thead><tr><th>العميل</th><th>السيارة</th><th>خطة الدفع</th><th>المحافظة</th><th>الحالة</th></tr></thead><tbody id="evsa-leads"><tr><td colspan="5" style="text-align:center;padding:20px;color:var(--ts)">جارٍ التحميل...</td></tr></tbody></table></div>
 </div>
       <div id="atab-verif" style="display:none"><div style="font-size:20px;font-weight:700;margin-bottom:18px">طلبات التحقق (7)</div><div class="card" style="margin-bottom:12px"><div class="cb" style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:14px;font-weight:600">شركة الدلتا للحديد</div><div style="font-size:12px;color:var(--ts);margin-top:4px">سجل تجاري + بطاقة ضريبية · منذ 48 ساعة</div></div><div style="display:flex;gap:8px"><button class="bl" style="padding:7px 14px;font-size:13px;border-radius:7px" onclick="openVerifPreview('شركة الدلتا للحديد','سجل تجاري + بطاقة ضريبية','منذ 48 ساعة')">🔍 معاينة</button><button class="bc" style="padding:7px 14px;font-size:13px;border-radius:7px" data-msg="accept">قبول</button><button class="bl" style="padding:7px 14px;font-size:13px;border-radius:7px" data-msg="reject">رفض</button></div></div></div>
 <div class="card" style="margin-bottom:12px"><div class="cb" style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:14px;font-weight:600">مصنع النور للبلاستيك</div><div style="font-size:12px;color:var(--ts);margin-top:4px">شهادات ISO · منذ 24 ساعة</div></div><div style="display:flex;gap:8px"><button class="bl" style="padding:7px 14px;font-size:13px;border-radius:7px" onclick="openVerifPreview('مصنع النور للبلاستيك','شهادات ISO','منذ 24 ساعة')">🔍 معاينة</button><button class="bc" style="padding:7px 14px;font-size:13px;border-radius:7px" data-msg="accept">قبول</button><button class="bl" style="padding:7px 14px;font-size:13px;border-radius:7px" data-msg="reject">رفض</button></div></div></div>
@@ -4251,7 +4524,7 @@ var PAGE_ROUTES = {
   terms:"terms", shipping:"shipping", packaging:"packaging",
   training:"training", financing:"financing", inspection:"inspection",
   factory:"factory", supplychain:"supply-chain", adreq:"advertise",
-  evinitiative:"ev-initiative", admin:"admin", dash:"dashboard",
+  evinitiative:"ev-initiative", evsales:"ev-cars", admin:"admin", dash:"dashboard",
   orders:"orders", loyalty:"loyalty"
 };
 var PATH_TO_PAGE = {};
@@ -4364,6 +4637,7 @@ function goTo(pg, fromBack){
     else if (typeof renderAdSlot === "function") { renderAdSlot("TOP_TICKER", "ad-slot-top-ticker"); }
   }
   if (pg === "evinitiative" && typeof loadEvCars === "function") loadEvCars();
+  if (pg === "evsales" && typeof loadEvSales === "function") loadEvSales();
   if (pg === "admin" && typeof loadAdminOverview === "function") {
     loadAdminOverview();
   }
@@ -4933,7 +5207,7 @@ onDomReady(async function(){
 
   // ADMIN
   function showAdmin(name,btn){
-    ["overview","suppliers","factories","orders","disputes","revenue","escrow","verif","ads","offers-admin","incubator","products","sectors","payments","solar","evinitiative","services","team","promocodes","reports","translator"].forEach(function(t){
+    ["overview","suppliers","factories","orders","disputes","revenue","escrow","verif","ads","offers-admin","incubator","products","sectors","payments","solar","evinitiative","evsales","services","team","promocodes","reports","translator"].forEach(function(t){
       var e=document.getElementById("atab-"+t); if(e)e.style.display=t===name?"block":"none";
     });
     document.querySelectorAll(".asb").forEach(function(b){b.classList.remove("on");});
@@ -4957,6 +5231,9 @@ onDomReady(async function(){
     }
     if (name === "solar") {
       loadSolarLeadsAdmin();
+    }
+    if (name === "evsales") {
+      loadEvSalesAdmin();
     }
     if (name === "services") {
       loadRealFinancingAdmin();
@@ -7560,6 +7837,576 @@ function populateSolarSectorDropdown() {
     sel.appendChild(opt);
   });
 }
+
+/* ═══ EV SALES INITIATIVE — مبادرة بيع السيارات الكهربائية ═══ */
+var EVS = { cars: [], banks: [], cat: "", pay: "INSTALLMENT", price: {}, dlgImgs: [] };
+var EVS_STOCK = { AVAILABLE: ["متاحة", "evs-b-ok"], PREORDER: ["حجز مسبق", "evs-b-pre"], SOLD_OUT: ["نفدت", "evs-b-out"] };
+
+function evsEsc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function(c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  });
+}
+function evsMoney(n) { return isFinite(n) ? Math.round(n).toLocaleString("en-US") : "—"; }
+function evsImgs(c) { return (c.imageUrls || []).map(function(u) { return resolveUploadUrl(u); }); }
+function evsBank(id) { return EVS.banks.find(function(b) { return b.id === id; }); }
+function evsCar(id) { return EVS.cars.find(function(c) { return c.id === id; }); }
+function evsScroll(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+}
+
+// Standard reducing-balance installment — the same formula the server uses
+// to re-check every submitted plan.
+function evsCalc(price, downPct, months, bank) {
+  var down = price * downPct / 100;
+  var financed = price - down;
+  var r = bank.annualRatePct / 12 / 100;
+  var monthly = r === 0 ? financed / months : (financed * r) / (1 - Math.pow(1 + r, -months));
+  var fee = financed * (bank.adminFeePct || 0) / 100;
+  var paidInst = monthly * months;
+  return { down: down, financed: financed, monthly: monthly, interest: paidInst - financed, fee: fee, total: down + paidInst + fee };
+}
+// "Starts from": the lowest monthly figure across banks, using each bank's
+// own minimum down payment and longest tenor.
+function evsStartingMonthly(car) {
+  var best = null;
+  EVS.banks.forEach(function(b) {
+    var r = evsCalc(car.priceEgp, b.minDownPaymentPct, b.maxMonths, b);
+    if (best === null || r.monthly < best) best = r.monthly;
+  });
+  return best;
+}
+
+async function loadEvSales() {
+  try {
+    var res = await Promise.all([apiFetch("/ev-sales/cars"), apiFetch("/ev-sales/banks")]);
+    EVS.cars = res[0] || [];
+    EVS.banks = res[1] || [];
+  } catch (err) {
+    var g = document.getElementById("evs-grid");
+    if (g) g.innerHTML = '<div class="evs-empty" style="grid-column:1/-1">⚠️ تعذر تحميل السيارات الآن — جرّبي تاني بعد شوية.</div>';
+    return;
+  }
+  evsRenderStats();
+  evsRenderFilters();
+  evsFilter();
+  evsRenderBanks();
+  evsRenderFormCars();
+  EVS.price.evsf = 0;
+  evsCalcInit("evsf");
+  evsSetPay(EVS.pay);
+}
+window.loadEvSales = loadEvSales;
+
+function evsRenderStats() {
+  var el = document.getElementById("evs-stats");
+  if (!el) return;
+  var cells = [];
+  if (EVS.cars.length) {
+    var min = Math.min.apply(null, EVS.cars.map(function(c) { return c.priceEgp; }));
+    cells.push([EVS.cars.length, "سيارة في المبادرة"]);
+    cells.push([evsMoney(min), "ج.م — الأسعار تبدأ من"]);
+  }
+  if (EVS.banks.length) cells.push([EVS.banks.length, "بنوك تمويل شريكة"]);
+  var m = EVS.cars.map(evsStartingMonthly).filter(function(x) { return x !== null; });
+  if (m.length) cells.push([evsMoney(Math.min.apply(null, m)), "ج.م — أقل قسط شهري يبدأ من"]);
+  el.innerHTML = cells.map(function(c) { return '<div class="evs-stat"><b>' + c[0] + '</b><span>' + c[1] + '</span></div>'; }).join("");
+  el.style.display = cells.length ? "" : "none";
+}
+
+function evsRenderFilters() {
+  var brands = [], cats = [];
+  EVS.cars.forEach(function(c) {
+    if (c.brand && brands.indexOf(c.brand) === -1) brands.push(c.brand);
+    if (c.category && cats.indexOf(c.category) === -1) cats.push(c.category);
+  });
+  var sel = document.getElementById("evs-brand");
+  var cur = sel.value;
+  sel.innerHTML = '<option value="">كل الماركات</option>' + brands.map(function(b) { return '<option value="' + evsEsc(b) + '">' + evsEsc(b) + '</option>'; }).join("");
+  sel.value = brands.indexOf(cur) > -1 ? cur : "";
+  if (cats.indexOf(EVS.cat) === -1) EVS.cat = "";
+  var box = document.getElementById("evs-cats");
+  box.style.display = cats.length ? "" : "none";
+  box.innerHTML = ['الكل'].concat(cats).map(function(c, i) {
+    var val = i === 0 ? "" : c;
+    return '<button type="button" class="evs-chip" aria-pressed="' + (EVS.cat === val) + '" data-cat="' + evsEsc(val) + '" onclick="evsSetCat(this)">' + evsEsc(c) + '</button>';
+  }).join("");
+}
+window.evsSetCat = function(btn) { EVS.cat = btn.getAttribute("data-cat") || ""; evsRenderFilters(); evsFilter(); };
+
+window.evsFilter = function() {
+  var q = (document.getElementById("evs-q").value || "").trim().toLowerCase();
+  var brand = document.getElementById("evs-brand").value;
+  var sort = document.getElementById("evs-sort").value;
+  var list = EVS.cars.filter(function(c) {
+    if (EVS.cat && c.category !== EVS.cat) return false;
+    if (brand && c.brand !== brand) return false;
+    if (q && (c.brand + " " + c.modelName).toLowerCase().indexOf(q) === -1) return false;
+    return true;
+  });
+  if (sort === "price-asc") list.sort(function(a, b) { return a.priceEgp - b.priceEgp; });
+  else if (sort === "price-desc") list.sort(function(a, b) { return b.priceEgp - a.priceEgp; });
+  else list.sort(function(a, b) { return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0); }); // stable: keeps admin order within each group
+  var grid = document.getElementById("evs-grid");
+  document.getElementById("evs-count").textContent = EVS.cars.length ? list.length + " من " + EVS.cars.length + " سيارة" : "";
+  if (!EVS.cars.length) {
+    grid.innerHTML = '<div class="evs-empty" style="grid-column:1/-1">بنجهّز دلوقتي السيارات المتاحة في المبادرة — هتظهر هنا بأسعارها ومواصفاتها فور إضافتها.</div>';
+  } else if (!list.length) {
+    grid.innerHTML = '<div class="evs-empty" style="grid-column:1/-1">مفيش سيارات بتطابق اختيارك. جرّبي تغيّري الفلتر أو البحث.</div>';
+  } else {
+    grid.innerHTML = list.map(evsCardHtml).join("");
+  }
+};
+
+function evsCardHtml(c) {
+  var imgs = evsImgs(c);
+  var st = EVS_STOCK[c.stockStatus] || EVS_STOCK.AVAILABLE;
+  var specs = c.specsJson || {};
+  var chips = Object.keys(specs).slice(0, 3).map(function(k) {
+    return '<span class="evs-spec" title="' + evsEsc(k) + '">' + evsEsc(k) + ": " + evsEsc(specs[k]) + '</span>';
+  }).join("");
+  var from = evsStartingMonthly(c);
+  var sold = c.stockStatus === "SOLD_OUT";
+  return '<article class="evs-card">' +
+    '<div class="evs-card-img" onclick="evsOpenCar(\'' + c.id + '\')">' +
+      (imgs.length ? '<img src="' + imgs[0] + '" alt="' + evsEsc(c.brand + " " + c.modelName) + '" loading="lazy" decoding="async">' : '<span style="font-size:52px">🚘</span>') +
+      '<div class="evs-badges"><span class="evs-b ' + st[1] + '">' + st[0] + '</span>' + (c.isFeatured ? '<span class="evs-b">⭐ مميزة</span>' : '') + '</div>' +
+    '</div>' +
+    '<div class="evs-card-body">' +
+      '<div><div class="evs-brand">' + evsEsc(c.brand) + (c.year ? " · " + c.year : "") + '</div>' +
+      '<h3>' + evsEsc(c.modelName) + (c.category ? '<span class="evs-cat">' + evsEsc(c.category) + '</span>' : '') + '</h3></div>' +
+      (chips ? '<div class="evs-specs">' + chips + '</div>' : '') +
+      '<div class="evs-price"><small>السعر</small><b>' + evsMoney(c.priceEgp) + '<span>ج.م</span></b></div>' +
+      (from !== null ? '<div class="evs-from">أو قسط يبدأ من ≈ <b>' + evsMoney(from) + '</b> ج.م / شهر</div>' : '') +
+      '<div class="evs-actions">' +
+        '<button type="button" class="evs-btn evs-btn-ghost" onclick="evsOpenCar(\'' + c.id + '\')">التفاصيل والتقسيط</button>' +
+        '<button type="button" class="evs-btn" ' + (sold ? 'disabled' : '') + ' onclick="evsPickCar(\'' + c.id + '\')">' + (sold ? 'نفدت' : 'اطلبيها') + '</button>' +
+      '</div>' +
+    '</div></article>';
+}
+
+// Placeholder letter for a bank without an uploaded logo: the first letter of
+// the distinctive part of its name ("بنك الأهلي" -> أ, not the shared "ب").
+function evsMono(name) {
+  var n = String(name || "").trim().replace(/^(ال)?بنك\s+/, "").replace(/^ال(?=\S)/, "");
+  return (n || String(name || "?")).charAt(0).toUpperCase();
+}
+function evsRenderBanks() {
+  var box = document.getElementById("evs-banks");
+  if (!EVS.banks.length) {
+    box.innerHTML = '<div class="evs-empty" style="grid-column:1/-1">بنوك التمويل الشريكة هتظهر هنا بشروطها فور اعتمادها. تقدري تقدّمي طلبك دلوقتي وفريق المبادرة هيوضحلك خطط التقسيط المتاحة.</div>';
+    return;
+  }
+  box.innerHTML = EVS.banks.map(function(b) {
+    var logo = b.logoUrl ? '<img src="' + resolveUploadUrl(b.logoUrl) + '" alt="" loading="lazy">' : evsEsc(evsMono(b.nameAr));
+    return '<article class="evs-bank"><div class="evs-bank-head"><div class="evs-bank-logo">' + logo + '</div><h3>' + evsEsc(b.nameAr) + '</h3></div>' +
+      '<div class="evs-kv">' +
+        '<div><b>' + b.annualRatePct + '%</b><span>فائدة سنوية</span></div>' +
+        '<div><b>' + b.maxMonths + '</b><span>أقصى مدة (شهر)</span></div>' +
+        '<div><b>' + b.minDownPaymentPct + '%</b><span>أقل مقدم</span></div>' +
+        '<div><b>' + (b.adminFeePct || 0) + '%</b><span>مصاريف إدارية</span></div>' +
+      '</div>' + (b.notes ? '<p>' + evsEsc(b.notes) + '</p>' : '') + '</article>';
+  }).join("");
+}
+
+/* ── Calculator (shared by the car dialog "evsd" and the order form "evsf") ── */
+function evsCalcMarkup(p) {
+  return '<div class="evs-field"><label for="' + p + '-bank">البنك الممول</label><select class="sel" id="' + p + '-bank" onchange="evsCalcOnBank(\'' + p + '\')"></select></div>' +
+    '<div class="evs-field"><label for="' + p + '-down">المقدم: <b id="' + p + '-downlbl"></b></label><input type="range" id="' + p + '-down" oninput="evsCalcUpdate(\'' + p + '\')"><div class="evs-hint" id="' + p + '-downamt"></div></div>' +
+    '<div class="evs-field"><label for="' + p + '-months">مدة التقسيط</label><select class="sel" id="' + p + '-months" onchange="evsCalcUpdate(\'' + p + '\')"></select></div>' +
+    '<div class="evs-result" id="' + p + '-out" aria-live="polite"></div>';
+}
+function evsCalcInit(p) {
+  var box = document.getElementById(p + "-calc");
+  if (!box) return;
+  if (!EVS.banks.length) {
+    box.innerHTML = '<div class="evs-note" style="border:0;padding:6px">لسه مفيش بنوك تمويل معتمدة. قدّمي طلبك وفريق المبادرة هيوضحلك خطط التقسيط المتاحة.</div>';
+    return;
+  }
+  box.innerHTML = evsCalcMarkup(p);
+  document.getElementById(p + "-bank").innerHTML = EVS.banks.map(function(b) {
+    return '<option value="' + b.id + '">' + evsEsc(b.nameAr) + " — " + b.annualRatePct + '%</option>';
+  }).join("");
+  evsCalcOnBank(p, true);
+}
+window.evsCalcOnBank = function(p, first) {
+  var bankSel = document.getElementById(p + "-bank");
+  if (!bankSel) return;
+  var bank = evsBank(bankSel.value);
+  if (!bank) return;
+  var down = document.getElementById(p + "-down");
+  var min = Math.ceil(bank.minDownPaymentPct);
+  var keep = parseFloat(down.value);
+  down.min = min; down.max = Math.max(80, min); down.step = 1;
+  down.value = (first || isNaN(keep)) ? Math.max(min, 20) : Math.max(min, Math.min(parseFloat(down.max), keep));
+  var monthsSel = document.getElementById(p + "-months");
+  var prev = parseInt(monthsSel.value, 10);
+  var opts = [];
+  for (var m = 12; m <= bank.maxMonths; m += 12) opts.push(m);
+  if (opts.indexOf(bank.maxMonths) === -1) opts.push(bank.maxMonths);
+  monthsSel.innerHTML = opts.map(function(x) { return '<option value="' + x + '">' + x + ' شهر</option>'; }).join("");
+  monthsSel.value = (first || !prev) ? (opts.indexOf(60) > -1 ? 60 : opts[opts.length - 1]) : (opts.indexOf(prev) > -1 ? prev : opts[opts.length - 1]);
+  evsCalcUpdate(p);
+};
+window.evsCalcUpdate = function(p) {
+  var out = document.getElementById(p + "-out");
+  var bankSel = document.getElementById(p + "-bank");
+  if (!out || !bankSel) return;
+  var bank = evsBank(bankSel.value);
+  var pct = parseFloat(document.getElementById(p + "-down").value);
+  var months = parseInt(document.getElementById(p + "-months").value, 10);
+  var price = EVS.price[p];
+  document.getElementById(p + "-downlbl").textContent = pct + "%";
+  if (!bank) return;
+  if (!price) {
+    document.getElementById(p + "-downamt").textContent = "";
+    out.innerHTML = '<div class="evs-note" style="border:0;padding:4px">اختاري السيارة عشان نعرض القسط التقديري.</div>';
+    return;
+  }
+  var r = evsCalc(price, pct, months, bank);
+  document.getElementById(p + "-downamt").textContent = "قيمة المقدم: " + evsMoney(r.down) + " ج.م";
+  out.innerHTML = '<div class="big">' + evsMoney(r.monthly) + '<span>ج.م / شهر</span></div>' +
+    '<div class="evs-rows">' +
+      '<div><span>المبلغ الممول</span><b>' + evsMoney(r.financed) + ' ج.م</b></div>' +
+      '<div><span>إجمالي الفوائد</span><b>' + evsMoney(r.interest) + ' ج.م</b></div>' +
+      (r.fee > 0 ? '<div><span>مصاريف إدارية (تُدفع مرة واحدة)</span><b>' + evsMoney(r.fee) + ' ج.م</b></div>' : '') +
+      '<div><span>التكلفة الإجمالية</span><b>' + evsMoney(r.total) + ' ج.م</b></div>' +
+    '</div><div class="evs-disc">أرقام تقديرية بنظام الفائدة المتناقصة. القسط النهائي يحدده البنك بعد دراسة الطلب.</div>';
+};
+
+/* ── Car details dialog ── */
+window.evsOpenCar = function(id) {
+  var c = evsCar(id);
+  if (!c) return;
+  var imgs = evsImgs(c);
+  EVS.dlgImgs = imgs;
+  EVS.dlgCar = id;
+  EVS.price.evsd = c.priceEgp;
+  var st = EVS_STOCK[c.stockStatus] || EVS_STOCK.AVAILABLE;
+  var specs = c.specsJson || {};
+  var rows = Object.keys(specs).map(function(k) { return '<tr><td>' + evsEsc(k) + '</td><td>' + evsEsc(specs[k]) + '</td></tr>'; }).join("");
+  var gallery = imgs.length
+    ? '<div class="evs-gal-main"><img id="evsd-main" src="' + imgs[0] + '" alt="' + evsEsc(c.brand + " " + c.modelName) + '"></div>' +
+      (imgs.length > 1 ? '<div class="evs-thumbs">' + imgs.map(function(u, i) {
+        return '<button type="button" aria-label="الصورة ' + (i + 1) + '" aria-current="' + (i === 0) + '" onclick="evsSwapImg(this,' + i + ')"><img src="' + u + '" alt="" loading="lazy"></button>';
+      }).join("") + '</div>' : '')
+    : '<div class="evs-gal-main"><span style="font-size:64px">🚘</span></div>';
+  var sold = c.stockStatus === "SOLD_OUT";
+  document.getElementById("evs-dlg-body").innerHTML =
+    '<div class="evs-dlg-grid"><div>' + gallery + '</div><div>' +
+      '<div class="evs-brand">' + evsEsc(c.brand) + (c.year ? " · " + c.year : "") + '</div>' +
+      '<h2 id="evs-dlg-title" style="font-size:28px;margin:4px 0 10px">' + evsEsc(c.modelName) + '</h2>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"><span class="evs-b ' + st[1] + '">' + st[0] + '</span>' + (c.category ? '<span class="evs-b">' + evsEsc(c.category) + '</span>' : '') + '</div>' +
+      '<div class="evs-price"><small>السعر</small><b>' + evsMoney(c.priceEgp) + '<span>ج.م</span></b></div>' +
+      (rows ? '<table class="evs-spec-table"><tbody>' + rows + '</tbody></table>' : '') +
+    '</div></div>' +
+    '<div class="evs-dlg-foot"><h3 style="font-size:20px;margin-bottom:12px">احسبي قسطك</h3>' +
+      '<div class="evs-calc" id="evsd-calc"></div>' +
+      '<button type="button" class="evs-btn" style="width:100%" ' + (sold ? 'disabled' : '') + ' onclick="evsOrderFromDialog()">' + (sold ? 'السيارة نفدت من المخزون' : 'قدّمي طلب بهذه الخطة') + '</button></div>';
+  evsCalcInit("evsd");
+  var dlg = document.getElementById("evs-dialog");
+  if (!dlg.open) dlg.showModal();
+};
+window.evsSwapImg = function(btn, i) {
+  var main = document.getElementById("evsd-main");
+  if (main && EVS.dlgImgs[i]) main.src = EVS.dlgImgs[i];
+  var sibs = btn.parentNode.children;
+  for (var k = 0; k < sibs.length; k++) sibs[k].setAttribute("aria-current", sibs[k] === btn ? "true" : "false");
+};
+// light-dismiss fallback for browsers without <dialog closedby> (e.g. Safari)
+onDomReady(function() {
+  var dlg = document.getElementById("evs-dialog");
+  if (!dlg || ("closedBy" in HTMLDialogElement.prototype)) return;
+  dlg.addEventListener("click", function(e) {
+    if (e.target !== dlg) return;
+    var r = dlg.getBoundingClientRect();
+    var inside = r.top <= e.clientY && e.clientY <= r.top + r.height && r.left <= e.clientX && e.clientX <= r.left + r.width;
+    if (!inside) dlg.close();
+  });
+});
+
+window.evsOrderFromDialog = function() {
+  var bankSel = document.getElementById("evsd-bank");
+  var plan = bankSel ? { bankId: bankSel.value, pct: document.getElementById("evsd-down").value, months: document.getElementById("evsd-months").value } : null;
+  document.getElementById("evs-dialog").close();
+  evsFillForm(EVS.dlgCar, plan);
+};
+window.evsPickCar = function(id) { evsFillForm(id, null); };
+
+/* ── Order form ── */
+function evsRenderFormCars() {
+  var sel = document.getElementById("evsf-car");
+  var cur = sel.value;
+  sel.innerHTML = '<option value="">— اختاري السيارة —</option>' + EVS.cars.map(function(c) {
+    var sold = c.stockStatus === "SOLD_OUT";
+    return '<option value="' + c.id + '"' + (sold ? ' disabled' : '') + '>' + evsEsc(c.brand + " " + c.modelName) + " — " + evsMoney(c.priceEgp) + " ج.م" + (sold ? " (نفدت)" : "") + '</option>';
+  }).join("");
+  if (cur && evsCar(cur)) sel.value = cur;
+}
+window.evsFormCarChange = function() {
+  var c = evsCar(document.getElementById("evsf-car").value);
+  EVS.price.evsf = c ? c.priceEgp : 0;
+  evsCalcUpdate("evsf");
+};
+function evsFillForm(carId, plan) {
+  var sel = document.getElementById("evsf-car");
+  sel.value = carId;
+  evsFormCarChange();
+  if (plan && document.getElementById("evsf-bank")) {
+    evsSetPay("INSTALLMENT");
+    document.getElementById("evsf-bank").value = plan.bankId;
+    evsCalcOnBank("evsf", true);
+    document.getElementById("evsf-down").value = plan.pct;
+    document.getElementById("evsf-months").value = plan.months;
+    evsCalcUpdate("evsf");
+  }
+  document.getElementById("evs-ok").style.display = "none";
+  document.getElementById("evs-form").style.display = "";
+  evsScroll("evs-order");
+}
+window.evsSetPay = function(mode) {
+  EVS.pay = mode;
+  document.getElementById("evs-pay-inst").setAttribute("aria-pressed", mode === "INSTALLMENT");
+  document.getElementById("evs-pay-cash").setAttribute("aria-pressed", mode === "CASH");
+  document.getElementById("evsf-calc-wrap").style.display = mode === "INSTALLMENT" ? "" : "none";
+};
+window.evsSubmit = async function(e) {
+  if (e) e.preventDefault();
+  var name = document.getElementById("evsf-name").value.trim();
+  var phone = document.getElementById("evsf-phone").value.trim();
+  var carId = document.getElementById("evsf-car").value;
+  if (!name || !phone) { toast("الرجاء إدخال الاسم ورقم الموبايل"); return; }
+  if (!/^[0-9+\-\s]{8,20}$/.test(phone)) { toast("رقم الموبايل غير صالح"); return; }
+  var payload = {
+    carId: carId || undefined, paymentMethod: EVS.pay, fullName: name, phone: phone,
+    governorate: document.getElementById("evsf-gov").value.trim() || undefined,
+    city: document.getElementById("evsf-city").value.trim() || undefined,
+    notes: document.getElementById("evsf-notes").value.trim() || undefined
+  };
+  if (EVS.pay === "INSTALLMENT") {
+    if (!carId) { toast("اختاري السيارة الأول عشان نحسب التقسيط"); return; }
+    var bankSel = document.getElementById("evsf-bank");
+    if (bankSel) {
+      payload.bankId = bankSel.value;
+      payload.downPaymentEgp = Math.round(EVS.price.evsf * parseFloat(document.getElementById("evsf-down").value) / 100);
+      payload.months = parseInt(document.getElementById("evsf-months").value, 10);
+    }
+  }
+  var btn = document.getElementById("evsf-submit");
+  btn.disabled = true; btn.textContent = "جارٍ الإرسال...";
+  try {
+    await apiFetch("/ev-sales/submit", { method: "POST", body: JSON.stringify(payload) });
+    var ok = document.getElementById("evs-ok");
+    ok.innerHTML = '<div style="font-size:34px;margin-bottom:6px">✅</div><h3 style="margin-bottom:6px">وصلنا طلبك يا ' + evsEsc(name.split(" ")[0]) + '</h3><p style="margin:0;color:var(--ts)">فريق المبادرة هيتواصل معاكِ على ' + evsEsc(phone) + ' قريبًا لاستكمال الإجراءات.</p>';
+    ok.style.display = "";
+    document.getElementById("evs-form").style.display = "none";
+    ["evsf-name", "evsf-phone", "evsf-gov", "evsf-city", "evsf-notes"].forEach(function(id) { document.getElementById(id).value = ""; });
+    evsScroll("evs-order");
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر إرسال الطلب"));
+  } finally {
+    btn.disabled = false; btn.textContent = "إرسال الطلب";
+  }
+};
+
+/* ═══ EV SALES — admin ═══ */
+var EVSA = { cars: [], banks: [], leads: [] };
+var EVSA_IMAGES = [];
+var EVSA_LOGO = "";
+var EVSA_LEAD_STATUS = { PENDING: "معلّق", CONTACTED: "تم التواصل", APPROVED: "موافَق", REJECTED: "مرفوض", COMPLETED: "تم التسليم" };
+
+async function loadEvSalesAdmin() {
+  try {
+    var r = await Promise.all([apiFetch("/ev-sales/admin/cars"), apiFetch("/ev-sales/admin/banks"), apiFetch("/ev-sales/admin/leads")]);
+    EVSA.cars = r[0] || []; EVSA.banks = r[1] || []; EVSA.leads = r[2] || [];
+    evsaRender();
+  } catch (err) {
+    toast("⚠️ " + (err.message || "تعذر تحميل بيانات مبادرة البيع"));
+  }
+}
+window.loadEvSalesAdmin = loadEvSalesAdmin;
+
+function evsaRender() {
+  document.getElementById("evsa-kpi-total").textContent = EVSA.leads.length;
+  document.getElementById("evsa-kpi-pending").textContent = EVSA.leads.filter(function(l) { return l.status === "PENDING"; }).length;
+  document.getElementById("evsa-kpi-cars").textContent = EVSA.cars.filter(function(c) { return c.isActive; }).length;
+  document.getElementById("evsa-kpi-banks").textContent = EVSA.banks.filter(function(b) { return b.isActive; }).length;
+
+  document.getElementById("evsa-cars").innerHTML = EVSA.cars.length ? EVSA.cars.map(function(c) {
+    var img = (c.imageUrls || [])[0];
+    var st = EVS_STOCK[c.stockStatus] || EVS_STOCK.AVAILABLE;
+    return '<div class="card"><div style="background:#f5f5f0;height:150px;display:flex;align-items:center;justify-content:center">' +
+      (img ? '<img src="' + resolveUploadUrl(img) + '" style="width:100%;height:150px;object-fit:contain" alt="">' : '<span style="font-size:40px">🚘</span>') + '</div><div class="cb">' +
+      '<div style="font-size:14px;font-weight:700">' + evsEsc(c.brand + " " + c.modelName) + '</div>' +
+      '<div style="font-size:15px;font-weight:700;margin:4px 0 8px;font-variant-numeric:tabular-nums">' + evsMoney(c.priceEgp) + ' ج.م</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"><span class="pill ' + (c.isActive ? "pg" : "pa") + '">' + (c.isActive ? "مفعّلة" : "غير مفعّلة") + '</span><span class="pill pb2">' + st[0] + '</span>' + (c.isFeatured ? '<span class="pill pg">⭐ مميزة</span>' : '') + '<span class="pill pa">' + (c.imageUrls || []).length + ' صورة</span></div>' +
+      '<button class="bl" style="width:100%;padding:7px;font-size:12px;border-radius:7px" onclick="openEvsCarModal(\'' + c.id + '\')">✏️ تعديل</button></div></div>';
+  }).join("") : '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--ts)">لا توجد سيارات مضافة بعد — دوسي "+ إضافة سيارة".</div>';
+
+  document.getElementById("evsa-banks").innerHTML = EVSA.banks.length ? EVSA.banks.map(function(b) {
+    return '<tr><td><strong>' + evsEsc(b.nameAr) + '</strong></td><td>' + b.annualRatePct + '%</td><td>' + b.maxMonths + ' شهر</td><td>' + b.minDownPaymentPct + '%</td><td>' + (b.adminFeePct || 0) + '%</td>' +
+      '<td><span class="pill ' + (b.isActive ? "pg" : "pa") + '">' + (b.isActive ? "مفعّل" : "غير مفعّل") + '</span></td>' +
+      '<td><button class="bl" style="font-size:11px;padding:4px 9px;border-radius:5px" onclick="openEvsBankModal(\'' + b.id + '\')">✏️ تعديل</button></td></tr>';
+  }).join("") : '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--ts)">لا توجد بنوك مضافة بعد — دوسي "+ إضافة بنك".</td></tr>';
+
+  document.getElementById("evsa-leads").innerHTML = EVSA.leads.length ? EVSA.leads.map(function(l) {
+    var plan = l.paymentMethod === "CASH" ? "كاش" :
+      (l.bank ? evsEsc(l.bank.nameAr) + " — مقدم " + evsMoney(l.downPaymentEgp) + " — " + l.months + " شهر — قسط ≈ " + evsMoney(l.estimatedMonthly) : "تقسيط (بدون خطة محددة)");
+    var opts = Object.keys(EVSA_LEAD_STATUS).map(function(k) { return '<option value="' + k + '"' + (l.status === k ? " selected" : "") + '>' + EVSA_LEAD_STATUS[k] + '</option>'; }).join("");
+    return '<tr><td><strong>' + evsEsc(l.fullName) + '</strong><div style="font-size:11px;color:var(--tt);margin-top:2px" dir="ltr">' + evsEsc(l.phone) + '</div></td>' +
+      '<td>' + (l.car ? evsEsc(l.car.brand + " " + l.car.modelName) : "—") + '</td><td style="font-size:12px">' + plan + '</td>' +
+      '<td>' + evsEsc([l.governorate, l.city].filter(Boolean).join(" — ") || "—") + '</td>' +
+      '<td><select class="sel" style="min-width:120px;padding:6px 8px;font-size:12px" onchange="updateEvsLeadStatus(\'' + l.id + '\',this.value)">' + opts + '</select></td></tr>';
+  }).join("") : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--ts)">لا توجد طلبات حتى الآن</td></tr>';
+}
+
+window.updateEvsLeadStatus = async function(id, status) {
+  try {
+    await apiFetch("/ev-sales/admin/leads/" + id + "/status", { method: "POST", body: JSON.stringify({ status: status }) });
+    toast("✅ تم تحديث حالة الطلب");
+    loadEvSalesAdmin();
+  } catch (err) { toast("⚠️ " + (err.message || "تعذر تحديث الحالة")); }
+};
+
+async function evsaUpload(file) {
+  var token = getAuthToken("inmisr_access_token");
+  var fd = new FormData();
+  fd.append("image", file);
+  var res = await fetch(API_BASE + "/ev-initiative/admin/upload-image", { method: "POST", headers: token ? { "Authorization": "Bearer " + token } : {}, body: fd });
+  var body = await res.json().catch(function() { return null; });
+  if (!res.ok) throw new Error((body && body.message) || "تعذر رفع الصورة");
+  return body.data.imageUrl;
+}
+function evsaRenderPreview() {
+  document.getElementById("evsc-image-preview").innerHTML = EVSA_IMAGES.map(function(u, i) {
+    return '<div style="position:relative;width:74px"><img src="' + resolveUploadUrl(u) + '" style="width:74px;height:74px;object-fit:cover;border-radius:8px;border:' + (i === 0 ? "2px solid #B8F33C" : "1px solid var(--bd)") + '" alt="">' +
+      '<button type="button" onclick="evsaRemoveImg(' + i + ')" style="position:absolute;top:-6px;left:-6px;width:20px;height:20px;border-radius:50%;background:#EF4444;color:#fff;border:none;cursor:pointer;font-size:11px;line-height:1" aria-label="حذف">✕</button>' +
+      (i > 0 ? '<button type="button" onclick="evsaMakeMain(' + i + ')" style="width:100%;margin-top:3px;font-size:10px;padding:2px;border-radius:5px;border:1px solid var(--bd2);background:var(--surface2);color:var(--ts);cursor:pointer">رئيسية</button>' : '<div style="font-size:10px;text-align:center;margin-top:3px;color:var(--ts)">الرئيسية</div>') + '</div>';
+  }).join("");
+}
+window.evsaRemoveImg = function(i) { EVSA_IMAGES.splice(i, 1); evsaRenderPreview(); };
+window.evsaMakeMain = function(i) { var u = EVSA_IMAGES.splice(i, 1)[0]; EVSA_IMAGES.unshift(u); evsaRenderPreview(); };
+window.handleEvsImageUpload = async function(files) {
+  if (!files || !files.length) return;
+  var status = document.getElementById("evsc-upload-status");
+  for (var i = 0; i < files.length; i++) {
+    status.textContent = "جارٍ رفع الصورة " + (i + 1) + " من " + files.length + "...";
+    try { EVSA_IMAGES.push(await evsaUpload(files[i])); evsaRenderPreview(); }
+    catch (err) { toast("⚠️ " + (err.message || "تعذر رفع إحدى الصور")); }
+  }
+  status.textContent = "";
+  document.getElementById("evsc-image-upload").value = "";
+};
+
+window.openEvsCarModal = function(id) {
+  var car = id ? EVSA.cars.find(function(c) { return c.id === id; }) : null;
+  document.getElementById("evsc-title").textContent = car ? "✏️ تعديل " + car.brand + " " + car.modelName : "🚘 إضافة سيارة للمبادرة";
+  document.getElementById("evsc-id").value = car ? car.id : "";
+  document.getElementById("evsc-brand").value = car ? car.brand : "";
+  document.getElementById("evsc-model").value = car ? car.modelName : "";
+  document.getElementById("evsc-category").value = car && car.category ? car.category : "";
+  document.getElementById("evsc-year").value = car && car.year ? car.year : "";
+  document.getElementById("evsc-price").value = car ? car.priceEgp : "";
+  document.getElementById("evsc-stock").value = car ? car.stockStatus : "AVAILABLE";
+  document.getElementById("evsc-sort").value = car ? car.sortOrder : 0;
+  document.getElementById("evsc-featured").checked = car ? car.isFeatured : false;
+  document.getElementById("evsc-active").checked = car ? car.isActive : true;
+  var specs = car ? (car.specsJson || {}) : {};
+  document.getElementById("evsc-specs").value = Object.keys(specs).map(function(k) { return k + " = " + specs[k]; }).join("\n");
+  EVSA_IMAGES = car ? (car.imageUrls || []).slice() : [];
+  evsaRenderPreview();
+  document.getElementById("evsc-submit-btn").textContent = car ? "حفظ التعديلات" : "إضافة السيارة";
+  openM("evs-car-modal");
+};
+window.submitEvsCar = async function() {
+  var id = document.getElementById("evsc-id").value;
+  var brand = document.getElementById("evsc-brand").value.trim();
+  var model = document.getElementById("evsc-model").value.trim();
+  var price = parseFloat(document.getElementById("evsc-price").value);
+  if (!brand || !model) { toast("الرجاء إدخال الماركة والموديل"); return; }
+  if (!price || price <= 0) { toast("الرجاء إدخال سعر السيارة"); return; }
+  var specs = {};
+  document.getElementById("evsc-specs").value.split("\n").forEach(function(line) {
+    var parts = line.split("=");
+    if (parts.length >= 2) { var k = parts[0].trim(), v = parts.slice(1).join("=").trim(); if (k && v) specs[k] = v; }
+  });
+  var payload = {
+    brand: brand, modelName: model,
+    category: document.getElementById("evsc-category").value.trim(),
+    year: document.getElementById("evsc-year").value || null,
+    priceEgp: price, stockStatus: document.getElementById("evsc-stock").value,
+    specsJson: specs, imageUrls: EVSA_IMAGES.slice(),
+    sortOrder: document.getElementById("evsc-sort").value || 0,
+    isFeatured: document.getElementById("evsc-featured").checked,
+    isActive: document.getElementById("evsc-active").checked
+  };
+  var btn = document.getElementById("evsc-submit-btn");
+  btn.disabled = true;
+  try {
+    await apiFetch(id ? "/ev-sales/admin/cars/" + id : "/ev-sales/admin/cars", { method: "POST", body: JSON.stringify(payload) });
+    toast(id ? "✅ تم حفظ تعديلات السيارة" : "✅ تمت إضافة السيارة للمبادرة");
+    closeM("evs-car-modal");
+    loadEvSalesAdmin();
+  } catch (err) { toast("⚠️ " + (err.message || "تعذر حفظ السيارة")); }
+  finally { btn.disabled = false; }
+};
+
+window.handleEvsLogoUpload = async function(files) {
+  if (!files || !files.length) return;
+  try { EVSA_LOGO = await evsaUpload(files[0]); evsaRenderLogo(); }
+  catch (err) { toast("⚠️ " + (err.message || "تعذر رفع الشعار")); }
+  document.getElementById("evsb-logo-upload").value = "";
+};
+function evsaRenderLogo() {
+  document.getElementById("evsb-logo-preview").innerHTML = EVSA_LOGO
+    ? '<img src="' + resolveUploadUrl(EVSA_LOGO) + '" style="width:44px;height:44px;object-fit:contain;background:#fff;border-radius:8px;border:1px solid var(--bd)" alt=""> <button type="button" onclick="EVSA_LOGO=\'\';evsaRenderLogo()" style="font-size:11px;border:none;background:none;color:#EF4444;cursor:pointer">حذف</button>'
+    : "";
+}
+window.openEvsBankModal = function(id) {
+  var b = id ? EVSA.banks.find(function(x) { return x.id === id; }) : null;
+  document.getElementById("evsb-title").textContent = b ? "✏️ تعديل " + b.nameAr : "🏦 إضافة بنك تمويل";
+  document.getElementById("evsb-id").value = b ? b.id : "";
+  document.getElementById("evsb-name").value = b ? b.nameAr : "";
+  document.getElementById("evsb-rate").value = b ? b.annualRatePct : "";
+  document.getElementById("evsb-months").value = b ? b.maxMonths : "";
+  document.getElementById("evsb-down").value = b ? b.minDownPaymentPct : "";
+  document.getElementById("evsb-fee").value = b ? (b.adminFeePct || 0) : "";
+  document.getElementById("evsb-notes").value = b && b.notes ? b.notes : "";
+  document.getElementById("evsb-sort").value = b ? b.sortOrder : 0;
+  document.getElementById("evsb-active").checked = b ? b.isActive : true;
+  EVSA_LOGO = b && b.logoUrl ? b.logoUrl : "";
+  evsaRenderLogo();
+  document.getElementById("evsb-submit-btn").textContent = b ? "حفظ التعديلات" : "إضافة البنك";
+  openM("evs-bank-modal");
+};
+window.submitEvsBank = async function() {
+  var id = document.getElementById("evsb-id").value;
+  var name = document.getElementById("evsb-name").value.trim();
+  var rate = document.getElementById("evsb-rate").value;
+  var months = document.getElementById("evsb-months").value;
+  if (!name) { toast("الرجاء إدخال اسم البنك"); return; }
+  if (rate === "" || months === "") { toast("الرجاء إدخال الفائدة السنوية وأقصى مدة"); return; }
+  var payload = {
+    nameAr: name, logoUrl: EVSA_LOGO || "", annualRatePct: rate, maxMonths: months,
+    minDownPaymentPct: document.getElementById("evsb-down").value || 0,
+    adminFeePct: document.getElementById("evsb-fee").value || 0,
+    notes: document.getElementById("evsb-notes").value.trim(),
+    sortOrder: document.getElementById("evsb-sort").value || 0,
+    isActive: document.getElementById("evsb-active").checked
+  };
+  var btn = document.getElementById("evsb-submit-btn");
+  btn.disabled = true;
+  try {
+    await apiFetch(id ? "/ev-sales/admin/banks/" + id : "/ev-sales/admin/banks", { method: "POST", body: JSON.stringify(payload) });
+    toast(id ? "✅ تم حفظ تعديلات البنك" : "✅ تمت إضافة البنك");
+    closeM("evs-bank-modal");
+    loadEvSalesAdmin();
+  } catch (err) { toast("⚠️ " + (err.message || "تعذر حفظ البنك")); }
+  finally { btn.disabled = false; }
+};
 
 async function loadEvCars() {
   var grid = document.getElementById("ev-cars-grid");

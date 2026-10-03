@@ -1204,6 +1204,225 @@ export class EvInitiativeService {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// EV SALES INITIATIVE — مبادرة بيع السيارات الكهربائية.
+// كتالوج سيارات بأسعار حقيقية، بنوك تمويل بشروطها الفعلية، وطلبات
+// شراء/تقسيط — الأدمن بيدير كل ده. القسط بيتحسب على السيرفر بنفس
+// معادلة الواجهة، ومبيتصدّقش رقم قسط جاي من المتصفح.
+// ══════════════════════════════════════════════════════════════════
+
+const EV_SALE_STOCK = ['AVAILABLE', 'PREORDER', 'SOLD_OUT'];
+const EV_SALE_LEAD_STATUS = ['PENDING', 'CONTACTED', 'APPROVED', 'REJECTED', 'COMPLETED'];
+
+// Standard reducing-balance (amortizing) monthly installment.
+function evMonthlyInstallment(financed: number, annualRatePct: number, months: number): number {
+  const r = annualRatePct / 12 / 100;
+  if (r === 0) return financed / months;
+  return (financed * r) / (1 - Math.pow(1 + r, -months));
+}
+
+@Injectable()
+export class EvSalesService {
+  constructor(private prisma: PrismaService) {}
+
+  private num(v: any): number | undefined {
+    if (v === undefined || v === null || v === '') return undefined;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : undefined;
+  }
+
+  // ── Public ───────────────────────────────────────────────────────
+  listCars() {
+    return this.prisma.evSaleCar.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    });
+  }
+
+  listBanks() {
+    return this.prisma.evFinancingBank.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: 'asc' }, { annualRatePct: 'asc' }],
+    });
+  }
+
+  async submit(dto: any) {
+    const fullName = String(dto?.fullName || '').trim();
+    const phone = String(dto?.phone || '').trim();
+    if (!fullName || !phone) throw new BadRequestException('الاسم ورقم الموبايل مطلوبان');
+    if (!/^[0-9+\-\s]{8,20}$/.test(phone)) throw new BadRequestException('رقم الموبايل غير صالح');
+    const paymentMethod = dto?.paymentMethod === 'CASH' ? 'CASH' : 'INSTALLMENT';
+
+    let car: any = null;
+    if (dto?.carId) {
+      car = await this.prisma.evSaleCar.findUnique({ where: { id: String(dto.carId) } });
+      if (!car || !car.isActive) throw new BadRequestException('السيارة المختارة غير متاحة حاليًا');
+      if (car.stockStatus === 'SOLD_OUT') throw new BadRequestException('السيارة المختارة نفدت من المخزون');
+    }
+
+    let bankId: string | undefined;
+    let downPaymentEgp: number | undefined;
+    let months: number | undefined;
+    let estimatedMonthly: number | undefined;
+
+    if (paymentMethod === 'INSTALLMENT') {
+      if (!car) throw new BadRequestException('اختاري السيارة أولًا عشان نحسب التقسيط');
+      // Until at least one financing bank is configured there is no plan to
+      // validate, so the request is accepted as a plain installment inquiry.
+      const activeBanks = await this.prisma.evFinancingBank.count({ where: { isActive: true } });
+      if (activeBanks > 0 || dto?.bankId) {
+        const bank = await this.prisma.evFinancingBank.findUnique({ where: { id: String(dto?.bankId || '') } });
+        if (!bank || !bank.isActive) throw new BadRequestException('اختاري بنك تمويل صالح');
+        const down = this.num(dto?.downPaymentEgp);
+        const m = this.num(dto?.months);
+        if (down === undefined || m === undefined) throw new BadRequestException('حدّدي المقدم ومدة التقسيط');
+        if (down < 0 || down >= car.priceEgp) throw new BadRequestException('قيمة المقدم غير صحيحة');
+        if (!Number.isInteger(m) || m < 1 || m > bank.maxMonths) {
+          throw new BadRequestException(`أقصى مدة تقسيط عند ${bank.nameAr} هي ${bank.maxMonths} شهر`);
+        }
+        if ((down / car.priceEgp) * 100 + 0.5 < bank.minDownPaymentPct) {
+          throw new BadRequestException(`أقل مقدم عند ${bank.nameAr} هو ${bank.minDownPaymentPct}% من سعر السيارة`);
+        }
+        estimatedMonthly = Math.round(evMonthlyInstallment(car.priceEgp - down, bank.annualRatePct, m));
+        bankId = bank.id;
+        downPaymentEgp = Math.round(down);
+        months = m;
+      }
+    }
+
+    return this.prisma.evSaleLead.create({
+      data: {
+        carId: car ? car.id : undefined,
+        bankId,
+        fullName: fullName.slice(0, 120),
+        phone,
+        governorate: dto?.governorate ? String(dto.governorate).trim().slice(0, 80) : undefined,
+        city: dto?.city ? String(dto.city).trim().slice(0, 80) : undefined,
+        paymentMethod,
+        downPaymentEgp,
+        months,
+        estimatedMonthly,
+        notes: dto?.notes ? String(dto.notes).trim().slice(0, 1000) : undefined,
+        status: 'PENDING',
+      },
+    });
+  }
+
+  // ── Admin: cars ──────────────────────────────────────────────────
+  adminListCars() {
+    return this.prisma.evSaleCar.findMany({ orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] });
+  }
+
+  private buildCarData(dto: any) {
+    const data: any = {};
+    if (dto.brand !== undefined) data.brand = String(dto.brand).trim();
+    if (dto.modelName !== undefined) data.modelName = String(dto.modelName).trim();
+    if (dto.category !== undefined) data.category = dto.category ? String(dto.category).trim() : null;
+    if (dto.year !== undefined) data.year = this.num(dto.year) ?? null;
+    if (dto.priceEgp !== undefined) data.priceEgp = this.num(dto.priceEgp);
+    if (dto.stockStatus !== undefined) {
+      if (!EV_SALE_STOCK.includes(dto.stockStatus)) throw new BadRequestException('حالة المخزون غير معروفة');
+      data.stockStatus = dto.stockStatus;
+    }
+    if (dto.specsJson !== undefined) data.specsJson = dto.specsJson && typeof dto.specsJson === 'object' ? dto.specsJson : {};
+    if (dto.imageUrls !== undefined) {
+      data.imageUrls = Array.isArray(dto.imageUrls) ? dto.imageUrls.filter((u: any) => typeof u === 'string' && u.trim()) : [];
+    }
+    if (dto.isFeatured !== undefined) data.isFeatured = !!dto.isFeatured;
+    if (dto.isActive !== undefined) data.isActive = !!dto.isActive;
+    if (dto.sortOrder !== undefined) data.sortOrder = Math.round(this.num(dto.sortOrder) ?? 0);
+    return data;
+  }
+
+  async adminCreateCar(dto: any) {
+    const data = this.buildCarData(dto || {});
+    if (!data.brand || !data.modelName) throw new BadRequestException('اسم الماركة والموديل مطلوبان');
+    if (!data.priceEgp || data.priceEgp <= 0) throw new BadRequestException('سعر السيارة مطلوب ولازم يكون أكبر من صفر');
+    return this.prisma.evSaleCar.create({ data });
+  }
+
+  async adminUpdateCar(id: string, dto: any) {
+    const car = await this.prisma.evSaleCar.findUnique({ where: { id } });
+    if (!car) throw new NotFoundException('السيارة غير موجودة');
+    const data = this.buildCarData(dto || {});
+    if (data.brand !== undefined && !data.brand) throw new BadRequestException('اسم الماركة مطلوب');
+    if (data.modelName !== undefined && !data.modelName) throw new BadRequestException('اسم الموديل مطلوب');
+    if ('priceEgp' in data && (!data.priceEgp || data.priceEgp <= 0)) {
+      throw new BadRequestException('سعر السيارة لازم يكون أكبر من صفر');
+    }
+    return this.prisma.evSaleCar.update({ where: { id }, data });
+  }
+
+  // ── Admin: financing banks ───────────────────────────────────────
+  adminListBanks() {
+    return this.prisma.evFinancingBank.findMany({ orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] });
+  }
+
+  private buildBankData(dto: any) {
+    const data: any = {};
+    if (dto.nameAr !== undefined) data.nameAr = String(dto.nameAr).trim();
+    if (dto.logoUrl !== undefined) data.logoUrl = dto.logoUrl ? String(dto.logoUrl).trim() : null;
+    if (dto.annualRatePct !== undefined) {
+      const v = this.num(dto.annualRatePct);
+      if (v === undefined || v < 0 || v > 100) throw new BadRequestException('نسبة الفائدة لازم تكون بين 0 و100');
+      data.annualRatePct = v;
+    }
+    if (dto.maxMonths !== undefined) {
+      const v = this.num(dto.maxMonths);
+      if (v === undefined || !Number.isInteger(v) || v < 1 || v > 120) throw new BadRequestException('أقصى مدة تقسيط لازم تكون بين 1 و120 شهر');
+      data.maxMonths = v;
+    }
+    if (dto.minDownPaymentPct !== undefined) {
+      const v = this.num(dto.minDownPaymentPct);
+      if (v === undefined || v < 0 || v > 90) throw new BadRequestException('أقل مقدم لازم يكون بين 0% و90%');
+      data.minDownPaymentPct = v;
+    }
+    if (dto.adminFeePct !== undefined) {
+      const v = this.num(dto.adminFeePct);
+      if (v === undefined || v < 0 || v > 20) throw new BadRequestException('المصاريف الإدارية لازم تكون بين 0% و20%');
+      data.adminFeePct = v;
+    }
+    if (dto.notes !== undefined) data.notes = dto.notes ? String(dto.notes).trim().slice(0, 600) : null;
+    if (dto.isActive !== undefined) data.isActive = !!dto.isActive;
+    if (dto.sortOrder !== undefined) data.sortOrder = Math.round(this.num(dto.sortOrder) ?? 0);
+    return data;
+  }
+
+  async adminCreateBank(dto: any) {
+    const data = this.buildBankData(dto || {});
+    if (!data.nameAr) throw new BadRequestException('اسم البنك مطلوب');
+    if (data.annualRatePct === undefined) throw new BadRequestException('نسبة الفائدة السنوية مطلوبة');
+    if (data.maxMonths === undefined) throw new BadRequestException('أقصى مدة تقسيط مطلوبة');
+    return this.prisma.evFinancingBank.create({ data });
+  }
+
+  async adminUpdateBank(id: string, dto: any) {
+    const bank = await this.prisma.evFinancingBank.findUnique({ where: { id } });
+    if (!bank) throw new NotFoundException('البنك غير موجود');
+    const data = this.buildBankData(dto || {});
+    if (data.nameAr !== undefined && !data.nameAr) throw new BadRequestException('اسم البنك مطلوب');
+    return this.prisma.evFinancingBank.update({ where: { id }, data });
+  }
+
+  // ── Admin: requests ──────────────────────────────────────────────
+  adminListLeads() {
+    return this.prisma.evSaleLead.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        car: { select: { brand: true, modelName: true } },
+        bank: { select: { nameAr: true } },
+      },
+    });
+  }
+
+  async adminUpdateLeadStatus(id: string, status: string) {
+    if (!EV_SALE_LEAD_STATUS.includes(status)) throw new BadRequestException('حالة غير معروفة');
+    const lead = await this.prisma.evSaleLead.findUnique({ where: { id } });
+    if (!lead) throw new NotFoundException('الطلب غير موجود');
+    return this.prisma.evSaleLead.update({ where: { id }, data: { status } });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // SERVICE CONSULTATION SERVICE — طلبات مشورة شحن + تغليف مخصص (بدون تسجيل دخول)
 // ══════════════════════════════════════════════════════════════════
 

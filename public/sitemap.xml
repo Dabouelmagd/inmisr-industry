@@ -20,6 +20,7 @@
   <url><loc>https://inmisr.net/incubator</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://inmisr.net/offers</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
   <url><loc>https://inmisr.net/solar</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inmisr.net/ev-cars</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://inmisr.net/register</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://inmisr.net/guide</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>https://inmisr.net/about</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>

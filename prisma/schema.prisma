@@ -1011,6 +1011,72 @@ model SolarLead {
   @@map("solar_leads")
 }
 
+// ── EV SALES INITIATIVE (مبادرة بيع السيارات الكهربائية) ─────────────
+// Catalog with real prices, financing banks with their real terms, and
+// purchase/installment requests. All of it is admin-managed.
+model EvSaleCar {
+  id          String   @id @default(uuid())
+  brand       String
+  modelName   String
+  category    String?
+  year        Int?
+  priceEgp    Float
+  stockStatus String   @default("AVAILABLE") // AVAILABLE | PREORDER | SOLD_OUT
+  specsJson   Json     @default("{}")
+  imageUrls   Json     @default("[]")
+  isFeatured  Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  leads       EvSaleLead[]
+
+  @@map("ev_sale_cars")
+}
+
+model EvFinancingBank {
+  id                String   @id @default(uuid())
+  nameAr            String
+  logoUrl           String?
+  annualRatePct     Float
+  maxMonths         Int
+  minDownPaymentPct Float    @default(0)
+  adminFeePct       Float    @default(0)
+  notes             String?
+  isActive          Boolean  @default(true)
+  sortOrder         Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  leads             EvSaleLead[]
+
+  @@map("ev_financing_banks")
+}
+
+model EvSaleLead {
+  id               String   @id @default(uuid())
+  carId            String?
+  car              EvSaleCar? @relation(fields: [carId], references: [id])
+  bankId           String?
+  bank             EvFinancingBank? @relation(fields: [bankId], references: [id])
+  fullName         String
+  phone            String
+  governorate      String?
+  city             String?
+  paymentMethod    String   @default("INSTALLMENT") // CASH | INSTALLMENT
+  downPaymentEgp   Float?
+  months           Int?
+  estimatedMonthly Float?
+  notes            String?
+  status           String   @default("PENDING")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([status])
+  @@map("ev_sale_leads")
+}
+
 model EvInitiativeCar {
   id          String   @id @default(uuid())
   brand       String

@@ -18,7 +18,7 @@ import { RfqService, CreateRfqDto, CreateQuoteDto } from '../rfq/rfq.service';
 import { EscrowService, DisputeDto } from '../escrow/escrow.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AntiLeakageService } from '../common/anti-leakage.service';
-import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, EvInitiativeService, ServiceConsultationService, ProviderListingService, CompanyAssistantService, CompanyProfileService, QualityService, CustomIndustrialServiceService, SupplyChainService, DashboardActivityService, WorkerService, MarketGapService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
+import { GeoService, FinanceService, InspectionService, TrainingService, FactoryNeedService, ReverseLogisticsService, JobPostingService, SmeProjectService, PromoCodeService, TradeApplicationService, SpecialOfferService, SolarLeadService, EvInitiativeService, EvSalesService, ServiceConsultationService, ProviderListingService, CompanyAssistantService, CompanyProfileService, QualityService, CustomIndustrialServiceService, SupplyChainService, DashboardActivityService, WorkerService, MarketGapService, IncubatorService, OrdersService, MessagesService } from '../common/remaining-services';
 
 // ── Auth Guards (simplified) ───────────────────────────────────────
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -1358,6 +1358,112 @@ export class EvInitiativeController {
       throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
     }
     return this.ev.adminUpdateStatus(id, body.status);
+  }
+}
+
+// ── EV Sales Initiative Controller (مبادرة بيع السيارات الكهربائية) ──
+@ApiTags('ev-sales')
+@Controller('ev-sales')
+export class EvSalesController {
+  constructor(private sales: EvSalesService) {}
+
+  private assertAdmin(req: any) {
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('هذا الإجراء متاح لفريق الإدارة فقط');
+    }
+  }
+
+  // ── Public ──
+  @Get('cars')
+  @ApiOperation({ summary: 'سيارات مبادرة البيع المتاحة (عام)' })
+  listCars() {
+    return this.sales.listCars();
+  }
+
+  @Get('banks')
+  @ApiOperation({ summary: 'بنوك التمويل الشريكة بشروطها (عام)' })
+  listBanks() {
+    return this.sales.listBanks();
+  }
+
+  @Post('submit')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({ summary: 'تقديم طلب شراء/تقسيط سيارة (بدون تسجيل دخول)' })
+  submit(@Body() dto: any) {
+    return this.sales.submit(dto);
+  }
+
+  // ── Admin ──
+  @Get('admin/cars')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'كل سيارات مبادرة البيع بما فيها غير المفعّلة (أدمن)' })
+  adminListCars(@Request() req: any) {
+    this.assertAdmin(req);
+    return this.sales.adminListCars();
+  }
+
+  @Post('admin/cars')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'إضافة سيارة لمبادرة البيع (أدمن)' })
+  adminCreateCar(@Body() dto: any, @Request() req: any) {
+    this.assertAdmin(req);
+    return this.sales.adminCreateCar(dto);
+  }
+
+  @Post('admin/cars/:id')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تعديل سيارة في مبادرة البيع (أدمن)' })
+  adminUpdateCar(@Param('id') id: string, @Body() dto: any, @Request() req: any) {
+    this.assertAdmin(req);
+    return this.sales.adminUpdateCar(id, dto);
+  }
+
+  @Get('admin/banks')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'كل بنوك التمويل بما فيها غير المفعّلة (أدمن)' })
+  adminListBanks(@Request() req: any) {
+    this.assertAdmin(req);
+    return this.sales.adminListBanks();
+  }
+
+  @Post('admin/banks')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'إضافة بنك تمويل (أدمن)' })
+  adminCreateBank(@Body() dto: any, @Request() req: any) {
+    this.assertAdmin(req);
+    return this.sales.adminCreateBank(dto);
+  }
+
+  @Post('admin/banks/:id')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تعديل بنك تمويل (أدمن)' })
+  adminUpdateBank(@Param('id') id: string, @Body() dto: any, @Request() req: any) {
+    this.assertAdmin(req);
+    return this.sales.adminUpdateBank(id, dto);
+  }
+
+  @Get('admin/leads')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'كل طلبات شراء/تقسيط السيارات (أدمن)' })
+  adminListLeads(@Request() req: any) {
+    this.assertAdmin(req);
+    return this.sales.adminListLeads();
+  }
+
+  @Post('admin/leads/:id/status')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تحديث حالة طلب شراء سيارة (أدمن)' })
+  adminUpdateLeadStatus(@Param('id') id: string, @Body() body: { status: string }, @Request() req: any) {
+    this.assertAdmin(req);
+    return this.sales.adminUpdateLeadStatus(id, body.status);
   }
 }
 
