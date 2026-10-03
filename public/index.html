@@ -7780,9 +7780,14 @@ async function renderEvAdminCarsGrid() {
   try {
     var cars = await apiFetch("/ev-initiative/admin/cars");
     EV_ADMIN_CARS_CACHE = cars;
-    grid.innerHTML = cars.length ? cars.map(function(c) {
-      var img = (c.imageUrls || [])[0] || "";
-      return '<div class="card"><div style="background:#f5f5f0">' + (img ? '<img src="' + resolveUploadUrl(img) + '" style="width:100%;height:160px;object-fit:contain">' : '') + '</div><div class="cb">' +
+    grid.innerHTML = cars.length ? cars.map(function(c, idx) {
+      var imgs = (c.imageUrls || []).map(function(u) { return resolveUploadUrl(u); });
+      var galleryId = "ev-admin-gallery-" + idx;
+      var mainHtml = imgs.length ? '<img id="' + galleryId + '" src="' + imgs[0] + '" style="width:100%;height:240px;object-fit:contain">' : '<div style="height:120px;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px">لا توجد صور</div>';
+      var thumbsHtml = imgs.length > 1 ? '<div style="display:flex;gap:6px;padding:8px;background:var(--bg2);flex-wrap:wrap">' + imgs.map(function(u, i) {
+        return '<img src="' + u + '" onclick="document.getElementById(\'' + galleryId + '\').src=\'' + u + '\'" style="width:64px;height:64px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid ' + (i === 0 ? 'var(--red)' : 'transparent') + '">';
+      }).join("") + '</div>' : '';
+      return '<div class="card"><div style="background:#f5f5f0">' + mainHtml + '</div>' + thumbsHtml + '<div class="cb">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:14px;font-weight:700">' + c.brand + ' ' + c.modelName + '</div><span class="pill ' + (c.isActive ? "pg" : "pa") + '">' + (c.isActive ? "مفعّلة" : "غير مفعّلة") + '</span></div>' +
         '<div style="font-size:11px;color:var(--ts);margin-bottom:8px">' + (c.imageUrls || []).length + ' صورة</div>' +
         '<button class="bl" style="width:100%;padding:7px;font-size:12px;border-radius:7px" onclick="editEvCar(\'' + c.id + '\')">✏️ تعديل الصور والمواصفات</button>' +
