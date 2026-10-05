@@ -33,6 +33,7 @@
   <url><loc>https://inmisr.net/packaging</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>https://inmisr.net/advertise</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>https://inmisr.net/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://inmisr.net/policies</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>https://inmisr.net/security</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
   <url><loc>https://inmisr.net/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
 </urlset>
